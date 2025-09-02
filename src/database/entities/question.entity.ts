@@ -29,6 +29,32 @@ export class Question {
   @Column({ type: 'jsonb', default: () => "'[]'" })
   themesJSON!: QuestionTheme[];
 
+  /**
+   * SUBJECTS EXPLANATION:
+   *
+   * The `subjectsJSON` array contains structured, queryable tags describing the main focus of each question.
+   * These are used for filtering, analytics, anti-repeat logic, themed events, and leaderboards.
+   *
+   * Subjects should be granular and follow a `type:value` convention. Supported types include:
+   *   - song:   e.g., "song:Love Story", "song:All Too Well"
+   *   - album:  e.g., "album:1989", "album:Red"
+   *   - era:    e.g., "era:Reputation", "era:Midnights"
+   *   - tour:   e.g., "tour:Eras Tour", "tour:1989 World Tour"
+   *   - theme:  e.g., "theme:lyrics", "theme:timeline", "theme:career"
+   *   - person: e.g., "person:Jack Antonoff", "person:Joe Alwyn"
+   *   - event:  e.g., "event:Grammy Awards", "event:Album Release"
+   *   - misc:   e.g., "misc:easter-egg", "misc:fan-theory"
+   *
+   * Example:
+   *   [
+   *     "song:All Too Well",
+   *     "album:Red",
+   *     "era:Red",
+   *     "theme:lyrics"
+   *   ]
+   *
+   * This structure enables filtering, anti-repeat, themed quizzes, and subject-based leaderboards.
+   */
   @Column({ type: 'jsonb', default: () => "'[]'" })
   subjectsJSON!: string[];
 
