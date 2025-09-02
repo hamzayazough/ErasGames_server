@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { DailyQuiz } from './daily-quiz.entity';
+import { Answer } from '../answers/answer.interface';
 
 @Entity('attempt')
 @Index(['user', 'dailyQuiz'], { unique: true })
@@ -34,7 +35,7 @@ export class Attempt {
   finishAt!: Date | null;
 
   @Column({ type: 'jsonb', default: () => "'[]'" })
-  answersJSON!: any[];
+  answersJSON!: Answer[];
 
   @Column({ type: 'int', default: 0 })
   accPoints!: number;

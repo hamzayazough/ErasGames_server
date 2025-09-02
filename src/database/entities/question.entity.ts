@@ -6,6 +6,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { MediaRef } from './questions/media-ref.interface';
 import { Difficulty, QuestionType } from '../enums/question.enums';
 import { DailyQuizQuestion } from './daily-quiz-question.entity';
 
@@ -38,7 +39,7 @@ export class Question {
   correctJSON!: any | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  mediaJSON!: any | null;
+  mediaJSON!: MediaRef[] | null;
 
   @Column({ type: 'boolean', default: false })
   approved!: boolean;
