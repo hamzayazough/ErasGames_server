@@ -11,6 +11,7 @@ import { Difficulty, QuestionType } from '../enums/question.enums';
 import { DailyQuizQuestion } from './daily-quiz-question.entity';
 import { Choice } from './choices/choice.type';
 import { AnyPrompt } from './prompts/any-prompt.type';
+import { QuestionTheme } from '../enums/question-theme.enum';
 
 @Entity('questions')
 @Index('idx_question_lastused_diff', ['lastUsedAt', 'difficulty'])
@@ -26,7 +27,7 @@ export class Question {
   difficulty!: Difficulty;
 
   @Column({ type: 'jsonb', default: () => "'[]'" })
-  themesJSON!: string[];
+  themesJSON!: QuestionTheme[];
 
   @Column({ type: 'jsonb', default: () => "'[]'" })
   subjectsJSON!: string[];
