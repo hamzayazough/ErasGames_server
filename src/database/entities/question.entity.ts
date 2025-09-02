@@ -10,7 +10,7 @@ import { Correct } from './corrects/correct.type';
 import { Difficulty, QuestionType } from '../enums/question.enums';
 import { DailyQuizQuestion } from './daily-quiz-question.entity';
 import { Choice } from './choices/choice.type';
-import { AnyPrompt } from './prompts/any-prompt.type';
+import type { AnyPrompt } from './prompts/any-prompt.type';
 import { QuestionTheme } from '../enums/question-theme.enum';
 
 @Entity('questions')
