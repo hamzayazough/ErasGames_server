@@ -1,13 +1,11 @@
 import { BasicQuestion } from './basic-question.interface';
 import { StringChoice } from '../choices/string-choice.type';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
+import { OddOneOutPrompt } from '../prompts/prompt-interfaces';
 
 export interface OddOneOutQuestion extends BasicQuestion {
   questionType: 'odd_one_out';
-  prompt: {
-    task: string;
-    setRule: string;
-  };
+  prompt: OddOneOutPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;
 }

@@ -1,13 +1,11 @@
 import { BasicQuestion } from './basic-question.interface';
 import { StringChoice } from '../choices/string-choice.type';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
+import { AlbumYearGuessPrompt } from '../prompts/prompt-interfaces';
 
 export interface AlbumYearGuessQuestion extends BasicQuestion {
   questionType: 'album_year_guess';
-  prompt: {
-    task: string;
-    album: string;
-  };
+  prompt: AlbumYearGuessPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;
 }

@@ -1,13 +1,10 @@
 import { BasicQuestion } from './basic-question.interface';
 import { StringMapCorrect } from '../corrects/string-map-correct.interface';
+import { SongAlbumMatchPrompt } from '../prompts/prompt-interfaces';
 
 export interface SongAlbumMatchQuestion extends BasicQuestion {
   questionType: 'song_album_match';
-  prompt: {
-    task: string;
-    left: string[];
-    right: string[];
-  };
+  prompt: SongAlbumMatchPrompt;
   correct: StringMapCorrect;
 }
 /**

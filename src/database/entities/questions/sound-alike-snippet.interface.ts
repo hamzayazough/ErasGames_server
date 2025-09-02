@@ -1,10 +1,11 @@
 import { BasicQuestion, MediaRef } from './basic-question.interface';
 import { Choice } from '../choices/choice.type';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
+import { SoundAlikeSnippetPrompt } from '../prompts/prompt-interfaces';
 
 export interface SoundAlikeSnippetQuestion extends BasicQuestion {
   questionType: 'sound_alike_snippet';
-  prompt: { task: string };
+  prompt: SoundAlikeSnippetPrompt;
   mediaRefs: MediaRef[];
   choices: Choice[];
   correct: SingleChoiceCorrect;

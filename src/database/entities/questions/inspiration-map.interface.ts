@@ -1,13 +1,11 @@
 import { BasicQuestion } from './basic-question.interface';
 import { StringChoice } from '../choices/string-choice.type';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
+import { InspirationMapPrompt } from '../prompts/prompt-interfaces';
 
 export interface InspirationMapQuestion extends BasicQuestion {
   questionType: 'inspiration_map';
-  prompt: {
-    task: string;
-    disclaimer?: string;
-  };
+  prompt: InspirationMapPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;
 }

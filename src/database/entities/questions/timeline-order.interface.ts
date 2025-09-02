@@ -1,12 +1,10 @@
 import { BasicQuestion } from './basic-question.interface';
 import { StringArrayCorrect } from '../corrects/string-array-correct.interface';
+import { TimelineOrderPrompt } from '../prompts/prompt-interfaces';
 
 export interface TimelineOrderQuestion extends BasicQuestion {
   questionType: 'timeline_order';
-  prompt: {
-    task: string;
-    items: string[];
-  };
+  prompt: TimelineOrderPrompt;
   correct: StringArrayCorrect;
 }
 /**

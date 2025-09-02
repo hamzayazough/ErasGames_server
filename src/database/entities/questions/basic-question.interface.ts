@@ -1,5 +1,7 @@
 export type Difficulty = 'easy' | 'medium' | 'hard';
+
 import type { Choice } from '../choices/choice.type';
+import type { AnyPrompt } from '../prompts/any-prompt.type';
 
 export type MediaRef = {
   type: 'image' | 'audio';
@@ -33,7 +35,7 @@ export interface BasicQuestion {
   difficulty: Difficulty;
   themes: string[];
   subjects: string[];
-  prompt: any;
+  prompt: AnyPrompt;
   choices?: Choice[];
   correct: any; // fallback for generic/legacy
   mediaRefs?: MediaRef[];

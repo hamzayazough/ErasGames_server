@@ -10,6 +10,7 @@ import { Correct } from './corrects/correct.type';
 import { Difficulty, QuestionType } from '../enums/question.enums';
 import { DailyQuizQuestion } from './daily-quiz-question.entity';
 import { Choice } from './choices/choice.type';
+import { AnyPrompt } from './prompts/any-prompt.type';
 
 @Entity('questions')
 @Index('idx_question_lastused_diff', ['lastUsedAt', 'difficulty'])
@@ -31,7 +32,7 @@ export class Question {
   subjectsJSON!: string[];
 
   @Column({ type: 'jsonb' })
-  promptJSON!: any;
+  promptJSON!: AnyPrompt;
 
   @Column({ type: 'jsonb', nullable: true })
   choicesJSON!: Choice[] | null;

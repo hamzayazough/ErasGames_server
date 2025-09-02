@@ -1,9 +1,10 @@
 import { BasicQuestion } from './basic-question.interface';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
+import { LongestSongPrompt } from '../prompts/prompt-interfaces';
 
 export interface LongestSongQuestion extends BasicQuestion {
   questionType: 'longest_song';
-  prompt: { task: string };
+  prompt: LongestSongPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;
 }
