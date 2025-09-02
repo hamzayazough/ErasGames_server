@@ -1,4 +1,5 @@
 import { BasicQuestion } from './basic-question.interface';
+import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
 
 export interface OddOneOutQuestion extends BasicQuestion {
   questionType: 'odd_one_out';
@@ -7,7 +8,7 @@ export interface OddOneOutQuestion extends BasicQuestion {
     setRule: string;
   };
   choices: string[];
-  correct: number;
+  correct: SingleChoiceCorrect;
 }
 /**
  * Odd One Out: Player selects the item that does not fit the set rule among the choices.

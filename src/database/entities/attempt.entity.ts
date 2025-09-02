@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { DailyQuiz } from './daily-quiz.entity';
-import { Answer } from '../answers/answer.interface';
+import { Answer } from './answers/answer.interface';
 
 @Entity('attempt')
 @Index(['user', 'dailyQuiz'], { unique: true })

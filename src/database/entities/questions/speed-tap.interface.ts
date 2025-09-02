@@ -1,4 +1,5 @@
 import { BasicQuestion } from './basic-question.interface';
+import { SpeedTapCorrect } from '../corrects/speed-tap-correct.interface';
 
 export interface SpeedTapQuestion extends BasicQuestion {
   questionType: 'speed_tap';
@@ -8,7 +9,7 @@ export interface SpeedTapQuestion extends BasicQuestion {
     roundSeconds: number;
     grid: string[];
   };
-  correct: { targets: string[] };
+  correct: SpeedTapCorrect;
   scoringHints?: { perCorrect: number; perWrong: number };
 }
 /**

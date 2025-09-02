@@ -1,4 +1,5 @@
 import { BasicQuestion } from './basic-question.interface';
+import { StringArrayCorrect } from '../corrects/string-array-correct.interface';
 
 export interface TimelineOrderQuestion extends BasicQuestion {
   questionType: 'timeline_order';
@@ -6,7 +7,7 @@ export interface TimelineOrderQuestion extends BasicQuestion {
     task: string;
     items: string[];
   };
-  correct: string[];
+  correct: StringArrayCorrect;
 }
 /**
  * Timeline Ordering: Player arranges items (songs, events, etc.) in the correct chronological order.

@@ -34,7 +34,7 @@ export interface BasicQuestion {
   subjects: string[];
   prompt: any;
   choices?: string[];
-  correct: any;
+  correct: any; // fallback for generic/legacy
   mediaRefs?: MediaRef[];
   scoringHints?: Record<string, any>;
 }

@@ -1,4 +1,5 @@
 import { BasicQuestion } from './basic-question.interface';
+import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
 
 export interface InspirationMapQuestion extends BasicQuestion {
   questionType: 'inspiration_map';
@@ -7,7 +8,7 @@ export interface InspirationMapQuestion extends BasicQuestion {
     disclaimer?: string;
   };
   choices: string[];
-  correct: number;
+  correct: SingleChoiceCorrect;
 }
 /**
  * Inspiration Mapping: Player selects the correct inspiration or relationship mapping for a song or event.

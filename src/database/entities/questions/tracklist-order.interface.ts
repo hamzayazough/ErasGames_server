@@ -1,4 +1,5 @@
 import { BasicQuestion } from './basic-question.interface';
+import { StringArrayCorrect } from '../corrects/string-array-correct.interface';
 
 export interface TracklistOrderQuestion extends BasicQuestion {
   questionType: 'tracklist_order';
@@ -7,7 +8,7 @@ export interface TracklistOrderQuestion extends BasicQuestion {
     album: string;
     tracks: string[];
   };
-  correct: string[];
+  correct: StringArrayCorrect;
 }
 /**
  * Tracklist Order: Player arranges tracks in the correct order for a given album.

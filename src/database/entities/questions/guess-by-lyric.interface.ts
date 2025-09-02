@@ -1,4 +1,5 @@
 import { BasicQuestion } from './basic-question.interface';
+import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
 
 export interface GuessByLyricQuestion extends BasicQuestion {
   questionType: 'guess_by_lyric';
@@ -7,7 +8,7 @@ export interface GuessByLyricQuestion extends BasicQuestion {
     lyric: string;
   };
   choices: string[];
-  correct: number;
+  correct: SingleChoiceCorrect;
 }
 /**
  * Guess by Lyric: Player is shown a lyric and must pick the correct song from multiple choices.
