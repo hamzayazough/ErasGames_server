@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 export interface LongestSongQuestion extends BasicQuestion {
   questionType: 'longest_song';
   prompt: { task: string };
-  choices: string[];
+  choices: StringChoice[];
   correct: SingleChoiceCorrect;
 }
 /**

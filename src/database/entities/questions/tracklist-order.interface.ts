@@ -1,5 +1,6 @@
 import { BasicQuestion } from './basic-question.interface';
 import { StringArrayCorrect } from '../corrects/string-array-correct.interface';
+import { StringChoice } from '../choices/string-choice.type';
 
 export interface TracklistOrderQuestion extends BasicQuestion {
   questionType: 'tracklist_order';
@@ -8,6 +9,7 @@ export interface TracklistOrderQuestion extends BasicQuestion {
     album: string;
     tracks: string[];
   };
+  choices: StringChoice[];
   correct: StringArrayCorrect;
 }
 /**

@@ -1,5 +1,6 @@
 import { BasicQuestion } from './basic-question.interface';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
+import { StringChoice } from '../choices/string-choice.type';
 
 export interface LifeTriviaQuestion extends BasicQuestion {
   questionType: 'life_trivia';
@@ -7,7 +8,7 @@ export interface LifeTriviaQuestion extends BasicQuestion {
     task: string;
     question: string;
   };
-  choices: string[];
+  choices: StringChoice[];
   correct: SingleChoiceCorrect;
 }
 /**

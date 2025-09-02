@@ -1,4 +1,5 @@
 import { BasicQuestion, MediaRef } from './basic-question.interface';
+import { Choice } from '../choices/choice.type';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
 
 export interface MoodMatchQuestion extends BasicQuestion {
@@ -9,7 +10,7 @@ export interface MoodMatchQuestion extends BasicQuestion {
     note?: string;
   };
   mediaRefs: MediaRef[];
-  choices: string[];
+  choices: Choice[];
   correct: SingleChoiceCorrect;
 }
 /**

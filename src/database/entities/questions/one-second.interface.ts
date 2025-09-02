@@ -1,11 +1,12 @@
 import { BasicQuestion, MediaRef } from './basic-question.interface';
+import { AudioChoice } from '../choices/audio-choice.interface';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
 
 export interface OneSecondQuestion extends BasicQuestion {
   questionType: 'one_second';
   prompt: { task: string };
   mediaRefs: MediaRef[];
-  choices: string[];
+  choices: AudioChoice[];
   correct: SingleChoiceCorrect;
 }
 /**

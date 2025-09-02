@@ -1,4 +1,5 @@
 import { BasicQuestion } from './basic-question.interface';
+import { StringChoice } from '../choices/string-choice.type';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
 
 export interface GuessByLyricQuestion extends BasicQuestion {
@@ -7,7 +8,7 @@ export interface GuessByLyricQuestion extends BasicQuestion {
     task: string;
     lyric: string;
   };
-  choices: string[];
+  choices: StringChoice[];
   correct: SingleChoiceCorrect;
 }
 /**

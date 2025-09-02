@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import {
   Column,
   Entity,
@@ -10,6 +9,7 @@ import { MediaRef } from './media/media-ref.interface';
 import { Correct } from './corrects/correct.type';
 import { Difficulty, QuestionType } from '../enums/question.enums';
 import { DailyQuizQuestion } from './daily-quiz-question.entity';
+import { Choice } from './choices/choice.type';
 
 @Entity('questions')
 @Index('idx_question_lastused_diff', ['lastUsedAt', 'difficulty'])
@@ -34,7 +34,7 @@ export class Question {
   promptJSON!: any;
 
   @Column({ type: 'jsonb', nullable: true })
-  choicesJSON!: any | null;
+  choicesJSON!: Choice[] | null;
 
   @Column({ type: 'jsonb', nullable: true })
   correctJSON!: Correct | null;

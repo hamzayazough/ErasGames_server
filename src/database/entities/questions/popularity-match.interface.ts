@@ -1,5 +1,6 @@
 import { BasicQuestion } from './basic-question.interface';
 import { StringArrayCorrect } from '../corrects/string-array-correct.interface';
+import { StringChoice } from '../choices/string-choice.type';
 
 export interface PopularityMatchQuestion extends BasicQuestion {
   questionType: 'popularity_match';
@@ -7,7 +8,7 @@ export interface PopularityMatchQuestion extends BasicQuestion {
     task: string;
     asOf: string;
   };
-  choices: string[];
+  choices: StringChoice[];
   correct: StringArrayCorrect;
 }
 /**

@@ -1,11 +1,12 @@
 import { BasicQuestion, MediaRef } from './basic-question.interface';
+import { ImageChoice } from '../choices/image-choice.interface';
 import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
 
 export interface OutfitEraQuestion extends BasicQuestion {
   questionType: 'outfit_era';
   prompt: { task: string };
   mediaRefs: MediaRef[];
-  choices: string[];
+  choices: ImageChoice[];
   correct: SingleChoiceCorrect;
 }
 /**
