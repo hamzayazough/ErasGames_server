@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { SoundAlikeSnippetPrompt } from '../prompts/prompt-interfaces';
 
 export interface SoundAlikeSnippetQuestion extends BasicQuestion {
-  questionType: 'sound_alike_snippet';
+  questionType: 'sound-alike-snippet';
   prompt: SoundAlikeSnippetPrompt;
   mediaRefs: MediaRef[];
   choices: Choice[];

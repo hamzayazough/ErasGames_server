@@ -4,13 +4,13 @@ import { CreateQuestionBaseDto } from './create-question-base.dto';
 import {
   StringChoiceDto,
   SingleChoiceCorrectDto,
-  OddOneOutPromptDto,
+  LongestSongPromptDto,
 } from './shared.dto';
 
-export class CreateOddOneOutQuestionDto extends CreateQuestionBaseDto {
+export class CreateLongestSongQuestionDto extends CreateQuestionBaseDto {
   @ValidateNested()
-  @Type(() => OddOneOutPromptDto)
-  prompt: OddOneOutPromptDto;
+  @Type(() => LongestSongPromptDto)
+  prompt: LongestSongPromptDto;
 
   @IsArray()
   @ValidateNested({ each: true })

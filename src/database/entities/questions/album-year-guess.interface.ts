@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { AlbumYearGuessPrompt } from '../prompts/prompt-interfaces';
 
 export interface AlbumYearGuessQuestion extends BasicQuestion {
-  questionType: 'album_year_guess';
+  questionType: 'album-year-guess';
   prompt: AlbumYearGuessPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;

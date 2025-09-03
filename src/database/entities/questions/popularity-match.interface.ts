@@ -4,7 +4,7 @@ import { StringChoice } from '../choices/string-choice.type';
 import { PopularityMatchPrompt } from '../prompts/prompt-interfaces';
 
 export interface PopularityMatchQuestion extends BasicQuestion {
-  questionType: 'popularity_match';
+  questionType: 'popularity-match';
   prompt: PopularityMatchPrompt;
   choices: StringChoice[];
   correct: StringArrayCorrect;

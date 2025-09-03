@@ -6,7 +6,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import {
+import type {
   Difficulty,
   QuestionType,
 } from '../../../entities/questions/basic-question.interface';

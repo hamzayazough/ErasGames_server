@@ -5,7 +5,7 @@ import { ImageChoice } from '../choices/image-choice.interface';
 import { AiVisualPrompt } from '../prompts/prompt-interfaces';
 
 export interface AiVisualQuestion extends BasicQuestion {
-  questionType: 'ai_visual';
+  questionType: 'ai-visual';
   prompt: AiVisualPrompt;
   mediaRefs: MediaRef[];
   choices: ImageChoice[];

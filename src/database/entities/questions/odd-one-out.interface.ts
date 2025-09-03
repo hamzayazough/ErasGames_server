@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { OddOneOutPrompt } from '../prompts/prompt-interfaces';
 
 export interface OddOneOutQuestion extends BasicQuestion {
-  questionType: 'odd_one_out';
+  questionType: 'odd-one-out';
   prompt: OddOneOutPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;

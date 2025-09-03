@@ -3,7 +3,7 @@ import { StringMapCorrect } from '../corrects/string-map-correct.interface';
 import { SongAlbumMatchPrompt } from '../prompts/prompt-interfaces';
 
 export interface SongAlbumMatchQuestion extends BasicQuestion {
-  questionType: 'song_album_match';
+  questionType: 'song-album-match';
   prompt: SongAlbumMatchPrompt;
   correct: StringMapCorrect;
 }

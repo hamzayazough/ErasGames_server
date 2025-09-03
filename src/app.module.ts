@@ -1,10 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PartitionManagementService } from './database/services/partition-management.service';
 import { AdminPartitionController } from './admin/controllers/admin-partition.controller';
+import { QuestionController } from './controllers/question.controller';
+
+// Question Creation Services
+import { QuestionCreationService } from './database/services/question-creation/question-creation.service';
+import { AudioBasedQuestionService } from './database/services/question-creation/child-services/audio-based-question.service';
+import { InteractiveGameQuestionService } from './database/services/question-creation/child-services/interactive-game-question.service';
+import { KnowledgeTriviaQuestionService } from './database/services/question-creation/child-services/knowledge-trivia-question.service';
+import { VisualAestheticQuestionService } from './database/services/question-creation/child-services/visual-aesthetic-question.service';
 
 // Import all entities for TypeORM
 import { User } from './database/entities/user.entity';
@@ -23,6 +32,11 @@ import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
 
 @Module({
   imports: [
+    // Configuration module to load .env file
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
     // Schedule module for cron jobs
     ScheduleModule.forRoot(),
 
@@ -55,10 +69,23 @@ import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
       migrationsTableName: 'migrations',
     }),
 
-    // Register repositories for partition service
-    TypeOrmModule.forFeature([Attempt, DailyQuizQuestion]),
+    // Register repositories for partition service and question creation
+    TypeOrmModule.forFeature([
+      Attempt,
+      DailyQuizQuestion,
+      Question, // Add Question repository for question creation services
+    ]),
   ],
-  controllers: [AppController, AdminPartitionController],
-  providers: [AppService, PartitionManagementService],
+  controllers: [AppController, AdminPartitionController, QuestionController],
+  providers: [
+    AppService,
+    PartitionManagementService,
+    // Question Creation Services
+    QuestionCreationService,
+    AudioBasedQuestionService,
+    InteractiveGameQuestionService,
+    KnowledgeTriviaQuestionService,
+    VisualAestheticQuestionService,
+  ],
 })
 export class AppModule {}

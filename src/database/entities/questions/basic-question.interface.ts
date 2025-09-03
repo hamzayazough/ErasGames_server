@@ -3,31 +3,31 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 import type { Choice } from '../choices/choice.type';
 import type { AnyPrompt } from '../prompts/any-prompt.type';
 
+export type QuestionType =
+  | 'album-year-guess'
+  | 'song-album-match'
+  | 'fill-blank'
+  | 'guess-by-lyric'
+  | 'odd-one-out'
+  | 'ai-visual'
+  | 'sound-alike-snippet'
+  | 'mood-match'
+  | 'inspiration-map'
+  | 'life-trivia'
+  | 'timeline-order'
+  | 'popularity-match'
+  | 'longest-song'
+  | 'tracklist-order'
+  | 'outfit-era'
+  | 'lyric-mashup'
+  | 'speed-tap'
+  | 'reverse-audio'
+  | 'one-second';
+
 export type MediaRef = {
   type: 'image' | 'audio';
   url: string;
 };
-
-export type QuestionType =
-  | 'album_year_guess'
-  | 'song_album_match'
-  | 'fill_blank'
-  | 'guess_by_lyric'
-  | 'odd_one_out'
-  | 'ai_visual'
-  | 'sound_alike_snippet'
-  | 'mood_match'
-  | 'inspiration_map'
-  | 'life_trivia'
-  | 'timeline_order'
-  | 'popularity_match'
-  | 'longest_song'
-  | 'tracklist_order'
-  | 'outfit_era'
-  | 'lyric_mashup'
-  | 'speed_tap'
-  | 'reverse_audio'
-  | 'one_second';
 
 export interface BasicQuestion {
   id: string;

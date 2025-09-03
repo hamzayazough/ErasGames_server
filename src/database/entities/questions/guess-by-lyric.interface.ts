@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { GuessByLyricPrompt } from '../prompts/prompt-interfaces';
 
 export interface GuessByLyricQuestion extends BasicQuestion {
-  questionType: 'guess_by_lyric';
+  questionType: 'guess-by-lyric';
   prompt: GuessByLyricPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;

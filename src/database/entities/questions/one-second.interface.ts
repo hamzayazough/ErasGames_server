@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { OneSecondPrompt } from '../prompts/prompt-interfaces';
 
 export interface OneSecondQuestion extends BasicQuestion {
-  questionType: 'one_second';
+  questionType: 'one-second';
   prompt: OneSecondPrompt;
   mediaRefs: MediaRef[];
   choices: AudioChoice[];

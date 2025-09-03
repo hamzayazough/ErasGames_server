@@ -2,20 +2,20 @@ import { ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateQuestionBaseDto } from './create-question-base.dto';
 import {
-  StringChoiceDto,
+  ChoiceDto,
   SingleChoiceCorrectDto,
-  OddOneOutPromptDto,
+  SoundAlikeSnippetPromptDto,
 } from './shared.dto';
 
-export class CreateOddOneOutQuestionDto extends CreateQuestionBaseDto {
+export class CreateSoundAlikeSnippetQuestionDto extends CreateQuestionBaseDto {
   @ValidateNested()
-  @Type(() => OddOneOutPromptDto)
-  prompt: OddOneOutPromptDto;
+  @Type(() => SoundAlikeSnippetPromptDto)
+  prompt: SoundAlikeSnippetPromptDto;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => StringChoiceDto)
-  choices: StringChoiceDto[];
+  @Type(() => ChoiceDto)
+  choices: ChoiceDto[];
 
   @ValidateNested()
   @Type(() => SingleChoiceCorrectDto)

@@ -4,7 +4,7 @@ import { LongestSongPrompt } from '../prompts/prompt-interfaces';
 import { StringChoice } from '../choices/string-choice.type';
 
 export interface LongestSongQuestion extends BasicQuestion {
-  questionType: 'longest_song';
+  questionType: 'longest-song';
   prompt: LongestSongPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;

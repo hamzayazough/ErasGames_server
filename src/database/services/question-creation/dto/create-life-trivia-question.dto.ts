@@ -4,13 +4,13 @@ import { CreateQuestionBaseDto } from './create-question-base.dto';
 import {
   StringChoiceDto,
   SingleChoiceCorrectDto,
-  OddOneOutPromptDto,
+  LifeTriviaPromptDto,
 } from './shared.dto';
 
-export class CreateOddOneOutQuestionDto extends CreateQuestionBaseDto {
+export class CreateLifeTriviaQuestionDto extends CreateQuestionBaseDto {
   @ValidateNested()
-  @Type(() => OddOneOutPromptDto)
-  prompt: OddOneOutPromptDto;
+  @Type(() => LifeTriviaPromptDto)
+  prompt: LifeTriviaPromptDto;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { MoodMatchPrompt } from '../prompts/prompt-interfaces';
 
 export interface MoodMatchQuestion extends BasicQuestion {
-  questionType: 'mood_match';
+  questionType: 'mood-match';
   prompt: MoodMatchPrompt;
   mediaRefs: MediaRef[];
   choices: Choice[];

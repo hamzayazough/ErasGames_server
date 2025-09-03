@@ -2,20 +2,20 @@ import { ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateQuestionBaseDto } from './create-question-base.dto';
 import {
-  StringChoiceDto,
+  ImageChoiceDto,
   SingleChoiceCorrectDto,
-  OddOneOutPromptDto,
+  OutfitEraPromptDto,
 } from './shared.dto';
 
-export class CreateOddOneOutQuestionDto extends CreateQuestionBaseDto {
+export class CreateOutfitEraQuestionDto extends CreateQuestionBaseDto {
   @ValidateNested()
-  @Type(() => OddOneOutPromptDto)
-  prompt: OddOneOutPromptDto;
+  @Type(() => OutfitEraPromptDto)
+  prompt: OutfitEraPromptDto;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => StringChoiceDto)
-  choices: StringChoiceDto[];
+  @Type(() => ImageChoiceDto)
+  choices: ImageChoiceDto[];
 
   @ValidateNested()
   @Type(() => SingleChoiceCorrectDto)

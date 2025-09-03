@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { OutfitEraPrompt } from '../prompts/prompt-interfaces';
 
 export interface OutfitEraQuestion extends BasicQuestion {
-  questionType: 'outfit_era';
+  questionType: 'outfit-era';
   prompt: OutfitEraPrompt;
   mediaRefs: MediaRef[];
   choices: ImageChoice[];

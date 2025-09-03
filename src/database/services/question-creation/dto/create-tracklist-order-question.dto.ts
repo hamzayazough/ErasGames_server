@@ -3,14 +3,14 @@ import { Type } from 'class-transformer';
 import { CreateQuestionBaseDto } from './create-question-base.dto';
 import {
   StringChoiceDto,
-  SingleChoiceCorrectDto,
-  OddOneOutPromptDto,
+  StringArrayCorrectDto,
+  TracklistOrderPromptDto,
 } from './shared.dto';
 
-export class CreateOddOneOutQuestionDto extends CreateQuestionBaseDto {
+export class CreateTracklistOrderQuestionDto extends CreateQuestionBaseDto {
   @ValidateNested()
-  @Type(() => OddOneOutPromptDto)
-  prompt: OddOneOutPromptDto;
+  @Type(() => TracklistOrderPromptDto)
+  prompt: TracklistOrderPromptDto;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -18,6 +18,6 @@ export class CreateOddOneOutQuestionDto extends CreateQuestionBaseDto {
   choices: StringChoiceDto[];
 
   @ValidateNested()
-  @Type(() => SingleChoiceCorrectDto)
-  correct: SingleChoiceCorrectDto;
+  @Type(() => StringArrayCorrectDto)
+  correct: StringArrayCorrectDto;
 }

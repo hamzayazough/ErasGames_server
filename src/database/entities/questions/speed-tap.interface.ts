@@ -3,7 +3,7 @@ import { SpeedTapCorrect } from '../corrects/speed-tap-correct.interface';
 import { SpeedTapPrompt } from '../prompts/prompt-interfaces';
 
 export interface SpeedTapQuestion extends BasicQuestion {
-  questionType: 'speed_tap';
+  questionType: 'speed-tap';
   prompt: SpeedTapPrompt;
   correct: SpeedTapCorrect;
   scoringHints?: { perCorrect: number; perWrong: number };

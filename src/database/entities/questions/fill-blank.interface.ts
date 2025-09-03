@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { FillBlankPrompt } from '../prompts/prompt-interfaces';
 
 export interface FillBlankQuestion extends BasicQuestion {
-  questionType: 'fill_blank';
+  questionType: 'fill-blank';
   prompt: FillBlankPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;

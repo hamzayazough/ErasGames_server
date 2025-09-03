@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { ReverseAudioPrompt } from '../prompts/prompt-interfaces';
 
 export interface ReverseAudioQuestion extends BasicQuestion {
-  questionType: 'reverse_audio';
+  questionType: 'reverse-audio';
   prompt: ReverseAudioPrompt;
   mediaRefs: MediaRef[];
   choices: AudioChoice[];

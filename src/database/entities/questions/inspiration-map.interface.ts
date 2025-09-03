@@ -4,7 +4,7 @@ import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface
 import { InspirationMapPrompt } from '../prompts/prompt-interfaces';
 
 export interface InspirationMapQuestion extends BasicQuestion {
-  questionType: 'inspiration_map';
+  questionType: 'inspiration-map';
   prompt: InspirationMapPrompt;
   choices: StringChoice[];
   correct: SingleChoiceCorrect;
