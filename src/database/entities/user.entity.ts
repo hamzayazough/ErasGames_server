@@ -96,4 +96,12 @@ export class User extends BaseEntityTimestamps {
   // attempts!: Attempt[];
   // @OneToMany(() => PracticeAttempt, (a) => a.user)
   // practiceAttempts!: PracticeAttempt[];
+
+  // Helper method to get active subscription
+  // getActiveSubscription(): Subscription | null {
+  //   return this.subscriptions?.find(sub =>
+  //     sub.status === SubscriptionStatus.ACTIVE &&
+  //     (!sub.currentPeriodEnd || sub.currentPeriodEnd > new Date())
+  //   ) || null;
+  // }
 }
