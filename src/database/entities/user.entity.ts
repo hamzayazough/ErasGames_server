@@ -1,13 +1,14 @@
-import {
-  Column,
-  Entity,
-  Index,
-  //OneToMany,
-  Unique,
-} from 'typeorm';
+import { Column, Entity, Index, OneToMany, Unique } from 'typeorm';
 
 import { UserRole, UserStatus, AuthProvider } from '../enums/user.enums';
 import { BaseEntityTimestamps } from './base.entity';
+
+// Import related entities for relationships
+import { Subscription } from './subscription.entity';
+import { Purchase } from './purchase.entity';
+import { DailyEntitlements } from './daily-entitlements.entity';
+import { Attempt } from './attempt.entity';
+import { PracticeAttempt } from './practice-attempt.entity';
 
 @Entity('users')
 @Unique('uniq_users_provider_identity', ['authProvider', 'providerUserId'])
@@ -85,23 +86,32 @@ export class User extends BaseEntityTimestamps {
   @Column({ type: 'varchar', length: 100, nullable: true })
   stripeCustomerId!: string | null;
 
-  // Relations (to be filled in after related entities are created)
-  // @OneToMany(() => Subscription, (s) => s.user)
-  // subscriptions!: Subscription[];
-  // @OneToMany(() => Purchase, (p) => p.user)
-  // purchases!: Purchase[];
-  // @OneToMany(() => DailyEntitlements, (e) => e.user)
-  // entitlements!: DailyEntitlements[];
-  // @OneToMany(() => Attempt, (a) => a.user)
-  // attempts!: Attempt[];
-  // @OneToMany(() => PracticeAttempt, (a) => a.user)
-  // practiceAttempts!: PracticeAttempt[];
+  // Relations
+  @OneToMany(() => Subscription, (s) => s.user)
+  subscriptions!: Subscription[];
+
+  @OneToMany(() => Purchase, (p) => p.user)
+  purchases!: Purchase[];
+
+  @OneToMany(() => DailyEntitlements, (e) => e.user)
+  entitlements!: DailyEntitlements[];
+
+  @OneToMany(() => Attempt, (a) => a.user)
+  attempts!: Attempt[];
+
+  @OneToMany(() => PracticeAttempt, (a) => a.user)
+  practiceAttempts!: PracticeAttempt[];
 
   // Helper method to get active subscription
-  // getActiveSubscription(): Subscription | null {
-  //   return this.subscriptions?.find(sub =>
-  //     sub.status === SubscriptionStatus.ACTIVE &&
-  //     (!sub.currentPeriodEnd || sub.currentPeriodEnd > new Date())
-  //   ) || null;
-  // }
+  getActiveSubscription(): Subscription | null {
+    return (
+      this.subscriptions?.find(
+        (sub) =>
+          ['active', 'trialing', 'in_grace_period'].includes(
+            sub.statusDerived,
+          ) &&
+          (!sub.currentPeriodEnd || sub.currentPeriodEnd > new Date()),
+      ) || null
+    );
+  }
 }
