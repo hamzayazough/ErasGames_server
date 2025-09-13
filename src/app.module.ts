@@ -10,6 +10,7 @@ import { QuestionController } from './controllers/question.controller';
 
 // Question Creation Services
 import { QuestionCreationService } from './database/services/question-creation/question-creation.service';
+import { QuestionService } from './database/services/question.service';
 import { AudioBasedQuestionService } from './database/services/question-creation/child-services/audio-based-question.service';
 import { InteractiveGameQuestionService } from './database/services/question-creation/child-services/interactive-game-question.service';
 import { KnowledgeTriviaQuestionService } from './database/services/question-creation/child-services/knowledge-trivia-question.service';
@@ -82,6 +83,7 @@ import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
     PartitionManagementService,
     // Question Creation Services
     QuestionCreationService,
+    QuestionService,
     AudioBasedQuestionService,
     InteractiveGameQuestionService,
     KnowledgeTriviaQuestionService,
