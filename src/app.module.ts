@@ -6,15 +6,19 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PartitionManagementService } from './database/services/partition-management.service';
 import { AdminPartitionController } from './admin/controllers/admin-partition.controller';
-import { QuestionController } from './controllers/question.controller';
+import { AdminDailyQuizController } from './admin/controllers/admin-daily-quiz.controller';
+import { QuestionController } from './admin/controllers/question.controller';
 
 // Question Creation Services
 import { QuestionCreationService } from './database/services/question-creation/question-creation.service';
-import { QuestionService } from './database/services/question.service';
+import { QuestionService } from './database/services/question-creation/question.service';
 import { AudioBasedQuestionService } from './database/services/question-creation/child-services/audio-based-question.service';
 import { InteractiveGameQuestionService } from './database/services/question-creation/child-services/interactive-game-question.service';
 import { KnowledgeTriviaQuestionService } from './database/services/question-creation/child-services/knowledge-trivia-question.service';
 import { VisualAestheticQuestionService } from './database/services/question-creation/child-services/visual-aesthetic-question.service';
+
+// Daily Quiz Composer Module
+import { DailyQuizComposerModule } from './database/services/daily-quiz-composer';
 
 // Import all entities for TypeORM
 import { User } from './database/entities/user.entity';
@@ -40,6 +44,9 @@ import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
 
     // Schedule module for cron jobs
     ScheduleModule.forRoot(),
+
+    // Daily Quiz Composer module
+    DailyQuizComposerModule,
 
     // TypeORM configuration
     TypeOrmModule.forRoot({
@@ -77,7 +84,12 @@ import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
       Question, // Add Question repository for question creation services
     ]),
   ],
-  controllers: [AppController, AdminPartitionController, QuestionController],
+  controllers: [
+    AppController,
+    AdminPartitionController,
+    AdminDailyQuizController,
+    QuestionController,
+  ],
   providers: [
     AppService,
     PartitionManagementService,
