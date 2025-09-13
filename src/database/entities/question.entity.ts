@@ -20,13 +20,13 @@ export class Question {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'enum', enum: QuestionType })
+  @Column({ name: 'question_type', type: 'enum', enum: QuestionType })
   questionType!: QuestionType;
 
   @Column({ type: 'enum', enum: Difficulty })
   difficulty!: Difficulty;
 
-  @Column({ type: 'jsonb', default: () => "'[]'" })
+  @Column({ name: 'themes_json', type: 'jsonb', default: () => "'[]'" })
   themesJSON!: QuestionTheme[];
 
   /**
@@ -55,19 +55,19 @@ export class Question {
    *
    * This structure enables filtering, anti-repeat, themed quizzes, and subject-based leaderboards.
    */
-  @Column({ type: 'jsonb', default: () => "'[]'" })
+  @Column({ name: 'subjects_json', type: 'jsonb', default: () => "'[]'" })
   subjectsJSON!: string[];
 
-  @Column({ type: 'jsonb' })
+  @Column({ name: 'prompt_json', type: 'jsonb' })
   promptJSON!: AnyPrompt;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'choices_json', type: 'jsonb', nullable: true })
   choicesJSON!: Choice[] | null;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'correct_json', type: 'jsonb', nullable: true })
   correctJSON!: Correct | null;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'media_json', type: 'jsonb', nullable: true })
   mediaJSON!: MediaRef[] | null;
 
   @Column({ type: 'boolean', default: false })
@@ -76,13 +76,13 @@ export class Question {
   @Column({ type: 'boolean', default: false })
   disabled!: boolean;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'exposure_count', type: 'int', default: 0 })
   exposureCount!: number;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ name: 'last_used_at', type: 'timestamptz', nullable: true })
   lastUsedAt!: Date | null;
 
-  @Column({ type: 'timestamptz', default: () => 'NOW()' })
+  @Column({ name: 'updated_at', type: 'timestamptz', default: () => 'NOW()' })
   updatedAt!: Date;
 
   @OneToMany(() => DailyQuizQuestion, (dq) => dq.question)
