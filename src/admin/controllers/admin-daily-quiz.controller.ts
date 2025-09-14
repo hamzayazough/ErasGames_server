@@ -12,7 +12,6 @@ import {
   DailyQuizComposerService,
   ComposerConfig,
   DailyQuizMode,
-  QuestionTheme,
 } from '../../database/services/daily-quiz-composer';
 
 /**
@@ -153,22 +152,17 @@ export class AdminDailyQuizController {
         );
       }
 
-      // This would implement a preview version that doesn't save to database
-      // For now, return mock data showing what would be selected
+      const mode = request.mode || DailyQuizMode.MIX;
+
+      const preview = await this.composerService.previewComposition(
+        dropDate,
+        mode,
+        request.config,
+      );
 
       return {
         success: true,
-        data: {
-          previewMode: true,
-          dropAtUTC: dropDate.toISOString(),
-          mode: request.mode || DailyQuizMode.MIX,
-          estimatedQuestions: 6,
-          recommendedConfig: {
-            targetQuestionCount: 6,
-            difficultyDistribution: { easy: 3, medium: 2, hard: 1 },
-          },
-          warnings: ['This is a preview - no records will be created'],
-        },
+        data: preview,
         message: 'Preview generated successfully',
       };
     } catch (error) {
@@ -190,23 +184,12 @@ export class AdminDailyQuizController {
   @Get('health')
   async getCompositionHealth() {
     try {
-      // Perform health checks on the composition system
-      const issues: string[] = [];
-      const recommendations: string[] = [];
-
-      // This would check question pool sizes, recent composition success rates, etc.
-
-      const isHealthy = issues.length === 0;
+      const healthData = await this.composerService.getSystemHealth();
 
       return {
         success: true,
-        data: {
-          healthy: isHealthy,
-          issues,
-          recommendations,
-          lastCheck: new Date().toISOString(),
-        },
-        message: isHealthy
+        data: healthData,
+        message: healthData.healthy
           ? 'Composition system is healthy'
           : 'Issues detected',
       };
@@ -227,33 +210,12 @@ export class AdminDailyQuizController {
    * GET /admin/daily-quiz/options
    */
   @Get('options')
-  async getCompositionOptions() {
+  getCompositionOptions() {
+    const options = this.composerService.getConfigurationOptions();
+
     return {
       success: true,
-      data: {
-        modes: Object.values(DailyQuizMode),
-        themes: Object.values(QuestionTheme),
-        defaultConfig: {
-          targetQuestionCount: 6,
-          difficultyDistribution: {
-            easy: 3,
-            medium: 2,
-            hard: 1,
-          },
-          antiRepeatDays: {
-            strict: 30,
-            relaxed1: 21,
-            relaxed2: 14,
-            relaxed3: 10,
-            final: 7,
-          },
-          maxExposureBias: 10,
-          themeDiversity: {
-            minUniqueThemes: 3,
-            maxThemeOverlap: 2,
-          },
-        },
-      },
+      data: options,
       message: 'Composition options retrieved successfully',
     };
   }
@@ -268,19 +230,14 @@ export class AdminDailyQuizController {
     @Query('offset') offset: string = '0',
   ) {
     try {
-      // This would fetch recent composition logs from a dedicated table
-      // For now, return mock data
+      const logs = await this.composerService.getRecentCompositionLogs(
+        parseInt(limit),
+        parseInt(offset),
+      );
 
       return {
         success: true,
-        data: {
-          logs: [],
-          pagination: {
-            total: 0,
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-          },
-        },
+        data: logs,
         message: 'Composition logs retrieved successfully',
       };
     } catch (error) {

@@ -59,6 +59,8 @@ export class DailyQuizComposerService {
     private readonly dailyQuizRepository: Repository<DailyQuiz>,
     @InjectRepository(DailyQuizQuestion)
     private readonly dailyQuizQuestionRepository: Repository<DailyQuizQuestion>,
+    @InjectRepository(Question)
+    private readonly questionRepository: Repository<Question>,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly questionSelectorService: QuestionSelectorService,
@@ -496,16 +498,39 @@ export class DailyQuizComposerService {
     averageRelaxationLevel: number;
     themeDistribution: Record<string, number>;
     recentWarnings: string[];
+    byDifficulty: Record<string, number>;
   }> {
-    // This would typically query composition logs from a separate table
-    // For now, return basic stats from daily_quiz table
+    // Get basic quiz count
     const totalQuizzes = await this.dailyQuizRepository.count();
+
+    // Get question counts by difficulty
+    const questionStats = await this.questionRepository
+      .createQueryBuilder('q')
+      .select('q.difficulty, COUNT(*) as count')
+      .groupBy('q.difficulty')
+      .getRawMany();
+
+    const allowedDifficulties = ['easy', 'medium', 'hard'] as const;
+    type DifficultyKey = (typeof allowedDifficulties)[number];
+    const byDifficulty: Record<DifficultyKey, number> = {
+      easy: 0,
+      medium: 0,
+      hard: 0,
+    };
+
+    questionStats.forEach((stat: any) => {
+      const key = stat.difficulty.toLowerCase();
+      if (allowedDifficulties.includes(key as DifficultyKey)) {
+        byDifficulty[key as DifficultyKey] = parseInt(stat.count);
+      }
+    });
 
     return {
       totalQuizzes,
       averageRelaxationLevel: 0, // Would be calculated from logs
       themeDistribution: {}, // Would be calculated from logs
       recentWarnings: [], // Would be from recent composition logs
+      byDifficulty,
     };
   }
 
@@ -538,6 +563,240 @@ export class DailyQuizComposerService {
     return {
       isValid: issues.length === 0,
       issues,
+    };
+  }
+
+  /**
+   * Preview quiz composition without creating database records
+   */
+  async previewComposition(
+    dropAtUTC: Date,
+    mode: DailyQuizMode = DailyQuizMode.MIX,
+    config?: Partial<ComposerConfig>,
+  ): Promise<{
+    previewMode: boolean;
+    dropAtUTC: string;
+    mode: DailyQuizMode;
+    themePlan: ThemePlan;
+    estimatedQuestions: number;
+    difficultyDistribution: Record<string, number>;
+    availableQuestions: Record<string, number>;
+    warnings: string[];
+    feasible: boolean;
+  }> {
+    const finalConfig = { ...this.defaultConfig, ...config };
+    const themePlan = this.generateThemePlan(mode, dropAtUTC);
+    const stats = await this.getCompositionStats();
+
+    const warnings: string[] = [];
+    let feasible = true;
+
+    // Check if we have enough questions for each difficulty
+    const requiredEasy = finalConfig.difficultyDistribution.easy;
+    const requiredMedium = finalConfig.difficultyDistribution.medium;
+    const requiredHard = finalConfig.difficultyDistribution.hard;
+
+    if (stats.byDifficulty.easy < requiredEasy) {
+      warnings.push(
+        `Insufficient easy questions: need ${requiredEasy}, have ${stats.byDifficulty.easy}`,
+      );
+      feasible = false;
+    }
+    if (stats.byDifficulty.medium < requiredMedium) {
+      warnings.push(
+        `Insufficient medium questions: need ${requiredMedium}, have ${stats.byDifficulty.medium}`,
+      );
+      feasible = false;
+    }
+    if (stats.byDifficulty.hard < requiredHard) {
+      warnings.push(
+        `Insufficient hard questions: need ${requiredHard}, have ${stats.byDifficulty.hard}`,
+      );
+      feasible = false;
+    }
+
+    if (feasible) {
+      warnings.push('This is a preview - no records will be created');
+    }
+
+    return {
+      previewMode: true,
+      dropAtUTC: dropAtUTC.toISOString(),
+      mode,
+      themePlan,
+      estimatedQuestions: finalConfig.targetQuestionCount,
+      difficultyDistribution: finalConfig.difficultyDistribution,
+      availableQuestions: stats.byDifficulty,
+      warnings,
+      feasible,
+    };
+  }
+
+  /**
+   * Get system health check information
+   */
+  async getSystemHealth(): Promise<{
+    healthy: boolean;
+    issues: string[];
+    recommendations: string[];
+    lastCheck: string;
+    questionPoolStats: any;
+    recentCompositions: any[];
+  }> {
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+
+    try {
+      // Get question pool statistics
+      const stats = await this.getCompositionStats();
+
+      // Check minimum question thresholds
+      const minEasy = 10;
+      const minMedium = 6;
+      const minHard = 3;
+
+      if (stats.byDifficulty.easy < minEasy) {
+        issues.push(
+          `Low easy question count: ${stats.byDifficulty.easy} (minimum: ${minEasy})`,
+        );
+        recommendations.push('Add more easy questions to the pool');
+      }
+      if (stats.byDifficulty.medium < minMedium) {
+        issues.push(
+          `Low medium question count: ${stats.byDifficulty.medium} (minimum: ${minMedium})`,
+        );
+        recommendations.push('Add more medium questions to the pool');
+      }
+      if (stats.byDifficulty.hard < minHard) {
+        issues.push(
+          `Low hard question count: ${stats.byDifficulty.hard} (minimum: ${minHard})`,
+        );
+        recommendations.push('Add more hard questions to the pool');
+      }
+
+      // Check recent composition success
+      const recentQuizzes = await this.dailyQuizRepository
+        .createQueryBuilder('dq')
+        .where('dq.dropAtUTC > :sevenDaysAgo', {
+          sevenDaysAgo: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        })
+        .orderBy('dq.dropAtUTC', 'DESC')
+        .limit(20)
+        .getMany();
+
+      if (recentQuizzes.length === 0) {
+        issues.push('No recent quiz compositions found');
+        recommendations.push('Ensure daily quiz composition is running');
+      }
+
+      return {
+        healthy: issues.length === 0,
+        issues,
+        recommendations,
+        lastCheck: new Date().toISOString(),
+        questionPoolStats: stats,
+        recentCompositions: recentQuizzes.map((quiz) => ({
+          id: quiz.id,
+          dropAtUTC: quiz.dropAtUTC,
+          mode: quiz.mode,
+          questionCount: 6, // We could join to get actual count if needed
+        })),
+      };
+    } catch (error) {
+      issues.push(
+        `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return {
+        healthy: false,
+        issues,
+        recommendations: [
+          'Check database connectivity and service configuration',
+        ],
+        lastCheck: new Date().toISOString(),
+        questionPoolStats: null,
+        recentCompositions: [],
+      };
+    }
+  }
+
+  /**
+   * Get recent composition logs
+   */
+  async getRecentCompositionLogs(
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{
+    logs: Array<{
+      id: string;
+      dropAtUTC: string;
+      mode: DailyQuizMode;
+      themePlan: string[];
+      questionCount: number;
+      createdAt: string;
+      templateCdnUrl: string | null;
+    }>;
+    pagination: {
+      total: number;
+      limit: number;
+      offset: number;
+    };
+  }> {
+    // Get daily quizzes with question counts
+    const [logs, total] = await this.dailyQuizRepository
+      .createQueryBuilder('dq')
+      .leftJoin('daily_quiz_question', 'dqq', 'dqq.dailyQuizId = dq.id')
+      .addSelect('COUNT(dqq.id)', 'questionCount')
+      .groupBy('dq.id')
+      .orderBy('dq.createdAt', 'DESC')
+      .limit(limit)
+      .offset(offset)
+      .getManyAndCount();
+
+    // Get question counts for each quiz
+    const logsWithCounts = await Promise.all(
+      logs.map(async (quiz) => {
+        const questionCount = await this.dataSource
+          .getRepository('daily_quiz_question')
+          .createQueryBuilder('dqq')
+          .where('dqq.dailyQuizId = :quizId', { quizId: quiz.id })
+          .getCount();
+
+        return {
+          id: quiz.id,
+          dropAtUTC: quiz.dropAtUTC.toISOString(),
+          mode: quiz.mode,
+          themePlan: Array.isArray(quiz.themePlanJSON?.themes)
+            ? quiz.themePlanJSON.themes
+            : [quiz.themePlanJSON?.themes].filter(Boolean),
+          questionCount,
+          createdAt: quiz.createdAt.toISOString(),
+          templateCdnUrl: quiz.templateCdnUrl,
+        };
+      }),
+    );
+
+    return {
+      logs: logsWithCounts,
+      pagination: {
+        total,
+        limit,
+        offset,
+      },
+    };
+  }
+
+  /**
+   * Get available configuration options
+   */
+  getConfigurationOptions(): {
+    modes: DailyQuizMode[];
+    themes: QuestionTheme[];
+    defaultConfig: ComposerConfig;
+  } {
+    return {
+      modes: Object.values(DailyQuizMode),
+      themes: Object.values(QuestionTheme),
+      defaultConfig: this.defaultConfig,
     };
   }
 }
