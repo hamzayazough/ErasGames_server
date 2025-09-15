@@ -8,6 +8,9 @@ import {
   ThemePlan,
 } from './interfaces/composer.interfaces';
 import { Difficulty } from '../../enums/question.enums';
+import { AnyPrompt } from '../../entities/prompts/any-prompt.type';
+import { Choice } from '../../entities/choices/choice.type';
+import { MediaRef } from '../../entities/media/media-ref.interface';
 
 /**
  * Service for generating CDN-ready quiz templates
@@ -111,9 +114,9 @@ export class TemplateService {
       subjects:
         (question.subjectsJSON as unknown as TemplateQuestion['subjects']) ||
         [],
-      prompt: this.sanitizePrompt(question.promptJSON as unknown as any),
-      choices: this.sanitizeChoices(question.choicesJSON as unknown as any[]),
-      media: this.sanitizeMedia(question.mediaJSON as unknown as any[]),
+      prompt: this.sanitizePrompt(question.promptJSON),
+      choices: this.sanitizeChoices(question.choicesJSON as Choice[]),
+      media: this.sanitizeMedia(question.mediaJSON as MediaRef[]),
       orderIndex,
     };
   }
@@ -121,16 +124,16 @@ export class TemplateService {
   /**
    * Sanitize prompt data for client consumption
    */
-  private sanitizePrompt(promptJSON: any): any {
+  private sanitizePrompt(promptJSON: AnyPrompt | null): AnyPrompt | null {
     if (!promptJSON) return null;
 
     // Remove any server-side specific fields
     const sanitized = { ...promptJSON };
 
     // Remove internal fields that shouldn't be exposed to clients
-    delete sanitized.internalNotes;
-    delete sanitized.adminComments;
-    delete sanitized.scoringHints;
+    delete (sanitized as any).internalNotes;
+    delete (sanitized as any).adminComments;
+    delete (sanitized as any).scoringHints;
 
     return sanitized;
   }
@@ -138,11 +141,15 @@ export class TemplateService {
   /**
    * Sanitize choices data (remove correct answer indicators)
    */
-  private sanitizeChoices(choicesJSON: any[]): any[] | undefined {
+  private sanitizeChoices(choicesJSON: Choice[] | null): Choice[] | undefined {
     if (!choicesJSON || !Array.isArray(choicesJSON)) return undefined;
 
     return choicesJSON.map((choice) => {
-      const sanitized = { ...choice };
+      // Create a copy using JSON serialization to handle union types safely
+      const sanitized = JSON.parse(JSON.stringify(choice)) as Record<
+        string,
+        any
+      >;
 
       // Remove fields that indicate correct answers
       delete sanitized.isCorrect;
@@ -150,52 +157,26 @@ export class TemplateService {
       delete sanitized.weight;
       delete sanitized.explanation;
 
-      return sanitized;
+      return sanitized as Choice;
     });
   }
 
   /**
-   * Sanitize media references for CDN URLs
+   * Sanitize media references
    */
-  private sanitizeMedia(mediaJSON: any[]): any[] | undefined {
+  private sanitizeMedia(mediaJSON: MediaRef[] | null): MediaRef[] | undefined {
     if (!mediaJSON || !Array.isArray(mediaJSON)) return undefined;
 
     return mediaJSON.map((media) => {
       const sanitized = { ...media };
 
-      // Ensure media URLs are CDN URLs, not internal references
-      if (sanitized.url && !this.isCdnUrl(sanitized.url)) {
-        sanitized.url = this.convertToCdnUrl(sanitized.url);
-      }
-
       // Remove internal media processing fields
-      delete sanitized.internalPath;
-      delete sanitized.processingStatus;
-      delete sanitized.adminNotes;
+      delete (sanitized as any).internalPath;
+      delete (sanitized as any).processingStatus;
+      delete (sanitized as any).adminNotes;
 
       return sanitized;
     });
-  }
-
-  /**
-   * Check if URL is already a CDN URL
-   */
-  private isCdnUrl(url: string): boolean {
-    const cdnDomain = this.configService.get<string>('CDN_DOMAIN');
-    return cdnDomain ? url.includes(cdnDomain) : url.startsWith('http');
-  }
-
-  /**
-   * Convert internal media reference to CDN URL
-   */
-  private convertToCdnUrl(internalPath: string): string {
-    const cdnDomain =
-      this.configService.get<string>('CDN_DOMAIN') ||
-      'https://cdn.erasgames.com';
-    const cdnPath = internalPath.startsWith('/')
-      ? internalPath
-      : `/${internalPath}`;
-    return `${cdnDomain}${cdnPath}`;
   }
 
   /**

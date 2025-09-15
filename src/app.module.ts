@@ -34,6 +34,7 @@ import { Purchase } from './database/entities/purchase.entity';
 import { BillingEvent } from './database/entities/billing-event.entity';
 import { ProviderTransaction } from './database/entities/provider-transaction.entity';
 import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
+import { CompositionLogEntity } from './database/entities/composition-log.entity';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
         BillingEvent,
         ProviderTransaction,
         DailyDropTZ,
+        CompositionLogEntity,
       ],
       synchronize: false, // Never use true in production - use migrations instead
       logging: process.env.NODE_ENV === 'development',

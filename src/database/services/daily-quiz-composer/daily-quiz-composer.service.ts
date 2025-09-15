@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { DailyQuiz } from '../../entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../../entities/daily-quiz-question.entity';
 import { Question } from '../../entities/question.entity';
+import { CompositionLogEntity } from '../../entities/composition-log.entity';
 import { DailyQuizMode } from '../../enums/daily-quiz-mode.enum';
 import { QuestionTheme } from '../../enums/question-theme.enum';
 import {
@@ -61,6 +62,8 @@ export class DailyQuizComposerService {
     private readonly dailyQuizQuestionRepository: Repository<DailyQuizQuestion>,
     @InjectRepository(Question)
     private readonly questionRepository: Repository<Question>,
+    @InjectRepository(CompositionLogEntity)
+    private readonly compositionLogRepository: Repository<CompositionLogEntity>,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly questionSelectorService: QuestionSelectorService,
@@ -122,7 +125,7 @@ export class DailyQuizComposerService {
       }
 
       // Create quiz and questions in a transaction
-      const { dailyQuiz, quizQuestions } = await this.dataSource.transaction(
+      const { dailyQuiz } = await this.dataSource.transaction(
         async (transactionalEntityManager) => {
           // Create the daily quiz record
           const quiz = await this.createDailyQuizRecord(
@@ -176,6 +179,10 @@ export class DailyQuizComposerService {
         Date.now() - startTime,
         dbQueries,
       );
+
+      // Persist composition log to database
+      await this.saveCompositionLog(dailyQuiz, compositionLog);
+      dbQueries++;
 
       this.logger.log(
         `Successfully composed daily quiz ${dailyQuiz.id} with ${selectionResult.questions.length} questions ` +
@@ -390,6 +397,38 @@ export class DailyQuizComposerService {
   }
 
   /**
+   * Save composition log to database for analytics and monitoring
+   */
+  private async saveCompositionLog(
+    dailyQuiz: DailyQuiz,
+    compositionLog: CompositionLog,
+  ): Promise<void> {
+    try {
+      const logEntity = this.compositionLogRepository.create({
+        dailyQuiz,
+        targetDate: compositionLog.targetDate,
+        mode: compositionLog.mode,
+        themePlanJSON: compositionLog.themePlan as any,
+        selectionProcessJSON: compositionLog.selectionProcess,
+        finalSelectionJSON: compositionLog.finalSelection,
+        warningsJSON: compositionLog.warnings,
+        performanceJSON: compositionLog.performance,
+        hasErrors: false,
+        errorMessage: null,
+      });
+
+      await this.compositionLogRepository.save(logEntity);
+
+      this.logger.debug(`Saved composition log for daily quiz ${dailyQuiz.id}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to save composition log: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      // Don't throw - logging failure shouldn't break quiz composition
+    }
+  }
+
+  /**
    * Build error composition log
    */
   private buildErrorCompositionLog(
@@ -525,11 +564,46 @@ export class DailyQuizComposerService {
       }
     });
 
+    // Get real statistics from composition logs
+    const recentLogs = await this.compositionLogRepository
+      .createQueryBuilder('log')
+      .where('log.createdAt > :thirtyDaysAgo', {
+        thirtyDaysAgo: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      })
+      .orderBy('log.createdAt', 'DESC')
+      .limit(100)
+      .getMany();
+
+    // Calculate average relaxation level
+    let averageRelaxationLevel = 0;
+    if (recentLogs.length > 0) {
+      const totalRelaxation = recentLogs.reduce(
+        (sum, log) => sum + log.relaxationLevel,
+        0,
+      );
+      averageRelaxationLevel = totalRelaxation / recentLogs.length;
+    }
+
+    // Calculate theme distribution from recent logs
+    const themeDistribution: Record<string, number> = {};
+    for (const log of recentLogs) {
+      const themes = log.themeDistribution;
+      for (const [theme, count] of Object.entries(themes)) {
+        themeDistribution[theme] = (themeDistribution[theme] || 0) + count;
+      }
+    }
+
+    // Get recent warnings
+    const recentWarnings: string[] = [];
+    for (const log of recentLogs.slice(0, 10)) {
+      recentWarnings.push(...log.warnings);
+    }
+
     return {
       totalQuizzes,
-      averageRelaxationLevel: 0, // Would be calculated from logs
-      themeDistribution: {}, // Would be calculated from logs
-      recentWarnings: [], // Would be from recent composition logs
+      averageRelaxationLevel: Math.round(averageRelaxationLevel * 100) / 100,
+      themeDistribution,
+      recentWarnings: recentWarnings.slice(0, 20), // Limit to most recent 20 warnings
       byDifficulty,
     };
   }
@@ -689,18 +763,30 @@ export class DailyQuizComposerService {
         recommendations.push('Ensure daily quiz composition is running');
       }
 
+      // Get actual question counts for recent quizzes
+      const recentCompositions = await Promise.all(
+        recentQuizzes.map(async (quiz) => {
+          const questionCount = await this.dailyQuizQuestionRepository
+            .createQueryBuilder('dqq')
+            .where('dqq.dailyQuizId = :quizId', { quizId: quiz.id })
+            .getCount();
+
+          return {
+            id: quiz.id,
+            dropAtUTC: quiz.dropAtUTC,
+            mode: quiz.mode,
+            questionCount,
+          };
+        }),
+      );
+
       return {
         healthy: issues.length === 0,
         issues,
         recommendations,
         lastCheck: new Date().toISOString(),
         questionPoolStats: stats,
-        recentCompositions: recentQuizzes.map((quiz) => ({
-          id: quiz.id,
-          dropAtUTC: quiz.dropAtUTC,
-          mode: quiz.mode,
-          questionCount: 6, // We could join to get actual count if needed
-        })),
+        recentCompositions,
       };
     } catch (error) {
       issues.push(
@@ -741,39 +827,46 @@ export class DailyQuizComposerService {
       offset: number;
     };
   }> {
-    // Get daily quizzes with question counts
-    const [logs, total] = await this.dailyQuizRepository
+    // Get daily quizzes with question counts in a single query
+    const results = await this.dailyQuizRepository
       .createQueryBuilder('dq')
       .leftJoin('daily_quiz_question', 'dqq', 'dqq.dailyQuizId = dq.id')
+      .select([
+        'dq.id',
+        'dq.dropAtUTC',
+        'dq.mode',
+        'dq.themePlanJSON',
+        'dq.templateCdnUrl',
+        'dq.createdAt',
+      ])
       .addSelect('COUNT(dqq.id)', 'questionCount')
       .groupBy('dq.id')
       .orderBy('dq.createdAt', 'DESC')
       .limit(limit)
       .offset(offset)
-      .getManyAndCount();
+      .getRawAndEntities();
 
-    // Get question counts for each quiz
-    const logsWithCounts = await Promise.all(
-      logs.map(async (quiz) => {
-        const questionCount = await this.dataSource
-          .getRepository('daily_quiz_question')
-          .createQueryBuilder('dqq')
-          .where('dqq.dailyQuizId = :quizId', { quizId: quiz.id })
-          .getCount();
+    const { entities: logs, raw: rawResults } = results;
 
-        return {
-          id: quiz.id,
-          dropAtUTC: quiz.dropAtUTC.toISOString(),
-          mode: quiz.mode,
-          themePlan: Array.isArray(quiz.themePlanJSON?.themes)
-            ? quiz.themePlanJSON.themes
-            : [quiz.themePlanJSON?.themes].filter(Boolean),
-          questionCount,
-          createdAt: quiz.createdAt.toISOString(),
-          templateCdnUrl: quiz.templateCdnUrl,
-        };
-      }),
-    );
+    // Get total count separately for pagination
+    const total = await this.dailyQuizRepository.count();
+
+    // Map results with question counts
+    const logsWithCounts = logs.map((quiz, index) => {
+      const questionCount = parseInt(rawResults[index]?.questionCount || '0');
+
+      return {
+        id: quiz.id,
+        dropAtUTC: quiz.dropAtUTC.toISOString(),
+        mode: quiz.mode,
+        themePlan: Array.isArray(quiz.themePlanJSON?.themes)
+          ? quiz.themePlanJSON.themes
+          : [quiz.themePlanJSON?.themes].filter(Boolean),
+        questionCount,
+        createdAt: quiz.createdAt.toISOString(),
+        templateCdnUrl: quiz.templateCdnUrl,
+      };
+    });
 
     return {
       logs: logsWithCounts,
