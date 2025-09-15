@@ -13,11 +13,14 @@ import {
   ThemePlan,
   CompositionResult,
   CompositionLog,
+  SelectionResult,
+  DifficultyAvailabilityStats,
 } from './interfaces/composer.interfaces';
 import { QuestionSelectorService } from './question-selector.service';
 import { DifficultyDistributionService } from './difficulty-distribution.service';
 import { AntiRepeatService } from './anti-repeat.service';
 import { TemplateService } from './template.service';
+import { Difficulty } from 'src/database/enums/question.enums';
 
 /**
  * Main Daily Quiz Composer Service
@@ -359,8 +362,8 @@ export class DailyQuizComposerService {
     mode: DailyQuizMode,
     themePlan: ThemePlan,
     config: ComposerConfig,
-    selectionResult: any,
-    availabilityStats: any,
+    selectionResult: SelectionResult,
+    availabilityStats: DifficultyAvailabilityStats,
     durationMs: number,
     dbQueries: number,
   ): CompositionLog {
@@ -401,7 +404,7 @@ export class DailyQuizComposerService {
         dailyQuiz,
         targetDate: compositionLog.targetDate,
         mode: compositionLog.mode,
-        themePlanJSON: compositionLog.themePlan as any,
+        themePlanJSON: compositionLog.themePlan,
         selectionProcessJSON: compositionLog.selectionProcess,
         finalSelectionJSON: compositionLog.finalSelection,
         warningsJSON: compositionLog.warnings,
@@ -439,7 +442,7 @@ export class DailyQuizComposerService {
       themePlan: { mode, themes: [] },
       selectionProcess: [
         {
-          difficulty: 'easy' as any,
+          difficulty: Difficulty.EASY,
           attempted: 0,
           selected: 0,
           relaxationLevel: 0,
@@ -448,8 +451,16 @@ export class DailyQuizComposerService {
       ],
       finalSelection: {
         totalQuestions: 0,
-        difficultyActual: { easy: 0, medium: 0, hard: 0 },
-        difficultyTarget: config.difficultyDistribution,
+        difficultyActual: {
+          [Difficulty.EASY]: 0,
+          [Difficulty.MEDIUM]: 0,
+          [Difficulty.HARD]: 0,
+        },
+        difficultyTarget: {
+          [Difficulty.EASY]: config.difficultyDistribution.easy,
+          [Difficulty.MEDIUM]: config.difficultyDistribution.medium,
+          [Difficulty.HARD]: config.difficultyDistribution.hard,
+        },
         themeDistribution: {},
         averageExposure: 0,
         oldestLastUsed: null,
@@ -467,28 +478,42 @@ export class DailyQuizComposerService {
    * Helper methods for log building
    */
   private buildSelectionProcessLog(
-    selectionResult: any,
+    selectionResult: SelectionResult,
     config: ComposerConfig,
-  ): any[] {
-    return Object.values(config.difficultyDistribution).map(
-      (targetCount, index) => ({
-        difficulty: ['easy', 'medium', 'hard'][index],
+  ): CompositionLog['selectionProcess'] {
+    const difficulties: Difficulty[] = [
+      Difficulty.EASY,
+      Difficulty.MEDIUM,
+      Difficulty.HARD,
+    ];
+    const difficultyKeys = ['easy', 'medium', 'hard'] as const;
+
+    return difficulties.map((difficulty, index) => {
+      const key = difficultyKeys[index];
+      const targetCount = config.difficultyDistribution[key];
+
+      return {
+        difficulty,
         attempted: targetCount,
         selected: Math.min(targetCount, selectionResult.questions.length),
         relaxationLevel: selectionResult.metadata.relaxationLevel,
         issues: selectionResult.metadata.warnings,
-      }),
-    );
+      };
+    });
   }
 
   private calculateActualDifficulty(
     questions: Question[],
-  ): Record<string, number> {
-    const actual = { easy: 0, medium: 0, hard: 0 };
+  ): Record<Difficulty, number> {
+    const actual: Record<Difficulty, number> = {
+      [Difficulty.EASY]: 0,
+      [Difficulty.MEDIUM]: 0,
+      [Difficulty.HARD]: 0,
+    };
+
     for (const question of questions) {
-      const difficulty = String(question.difficulty);
-      if (difficulty in actual) {
-        (actual as any)[difficulty]++;
+      if (question.difficulty in actual) {
+        actual[question.difficulty]++;
       }
     }
     return actual;
@@ -550,7 +575,7 @@ export class DailyQuizComposerService {
       hard: 0,
     };
 
-    questionStats.forEach((stat: any) => {
+    questionStats.forEach((stat: { difficulty: string; count: string }) => {
       const key = stat.difficulty.toLowerCase();
       if (allowedDifficulties.includes(key as DifficultyKey)) {
         byDifficulty[key as DifficultyKey] = parseInt(stat.count);
