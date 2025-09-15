@@ -1,0 +1,136 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
+import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.service';
+
+/**
+ * Admin controller for managing daily quiz background jobs
+ */
+@Controller('admin/jobs')
+export class AdminJobController {
+  private readonly logger = new Logger(AdminJobController.name);
+
+  constructor(private readonly jobProcessor: DailyQuizJobProcessor) {}
+
+  /**
+   * GET /admin/jobs/status
+   * Get status of scheduled jobs
+   */
+  @Get('status')
+  getJobStatus() {
+    return this.jobProcessor.getJobStatus();
+  }
+
+  /**
+   * POST /admin/jobs/composer/trigger
+   * Manually trigger daily composition job
+   */
+  @Post('composer/trigger')
+  async triggerComposer(
+    @Body() request: { dropAtUTC: string },
+  ): Promise<{ message: string }> {
+    try {
+      const dropDate = new Date(request.dropAtUTC);
+
+      if (isNaN(dropDate.getTime())) {
+        throw new HttpException(
+          'Invalid dropAtUTC format. Use ISO 8601 format.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      await this.jobProcessor.triggerDailyComposition(dropDate);
+
+      return {
+        message: `Daily composition triggered for ${dropDate.toISOString()}`,
+      };
+    } catch (error) {
+      this.logger.error('Failed to trigger composer job', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * POST /admin/jobs/template/trigger
+   * Manually trigger template warmup job
+   */
+  @Post('template/trigger')
+  async triggerTemplate(
+    @Body() request: { quizId: string },
+  ): Promise<{ message: string }> {
+    try {
+      await this.jobProcessor.triggerTemplateWarmup(request.quizId);
+
+      return {
+        message: `Template warmup triggered for quiz ${request.quizId}`,
+      };
+    } catch (error) {
+      this.logger.error('Failed to trigger template job', error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * POST /admin/jobs/composer/run
+   * Run daily composition job immediately
+   */
+  @Post('composer/run')
+  async runComposerJob(): Promise<{ message: string }> {
+    try {
+      await this.jobProcessor.runDailyComposition();
+
+      return {
+        message: 'Daily composition job completed successfully',
+      };
+    } catch (error) {
+      this.logger.error('Failed to run composer job', error);
+      throw new HttpException(
+        'Failed to run composer job',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * POST /admin/jobs/template/run
+   * Run template warmup job immediately
+   */
+  @Post('template/run')
+  async runTemplateJob(): Promise<{ message: string }> {
+    try {
+      await this.jobProcessor.runTemplateWarmup();
+
+      return {
+        message: 'Template warmup job completed successfully',
+      };
+    } catch (error) {
+      this.logger.error('Failed to run template job', error);
+      throw new HttpException(
+        'Failed to run template job',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
