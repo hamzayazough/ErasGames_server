@@ -4,10 +4,67 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
+// Ensure ConfigModule loads first
+import { config } from 'dotenv';
+config();
+
+// Environment-aware database configuration
+const isProduction = process.env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const createDatabaseConfig = () => {
+  const baseConfig = {
+    type: 'postgres' as const,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    database: process.env.DB_NAME || 'erasgames',
+    synchronize: false,
+    migrations: ['dist/db/*.js'],
+    migrationsTableName: 'migrations',
+  };
+
+  if (isProduction) {
+    return {
+      ...baseConfig,
+      ssl: { rejectUnauthorized: false },
+      extra: { max: 20, connectionTimeoutMillis: 30000 },
+      retryAttempts: 5,
+      retryDelay: 3000,
+      logging: false,
+    };
+  }
+
+  // Development configuration
+  return {
+    ...baseConfig,
+    ssl: false,
+    extra: { max: 5, connectionTimeoutMillis: 10000 },
+    retryAttempts: 3,
+    retryDelay: 2000,
+    logging: isDevelopment,
+  };
+};
+
+console.log('🔧 Environment:', process.env.NODE_ENV || 'development');
+console.log('📊 Database:', {
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || '5432',
+  database: process.env.DB_NAME || 'erasgames',
+});
+
 import { PartitionManagementService } from './database/services/partition-management.service';
 import { AdminPartitionController } from './admin/controllers/admin-partition.controller';
 import { AdminDailyQuizController } from './admin/controllers/admin-daily-quiz.controller';
 import { QuestionController } from './admin/controllers/question.controller';
+import { AdminJobController } from './admin/controllers/admin-job.controller';
+import { DailyQuizController } from './controllers/daily-quiz.controller';
+import { AttemptsController } from './controllers/attempts.controller';
+
+// Services
+import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
 
 // Question Creation Services
 import { QuestionCreationService } from './database/services/question-creation/question-creation.service';
@@ -20,12 +77,14 @@ import { VisualAestheticQuestionService } from './database/services/question-cre
 // Daily Quiz Composer Module
 import { DailyQuizComposerModule } from './database/services/daily-quiz-composer';
 
-// Import all entities for TypeORM
+// Import entities for TypeORM relationship resolution
+import { BaseEntityTimestamps } from './database/entities/base.entity';
 import { User } from './database/entities/user.entity';
 import { Question } from './database/entities/question.entity';
 import { DailyQuiz } from './database/entities/daily-quiz.entity';
 import { DailyQuizQuestion } from './database/entities/daily-quiz-question.entity';
 import { Attempt } from './database/entities/attempt.entity';
+import { AttemptAnswer } from './database/entities/attempt-answer.entity';
 import { PracticeAttempt } from './database/entities/practice-attempt.entity';
 import { LeaderboardSnapshot } from './database/entities/leaderboard-snapshot.entity';
 import { DailyEntitlements } from './database/entities/daily-entitlements.entity';
@@ -49,20 +108,17 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     // Daily Quiz Composer module
     DailyQuizComposerModule,
 
-    // TypeORM configuration
+    // TypeORM configuration with environment-aware settings
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      username: process.env.DB_USERNAME || 'erasgames',
-      password: process.env.DB_PASSWORD || 'password',
-      database: process.env.DB_NAME || 'erasgames',
+      ...createDatabaseConfig(),
       entities: [
+        BaseEntityTimestamps,
         User,
         Question,
         DailyQuiz,
         DailyQuizQuestion,
         Attempt,
+        AttemptAnswer,
         PracticeAttempt,
         LeaderboardSnapshot,
         DailyEntitlements,
@@ -73,17 +129,16 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
         DailyDropTZ,
         CompositionLogEntity,
       ],
-      synchronize: false, // Never use true in production - use migrations instead
-      logging: process.env.NODE_ENV === 'development',
-      migrations: ['dist/db/*.js'],
-      migrationsTableName: 'migrations',
     }),
 
     // Register repositories for partition service and question creation
     TypeOrmModule.forFeature([
       Attempt,
+      AttemptAnswer,
+      DailyQuiz,
       DailyQuizQuestion,
       Question, // Add Question repository for question creation services
+      User, // Add User repository for attempts
     ]),
   ],
   controllers: [
@@ -91,6 +146,9 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     AdminPartitionController,
     AdminDailyQuizController,
     QuestionController,
+    AdminJobController,
+    DailyQuizController,
+    AttemptsController,
   ],
   providers: [
     AppService,
@@ -102,6 +160,8 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     InteractiveGameQuestionService,
     KnowledgeTriviaQuestionService,
     VisualAestheticQuestionService,
+    // Job Processing Services
+    DailyQuizJobProcessor,
   ],
 })
 export class AppModule {}

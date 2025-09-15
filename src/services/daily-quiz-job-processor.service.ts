@@ -81,7 +81,7 @@ export class DailyQuizJobProcessor {
    * Template warmup job (T-5m)
    * Runs every day at 11:55 AM Toronto time to prepare templates for 12:00 PM drop
    */
-  @Cron('0 16 55 * * *', {
+  @Cron('0 55 16 * * *', {
     name: 'warmup:template',
     timeZone: 'UTC', // 11:55 AM Toronto = 4:55 PM UTC (approximate)
   })

@@ -443,13 +443,13 @@ export class QuestionSelectorService {
    * Get availability statistics for all difficulties
    */
   async getQuestionAvailability(): Promise<DifficultyAvailabilityStats> {
-    const stats = {} as DifficultyAvailabilityStats;
+    const stats: Partial<DifficultyAvailabilityStats> = {};
 
     for (const difficulty of Object.values(Difficulty)) {
       stats[difficulty] =
         await this.antiRepeatService.getAvailabilityStats(difficulty);
     }
 
-    return stats;
+    return stats as DifficultyAvailabilityStats;
   }
 }

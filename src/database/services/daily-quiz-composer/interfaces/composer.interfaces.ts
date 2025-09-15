@@ -28,9 +28,9 @@ export interface QuestionAvailabilityStats {
 /**
  * Complete availability statistics for all difficulty levels
  */
-export interface DifficultyAvailabilityStats {
+export type DifficultyAvailabilityStats = {
   [key in Difficulty]: QuestionAvailabilityStats;
-}
+};
 
 /**
  * Configuration for daily quiz composition
@@ -192,11 +192,4 @@ export interface QuestionAvailabilityStats {
   available: { [relaxationLevel: number]: number };
   averageExposure: number;
   oldestLastUsed: Date | null;
-}
-
-/**
- * Complete availability statistics for all difficulty levels
- */
-export interface DifficultyAvailabilityStats {
-  [key in Difficulty]: QuestionAvailabilityStats;
 }

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Question } from '../../entities/question.entity';
 import { DailyQuiz } from '../../entities/daily-quiz.entity';
 import {
@@ -26,7 +28,11 @@ import { MediaRef } from '../../entities/media/media-ref.interface';
 export class TemplateService {
   private readonly logger = new Logger(TemplateService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectRepository(DailyQuiz)
+    private readonly dailyQuizRepository: Repository<DailyQuiz>,
+  ) {}
 
   /**
    * Generate a complete quiz template from selected questions
@@ -325,5 +331,130 @@ export class TemplateService {
       mediaCount,
       averageChoicesPerQuestion,
     };
+  }
+
+  /**
+   * Upload template to CDN and update database with URL
+   * For MVP, this simulates CDN upload with local storage
+   */
+  async uploadTemplate(
+    dailyQuiz: DailyQuiz,
+    template: QuizTemplate,
+  ): Promise<{ templateUrl: string; version: number }> {
+    try {
+      // Generate CDN-style URL
+      const timestamp = Date.now();
+      const templateKey = `daily-quiz/${dailyQuiz.id}/v${template.version}-${timestamp}.json`;
+      const templateUrl = `${this.getCdnBaseUrl()}/${templateKey}`;
+
+      // For MVP: Store template in "mock CDN" format
+      // In production, this would upload to actual S3/CloudFront
+      const templateJson = this.formatTemplateForCdn(template);
+
+      this.logger.debug(`Uploading template to CDN: ${templateUrl}`);
+
+      // Simulate CDN upload delay
+      await this.simulateCdnUpload(templateKey, templateJson);
+
+      // Update database with CDN URL
+      await this.dailyQuizRepository.update(dailyQuiz.id, {
+        templateCdnUrl: templateUrl,
+        templateVersion: template.version,
+      });
+
+      this.logger.log(
+        `Template uploaded successfully for quiz ${dailyQuiz.id}: ${templateUrl}`,
+      );
+
+      return {
+        templateUrl,
+        version: template.version,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to upload template for quiz ${dailyQuiz.id}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Format template for CDN delivery with client shuffle configuration
+   */
+  private formatTemplateForCdn(template: QuizTemplate) {
+    return {
+      dailyQuizId: template.id,
+      version: template.version,
+      questions: template.questions.map((q) => ({
+        qid: q.id,
+        type: q.questionType,
+        payload: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          prompt: q.prompt,
+
+          choices: q.choices,
+
+          media: q.media,
+          themes: q.themes,
+          difficulty: q.difficulty,
+        },
+      })),
+      clientShuffle: {
+        algo: 'xorshift',
+        fields: ['questions', 'choices'],
+      },
+      metadata: template.metadata,
+    };
+  }
+
+  /**
+   * Get CDN base URL from configuration
+   */
+  private getCdnBaseUrl(): string {
+    return (
+      this.configService.get<string>('CDN_BASE_URL') ||
+      'https://cdn.erasgames.com'
+    );
+  }
+
+  /**
+   * Simulate CDN upload for MVP
+   * In production, this would be actual S3/CloudFront upload
+   */
+  private async simulateCdnUpload(key: string, content: any): Promise<void> {
+    // For MVP demonstration, we'll just log the upload
+    // In production, implement actual AWS S3 upload here
+    this.logger.debug(
+      `[MOCK CDN] Uploading ${key}, size: ${JSON.stringify(content).length} bytes`,
+    );
+
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    this.logger.debug(`[MOCK CDN] Upload complete: ${key}`);
+  }
+
+  /**
+   * Build and upload template for a daily quiz
+   */
+  async buildAndUploadTemplate(
+    dailyQuiz: DailyQuiz,
+    questions: Question[],
+    themePlan: ThemePlan,
+  ): Promise<{ templateUrl: string; version: number }> {
+    // Generate template
+    const template = this.generateTemplate(dailyQuiz, questions, themePlan);
+
+    // Validate template
+    const validation = this.validateTemplate(template);
+    if (!validation.isValid) {
+      throw new Error(
+        `Template validation failed: ${validation.issues.join(', ')}`,
+      );
+    }
+
+    // Upload to CDN
+    return this.uploadTemplate(dailyQuiz, template);
   }
 }
