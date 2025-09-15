@@ -5,6 +5,34 @@ import { Question } from '../../../entities/question.entity';
 import { DailyQuiz } from '../../../entities/daily-quiz.entity';
 
 /**
+ * Anti-repeat information for a question
+ */
+export interface AntiRepeatInfo {
+  daysSinceLastUsed: number | null;
+  exposureCount: number;
+  isEligible: boolean;
+  relaxationLevel: number;
+  reason?: string;
+}
+
+/**
+ * Availability statistics for questions by difficulty level
+ */
+export interface QuestionAvailabilityStats {
+  total: number;
+  available: { [relaxationLevel: number]: number };
+  averageExposure: number;
+  oldestLastUsed: Date | null;
+}
+
+/**
+ * Complete availability statistics for all difficulty levels
+ */
+export interface DifficultyAvailabilityStats {
+  [key in Difficulty]: QuestionAvailabilityStats;
+}
+
+/**
  * Configuration for daily quiz composition
  */
 export interface ComposerConfig {
@@ -154,4 +182,21 @@ export interface AntiRepeatInfo {
   isEligible: boolean;
   relaxationLevel: number;
   reason?: string;
+}
+
+/**
+ * Availability statistics for questions by difficulty level
+ */
+export interface QuestionAvailabilityStats {
+  total: number;
+  available: { [relaxationLevel: number]: number };
+  averageExposure: number;
+  oldestLastUsed: Date | null;
+}
+
+/**
+ * Complete availability statistics for all difficulty levels
+ */
+export interface DifficultyAvailabilityStats {
+  [key in Difficulty]: QuestionAvailabilityStats;
 }

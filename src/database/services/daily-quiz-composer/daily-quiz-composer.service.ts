@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, EntityManager } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { DailyQuiz } from '../../entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../../entities/daily-quiz-question.entity';
@@ -116,7 +116,6 @@ export class DailyQuizComposerService {
         await this.questionSelectorService.selectQuestionsForDailyQuiz(
           config,
           themePlan,
-          dropAtUTC,
         );
       dbQueries += 5; // Estimated queries for selection process
 
@@ -223,7 +222,7 @@ export class DailyQuizComposerService {
 
     switch (mode) {
       case DailyQuizMode.MIX:
-        return this.generateMixThemePlan(dayOfWeek, dayOfYear);
+        return this.generateMixThemePlan(dayOfWeek);
 
       case DailyQuizMode.SPOTLIGHT:
         return this.generateSpotlightThemePlan(dayOfYear);
@@ -232,17 +231,14 @@ export class DailyQuizComposerService {
         return this.generateEventThemePlan(dropDate);
 
       default:
-        return this.generateMixThemePlan(dayOfWeek, dayOfYear);
+        return this.generateMixThemePlan(dayOfWeek);
     }
   }
 
   /**
    * Generate mix mode theme plan (default)
    */
-  private generateMixThemePlan(
-    dayOfWeek: number,
-    dayOfYear: number,
-  ): ThemePlan {
+  private generateMixThemePlan(dayOfWeek: number): ThemePlan {
     // Rotate through different theme combinations based on day
     const themeRotations = [
       [QuestionTheme.Lyrics, QuestionTheme.Albums, QuestionTheme.Timeline],
@@ -312,10 +308,7 @@ export class DailyQuizComposerService {
 
     // Album anniversaries, tour dates, etc. could be added here
     // For now, fall back to mix mode
-    return this.generateMixThemePlan(
-      dropDate.getDay(),
-      this.getDayOfYear(dropDate),
-    );
+    return this.generateMixThemePlan(dropDate.getDay());
   }
 
   /**
@@ -325,9 +318,9 @@ export class DailyQuizComposerService {
     dropAtUTC: Date,
     mode: DailyQuizMode,
     themePlan: ThemePlan,
-    entityManager: any,
+    entityManager: EntityManager,
   ): Promise<DailyQuiz> {
-    const quiz = entityManager.create(DailyQuiz, {
+    const quiz: DailyQuiz = entityManager.create(DailyQuiz, {
       dropAtUTC,
       mode,
       themePlanJSON: themePlan,

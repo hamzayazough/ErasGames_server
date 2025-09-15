@@ -9,9 +9,11 @@ import {
   SelectionResult,
   ThemePlan,
   ComposerConfig,
+  DifficultyAvailabilityStats,
 } from './interfaces/composer.interfaces';
 import { AntiRepeatService } from './anti-repeat.service';
 import { DifficultyDistributionService } from './difficulty-distribution.service';
+import { DailyQuizMode } from 'src/database/enums/daily-quiz-mode.enum';
 
 /**
  * Service for intelligent question selection with theme diversity and anti-repeat logic
@@ -39,7 +41,6 @@ export class QuestionSelectorService {
   async selectQuestionsForDailyQuiz(
     config: ComposerConfig,
     themePlan: ThemePlan,
-    targetDate: Date = new Date(),
   ): Promise<SelectionResult> {
     this.logger.log(`Starting question selection for ${themePlan.mode} quiz`);
 
@@ -78,7 +79,6 @@ export class QuestionSelectorService {
         usedSubjects,
         usedThemes,
         selectedQuestions.map((q) => q.id),
-        targetDate,
       );
 
       selectedQuestions.push(...difficultyQuestions.questions);
@@ -128,7 +128,6 @@ export class QuestionSelectorService {
     usedSubjects: string[],
     usedThemes: string[],
     excludeQuestionIds: string[],
-    targetDate: Date,
   ): Promise<{
     questions: Question[];
     relaxationLevel: number;
@@ -269,7 +268,7 @@ export class QuestionSelectorService {
     let filtered = candidates;
 
     // Theme filtering based on quiz mode
-    if (themePlan.mode === 'spotlight' && themePlan.spotlight) {
+    if (themePlan.mode === DailyQuizMode.SPOTLIGHT && themePlan.spotlight) {
       // Spotlight mode: strongly prefer the spotlight theme
       const spotlightQuestions = filtered.filter((q) =>
         (q.themesJSON as unknown as QuestionTheme[])?.includes(
@@ -443,15 +442,8 @@ export class QuestionSelectorService {
   /**
    * Get availability statistics for all difficulties
    */
-  async getQuestionAvailability(): Promise<{
-    [key in Difficulty]: {
-      total: number;
-      available: { [relaxationLevel: number]: number };
-      averageExposure: number;
-      oldestLastUsed: Date | null;
-    };
-  }> {
-    const stats = {} as any;
+  async getQuestionAvailability(): Promise<DifficultyAvailabilityStats> {
+    const stats = {} as DifficultyAvailabilityStats;
 
     for (const difficulty of Object.values(Difficulty)) {
       stats[difficulty] =
