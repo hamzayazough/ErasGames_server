@@ -1,0 +1,59 @@
+# Node.js dependencies
+node_modules/
+
+# Build outputs
+/dist/
+/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# React Native/Expo
+ErasGamesClient/android/app/build/
+ErasGamesClient/ios/build/
+ErasGamesClient/ios/Pods/
+ErasGamesClient/ios/Podfile.lock
+ErasGamesClient/ios/Podfile*
+ErasGamesClient/ios/*.xcworkspace
+ErasGamesClient/ios/*.xcodeproj
+ErasGamesClient/ios/*.xcuserstate
+ErasGamesClient/ios/*.xcuserdata
+ErasGamesClient/ios/*.xcuserdatad
+ErasGamesClient/ios/DerivedData/
+ErasGamesClient/ios/.DS_Store
+ErasGamesClient/android/.gradle/
+ErasGamesClient/android/.idea/
+ErasGamesClient/android/.DS_Store
+ErasGamesClient/android/local.properties
+ErasGamesClient/android/.settings/
+
+# Server build outputs
+server/dist/
+
+# Environment files
+.env
+.env.*
+
+# Misc
+*.log
+*.lock
+
+# Test coverage
+coverage/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Others
+*.iml
