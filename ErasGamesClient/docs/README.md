@@ -54,4 +54,4 @@ If you're stuck or have questions:
 
 ---
 
-*This documentation is living and should be updated as the architecture evolves.*
+_This documentation is living and should be updated as the architecture evolves._

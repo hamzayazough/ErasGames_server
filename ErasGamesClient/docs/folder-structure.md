@@ -38,23 +38,27 @@ api/
 ```
 
 #### **`client.ts`**
+
 - Axios instance with base configuration
 - Request interceptor for authentication tokens
 - Response interceptor for error handling
 - Timeout and retry logic
 
 #### **`error.ts`**
+
 - `ApiError` class for consistent error handling
 - `normalizeApiError` function to standardize error responses
 - Error types for different scenarios (network, server, validation)
 
 #### **`queries.ts`**
+
 - Default React Query configuration
 - Pagination utilities
 - Query key factories
 - Common query options (staleTime, cacheTime, retry logic)
 
 #### **`types.ts`**
+
 - Zod schemas for API responses
 - TypeScript types derived from schemas
 - Common interfaces (User, Session, Pagination)
@@ -67,6 +71,7 @@ state/
 ```
 
 #### **`appStore.ts`**
+
 - Authentication state (session, user)
 - UI preferences (theme, language)
 - App-wide settings (notifications, onboarding status)
@@ -82,11 +87,13 @@ theme/
 ```
 
 #### **`index.ts`**
+
 - Design tokens (colors, spacing, typography)
 - Light and dark theme definitions
 - TypeScript types for theme structure
 
 #### **`ThemeProvider.tsx`**
+
 - React context for theme access
 - System theme detection
 - Theme switching logic
@@ -102,6 +109,7 @@ i18n/
 ```
 
 #### **`i18n.ts`**
+
 - i18next initialization
 - Language detection
 - Fallback language configuration
@@ -124,18 +132,21 @@ features/
 ### **Authentication (`app/features/auth/`)**
 
 #### **`api.ts`**
+
 - Login, register, logout API calls
 - Password reset functionality
 - Session refresh logic
 - Zod schema validation
 
 #### **`hooks.ts`**
+
 - `useLogin()` - Login mutation with session management
 - `useRegister()` - Registration with automatic login
 - `useLogout()` - Logout with state cleanup
 - `useSession()` - Current session state
 
 #### **`screens/LoginScreen.tsx`**
+
 - Login form UI
 - Input validation
 - Error handling
@@ -144,17 +155,20 @@ features/
 ### **Feed (`app/features/feed/`)**
 
 #### **`api.ts`**
+
 - Quiz feed fetching with pagination
 - Individual quiz details
 - Search and filtering
 - Quiz metadata
 
 #### **`hooks.ts`**
+
 - `useFeed()` - Infinite query for quiz feed
 - `useQuiz()` - Individual quiz data
 - Cache management and optimistic updates
 
 #### **`screens/FeedScreen.tsx`**
+
 - Quiz card list
 - Pull to refresh
 - Infinite scrolling
@@ -174,12 +188,14 @@ ui/
 ```
 
 ### **Design System Components**
+
 - Consistent API across all components
 - Theme integration
 - TypeScript props for customization
 - Accessibility support
 
 #### **Component Structure**
+
 ```typescript
 interface ComponentProps extends NativeComponentProps {
   variant?: 'primary' | 'secondary' | 'outline';
@@ -198,17 +214,20 @@ navigation/
 ```
 
 #### **`RootNavigator.tsx`**
+
 - Stack navigator with auth flow
 - Conditional rendering based on auth state
 - Theme integration
 - Screen options and animations
 
 #### **`types.ts`**
+
 - TypeScript definitions for all routes
 - Parameter types for each screen
 - Navigation prop types
 
 #### **`linking.ts`**
+
 - Deep link URL patterns
 - Route mapping for web/universal links
 
@@ -220,6 +239,7 @@ env/
 ```
 
 #### **`index.ts`**
+
 - API URLs for different environments
 - Feature flags
 - Configuration constants
@@ -236,14 +256,17 @@ assets/
 ## 📋 File Naming Conventions
 
 ### **Components**
+
 - `PascalCase.tsx` for React components
 - `camelCase.ts` for utilities and hooks
 
 ### **Directories**
+
 - `kebab-case` for feature names
 - `camelCase` for technical directories
 
 ### **Files**
+
 - `api.ts` - API functions
 - `hooks.ts` - Custom React hooks
 - `types.ts` - TypeScript type definitions
@@ -272,4 +295,4 @@ assets/
 
 ---
 
-*Next: Learn about [Core Systems](./core-systems.md) to understand the infrastructure.*
+_Next: Learn about [Core Systems](./core-systems.md) to understand the infrastructure._
