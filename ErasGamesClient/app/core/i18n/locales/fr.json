@@ -1,0 +1,44 @@
+{
+  "welcome": "Bienvenue sur ErasGames!",
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "register": "S'inscrire",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "username": "Nom d'utilisateur",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "forgotPassword": "Mot de passe oublié?",
+    "dontHaveAccount": "Vous n'avez pas de compte?",
+    "alreadyHaveAccount": "Vous avez déjà un compte?",
+    "signIn": "Se connecter",
+    "signUp": "S'inscrire"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "feed": "Fil",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "back": "Retour"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "save": "Sauvegarder",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "ok": "OK"
+  },
+  "errors": {
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "generalError": "Quelque chose s'est mal passé. Veuillez réessayer.",
+    "validationError": "Veuillez vérifier votre saisie et réessayer."
+  }
+}
