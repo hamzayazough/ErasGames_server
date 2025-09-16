@@ -20,6 +20,13 @@ Thumbs.db
 
 # React Native/Expo
 ErasGamesClient/android/app/build/
+ErasGamesClient/android/build/
+ErasGamesClient/android/.gradle/
+ErasGamesClient/android/.idea/
+ErasGamesClient/android/.DS_Store
+ErasGamesClient/android/local.properties
+ErasGamesClient/android/.settings/
+ErasGamesClient/android/app/.cxx/
 ErasGamesClient/ios/build/
 ErasGamesClient/ios/Pods/
 ErasGamesClient/ios/Podfile.lock
@@ -31,11 +38,6 @@ ErasGamesClient/ios/*.xcuserdata
 ErasGamesClient/ios/*.xcuserdatad
 ErasGamesClient/ios/DerivedData/
 ErasGamesClient/ios/.DS_Store
-ErasGamesClient/android/.gradle/
-ErasGamesClient/android/.idea/
-ErasGamesClient/android/.DS_Store
-ErasGamesClient/android/local.properties
-ErasGamesClient/android/.settings/
 
 # Server build outputs
 server/dist/
