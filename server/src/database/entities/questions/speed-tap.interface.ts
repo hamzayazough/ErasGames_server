@@ -5,7 +5,7 @@ import { SpeedTapPrompt } from '../prompts/prompt-interfaces';
 export interface SpeedTapQuestion extends BasicQuestion {
   questionType: 'speed-tap';
   prompt: SpeedTapPrompt;
-  correct: SpeedTapCorrect;
+  correct?: SpeedTapCorrect;
   scoringHints?: { perCorrect: number; perWrong: number };
 }
 /**

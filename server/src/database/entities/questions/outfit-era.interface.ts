@@ -8,7 +8,7 @@ export interface OutfitEraQuestion extends BasicQuestion {
   prompt: OutfitEraPrompt;
   mediaRefs: MediaRef[];
   choices: ImageChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Outfit Era: Player is shown images and must select the outfit that matches the described era.

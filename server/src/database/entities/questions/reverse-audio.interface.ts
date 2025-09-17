@@ -8,7 +8,7 @@ export interface ReverseAudioQuestion extends BasicQuestion {
   prompt: ReverseAudioPrompt;
   mediaRefs: MediaRef[];
   choices: AudioChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Reverse Audio: Player listens to reversed audio clips and selects the correct original song.

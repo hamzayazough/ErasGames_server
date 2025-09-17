@@ -5,7 +5,7 @@ import { SongAlbumMatchPrompt } from '../prompts/prompt-interfaces';
 export interface SongAlbumMatchQuestion extends BasicQuestion {
   questionType: 'song-album-match';
   prompt: SongAlbumMatchPrompt;
-  correct: StringMapCorrect;
+  correct?: StringMapCorrect;
 }
 /**
  * Song ↔ Album Match: Player matches each song to its correct album from two lists.

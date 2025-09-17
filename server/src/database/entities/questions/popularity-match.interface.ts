@@ -7,7 +7,7 @@ export interface PopularityMatchQuestion extends BasicQuestion {
   questionType: 'popularity-match';
   prompt: PopularityMatchPrompt;
   choices: StringChoice[];
-  correct: StringArrayCorrect;
+  correct?: StringArrayCorrect;
 }
 /**
  * Popularity Match: Player matches items (songs, albums, etc.) to their correct popularity ranking or order.

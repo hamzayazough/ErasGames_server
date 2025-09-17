@@ -7,7 +7,7 @@ export interface GuessByLyricQuestion extends BasicQuestion {
   questionType: 'guess-by-lyric';
   prompt: GuessByLyricPrompt;
   choices: StringChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Guess by Lyric: Player is shown a lyric and must pick the correct song from multiple choices.

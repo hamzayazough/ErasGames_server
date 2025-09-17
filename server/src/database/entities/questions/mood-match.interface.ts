@@ -8,7 +8,7 @@ export interface MoodMatchQuestion extends BasicQuestion {
   prompt: MoodMatchPrompt;
   mediaRefs: MediaRef[];
   choices: Choice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Mood Matching: Player matches a song or snippet to the correct mood or tag from the options.

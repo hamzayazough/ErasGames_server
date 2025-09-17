@@ -7,7 +7,7 @@ export interface OddOneOutQuestion extends BasicQuestion {
   questionType: 'odd-one-out';
   prompt: OddOneOutPrompt;
   choices: StringChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Odd One Out: Player selects the item that does not fit the set rule among the choices.

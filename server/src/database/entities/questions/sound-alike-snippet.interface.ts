@@ -8,7 +8,7 @@ export interface SoundAlikeSnippetQuestion extends BasicQuestion {
   prompt: SoundAlikeSnippetPrompt;
   mediaRefs: MediaRef[];
   choices: Choice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Sound-alike Snippet: Player listens to audio clips and selects the one that matches the described sound or song.

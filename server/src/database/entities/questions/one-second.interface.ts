@@ -8,7 +8,7 @@ export interface OneSecondQuestion extends BasicQuestion {
   prompt: OneSecondPrompt;
   mediaRefs: MediaRef[];
   choices: AudioChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * One Second Challenge: Player listens to a one-second audio clip and must identify the correct song.

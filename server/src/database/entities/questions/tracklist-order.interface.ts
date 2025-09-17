@@ -7,7 +7,7 @@ export interface TracklistOrderQuestion extends BasicQuestion {
   questionType: 'tracklist-order';
   prompt: TracklistOrderPrompt;
   choices: StringChoice[];
-  correct: StringArrayCorrect;
+  correct?: StringArrayCorrect;
 }
 /**
  * Tracklist Order: Player arranges tracks in the correct order for a given album.
