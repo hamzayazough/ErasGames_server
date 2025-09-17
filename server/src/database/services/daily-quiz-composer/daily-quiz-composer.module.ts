@@ -10,6 +10,7 @@ import { QuestionSelectorService } from './question-selector.service';
 import { DifficultyDistributionService } from './difficulty-distribution.service';
 import { AntiRepeatService } from './anti-repeat.service';
 import { TemplateService } from './template.service';
+import { CdnService } from './cdn.service';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TemplateService } from './template.service';
   providers: [
     AntiRepeatService,
     DifficultyDistributionService,
+    CdnService,
     TemplateService,
     QuestionSelectorService,
     DailyQuizComposerService,
@@ -34,6 +36,7 @@ import { TemplateService } from './template.service';
     DifficultyDistributionService,
     AntiRepeatService,
     TemplateService,
+    CdnService,
   ],
 })
 export class DailyQuizComposerModule {}

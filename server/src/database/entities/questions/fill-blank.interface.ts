@@ -7,7 +7,7 @@ export interface FillBlankQuestion extends BasicQuestion {
   questionType: 'fill-blank';
   prompt: FillBlankPrompt;
   choices: StringChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Fill in the Blank: Player selects the correct word or phrase to complete a lyric or statement.

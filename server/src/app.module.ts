@@ -62,6 +62,7 @@ import { QuestionController } from './admin/controllers/question.controller';
 import { AdminJobController } from './admin/controllers/admin-job.controller';
 import { DailyQuizController } from './controllers/daily-quiz.controller';
 import { AttemptsController } from './controllers/attempts.controller';
+import { TestController } from './controllers/test.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
@@ -149,6 +150,7 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     AdminJobController,
     DailyQuizController,
     AttemptsController,
+    TestController,
   ],
   providers: [
     AppService,

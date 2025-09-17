@@ -13,6 +13,7 @@ import { Difficulty } from '../../enums/question.enums';
 import { AnyPrompt } from '../../entities/prompts/any-prompt.type';
 import { Choice } from '../../entities/choices/choice.type';
 import { MediaRef } from '../../entities/media/media-ref.interface';
+import { CdnService } from './cdn.service';
 
 /**
  * Service for generating CDN-ready quiz templates
@@ -30,6 +31,7 @@ export class TemplateService {
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly cdnService: CdnService,
     @InjectRepository(DailyQuiz)
     private readonly dailyQuizRepository: Repository<DailyQuiz>,
   ) {}
@@ -229,12 +231,10 @@ export class TemplateService {
     dailyQuiz: DailyQuiz,
     version: number = dailyQuiz.templateVersion,
   ): string {
-    const cdnDomain =
-      this.configService.get<string>('CDN_DOMAIN') ||
-      'https://cdn.erasgames.com';
+    const cdnBaseUrl = this.getCdnBaseUrl();
     const dateStr = dailyQuiz.dropAtUTC.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    return `${cdnDomain}/quiz/${dateStr}/v${version}.json`;
+    return `${cdnBaseUrl}/quiz/${dateStr}/v${version}.json`;
   }
 
   /**
@@ -335,26 +335,28 @@ export class TemplateService {
 
   /**
    * Upload template to CDN and update database with URL
-   * For MVP, this simulates CDN upload with local storage
    */
   async uploadTemplate(
     dailyQuiz: DailyQuiz,
     template: QuizTemplate,
   ): Promise<{ templateUrl: string; version: number }> {
     try {
-      // Generate CDN-style URL
-      const timestamp = Date.now();
-      const templateKey = `daily-quiz/${dailyQuiz.id}/v${template.version}-${timestamp}.json`;
-      const templateUrl = `${this.getCdnBaseUrl()}/${templateKey}`;
+      // Generate template key for S3
+      const templateKey = this.cdnService.generateTemplateKey(
+        dailyQuiz.id,
+        template.version,
+      );
 
-      // For MVP: Store template in "mock CDN" format
-      // In production, this would upload to actual S3/CloudFront
+      // Format template for CDN delivery
       const templateJson = this.formatTemplateForCdn(template);
 
-      this.logger.debug(`Uploading template to CDN: ${templateUrl}`);
+      this.logger.debug(`Uploading template to S3: ${templateKey}`);
 
-      // Simulate CDN upload delay
-      await this.simulateCdnUpload(templateKey, templateJson);
+      // Upload to S3/CloudFront
+      const { templateUrl } = await this.cdnService.uploadTemplate(
+        templateKey,
+        templateJson,
+      );
 
       // Update database with CDN URL
       await this.dailyQuizRepository.update(dailyQuiz.id, {
@@ -412,27 +414,7 @@ export class TemplateService {
    * Get CDN base URL from configuration
    */
   private getCdnBaseUrl(): string {
-    return (
-      this.configService.get<string>('CDN_BASE_URL') ||
-      'https://cdn.erasgames.com'
-    );
-  }
-
-  /**
-   * Simulate CDN upload for MVP
-   * In production, this would be actual S3/CloudFront upload
-   */
-  private async simulateCdnUpload(key: string, content: any): Promise<void> {
-    // For MVP demonstration, we'll just log the upload
-    // In production, implement actual AWS S3 upload here
-    this.logger.debug(
-      `[MOCK CDN] Uploading ${key}, size: ${JSON.stringify(content).length} bytes`,
-    );
-
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    this.logger.debug(`[MOCK CDN] Upload complete: ${key}`);
+    return this.cdnService.getCdnBaseUrl();
   }
 
   /**
