@@ -7,7 +7,7 @@ export interface LifeTriviaQuestion extends BasicQuestion {
   questionType: 'life-trivia';
   prompt: LifeTriviaPrompt;
   choices: StringChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Life Trivia: Player answers a trivia question about Taylor Swift's life or career.

@@ -7,7 +7,7 @@ export interface AlbumYearGuessQuestion extends BasicQuestion {
   questionType: 'album-year-guess';
   prompt: AlbumYearGuessPrompt;
   choices: StringChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Album Year Guess: Player is shown an album and must select the correct release year from multiple choices.

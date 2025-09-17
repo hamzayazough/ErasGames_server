@@ -7,7 +7,7 @@ export interface LongestSongQuestion extends BasicQuestion {
   questionType: 'longest-song';
   prompt: LongestSongPrompt;
   choices: StringChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Longest Song: Player selects the longest song from a list of options.

@@ -7,7 +7,7 @@ export interface InspirationMapQuestion extends BasicQuestion {
   questionType: 'inspiration-map';
   prompt: InspirationMapPrompt;
   choices: StringChoice[];
-  correct: SingleChoiceCorrect;
+  correct?: SingleChoiceCorrect;
 }
 /**
  * Inspiration Mapping: Player selects the correct inspiration or relationship mapping for a song or event.

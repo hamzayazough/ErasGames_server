@@ -5,7 +5,7 @@ import { LyricMashupPrompt } from '../prompts/prompt-interfaces';
 export interface LyricMashupQuestion extends BasicQuestion {
   questionType: 'lyric-mashup';
   prompt: LyricMashupPrompt;
-  correct: LyricMashupCorrect;
+  correct?: LyricMashupCorrect;
 }
 /**
  * Lyric Mashup: Player matches lyric snippets to the correct song in a mashup challenge.
