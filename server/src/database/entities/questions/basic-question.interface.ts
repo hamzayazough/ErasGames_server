@@ -40,4 +40,5 @@ export interface BasicQuestion {
   correct?: any; // fallback for generic/legacy
   mediaRefs?: MediaRef[];
   scoringHints?: Record<string, any>;
+  orderIndex?: number; // Used for template ordering
 }

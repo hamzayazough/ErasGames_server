@@ -1,7 +1,8 @@
 import { DailyQuizMode } from '../../../enums/daily-quiz-mode.enum';
 import { QuestionTheme } from '../../../enums/question-theme.enum';
-import { Difficulty, QuestionType } from '../../../enums/question.enums';
+import { Difficulty } from '../../../enums/question.enums';
 import { Question } from '../../../entities/question.entity';
+import { Question as QuestionInterface } from '../../../entities/questions/question.interface';
 import { DailyQuiz } from '../../../entities/daily-quiz.entity';
 
 /**
@@ -107,7 +108,7 @@ export interface QuizTemplate {
   dropAtUTC: string;
   mode: DailyQuizMode;
   themePlan: ThemePlan;
-  questions: TemplateQuestion[];
+  questions: QuestionInterface[];
   version: number;
   metadata: {
     generatedAt: string;
@@ -115,21 +116,6 @@ export interface QuizTemplate {
     difficultyBreakdown: Record<Difficulty, number>;
     themeBreakdown: Record<string, number>;
   };
-}
-
-/**
- * Template question (without answers)
- */
-export interface TemplateQuestion {
-  id: string;
-  questionType: QuestionType;
-  difficulty: Difficulty;
-  themes: QuestionTheme[];
-  subjects: string[];
-  prompt: any; // AnyPrompt but without type import complexity
-  choices?: any[];
-  media?: any[];
-  orderIndex: number;
 }
 
 /**

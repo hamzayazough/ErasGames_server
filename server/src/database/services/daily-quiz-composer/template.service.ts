@@ -3,16 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Question } from '../../entities/question.entity';
+import { Question as QuestionInterface } from '../../entities/questions/question.interface';
 import { DailyQuiz } from '../../entities/daily-quiz.entity';
-import {
-  QuizTemplate,
-  TemplateQuestion,
-  ThemePlan,
-} from './interfaces/composer.interfaces';
+import { QuizTemplate, ThemePlan } from './interfaces/composer.interfaces';
 import { Difficulty } from '../../enums/question.enums';
-import { AnyPrompt } from '../../entities/prompts/any-prompt.type';
-import { Choice } from '../../entities/choices/choice.type';
-import { MediaRef } from '../../entities/media/media-ref.interface';
 import { CdnService } from './cdn.service';
 
 /**
@@ -49,9 +43,9 @@ export class TemplateService {
     // Sort questions by difficulty for consistent ordering
     const sortedQuestions = this.sortQuestionsByDifficulty(questions);
 
-    // Convert to template questions (stripping answers)
+    // Convert to sanitized questions (stripping answers)
     const templateQuestions = sortedQuestions.map((question, index) =>
-      this.convertToTemplateQuestion(question, index),
+      this.sanitizeQuestionForTemplate(question, index),
     );
 
     // Generate difficulty and theme breakdowns
@@ -61,8 +55,8 @@ export class TemplateService {
     const template: QuizTemplate = {
       id: dailyQuiz.id,
       dropAtUTC: dailyQuiz.dropAtUTC.toISOString(),
-      mode: themePlan.mode as unknown as QuizTemplate['mode'],
-      themePlan: themePlan as unknown as QuizTemplate['themePlan'],
+      mode: themePlan.mode,
+      themePlan: themePlan,
       questions: templateQuestions,
       version: dailyQuiz.templateVersion,
       metadata: {
@@ -105,86 +99,28 @@ export class TemplateService {
   }
 
   /**
-   * Convert a Question entity to a TemplateQuestion (without answers)
+   * Sanitize a Question entity for template use (remove answers and map to client interface)
    */
-  private convertToTemplateQuestion(
+  private sanitizeQuestionForTemplate(
     question: Question,
     orderIndex: number,
-  ): TemplateQuestion {
-    return {
+  ): QuestionInterface {
+    // Map from entity structure to client interface structure
+    const sanitized: QuestionInterface = {
       id: question.id,
-      questionType:
-        question.questionType as unknown as TemplateQuestion['questionType'],
-      difficulty:
-        question.difficulty as unknown as TemplateQuestion['difficulty'],
-      themes:
-        (question.themesJSON as unknown as TemplateQuestion['themes']) || [],
-      subjects:
-        (question.subjectsJSON as unknown as TemplateQuestion['subjects']) ||
-        [],
-      prompt: this.sanitizePrompt(question.promptJSON),
-      choices: this.sanitizeChoices(question.choicesJSON as Choice[]),
-      media: this.sanitizeMedia(question.mediaJSON as MediaRef[]),
+      questionType: question.questionType,
+      difficulty: question.difficulty,
+      themes: question.themesJSON || [],
+      subjects: question.subjectsJSON || [],
+      prompt: question.promptJSON,
+      choices: question.choicesJSON || undefined,
+      mediaRefs: question.mediaJSON || undefined,
       orderIndex,
+      // Explicitly exclude correctJSON and other sensitive fields
+      // correct: undefined - don't include answer data
     };
-  }
-
-  /**
-   * Sanitize prompt data for client consumption
-   */
-  private sanitizePrompt(promptJSON: AnyPrompt | null): AnyPrompt | null {
-    if (!promptJSON) return null;
-
-    // Remove any server-side specific fields
-    const sanitized = { ...promptJSON };
-
-    // Remove internal fields that shouldn't be exposed to clients
-    delete (sanitized as any).internalNotes;
-    delete (sanitized as any).adminComments;
-    delete (sanitized as any).scoringHints;
 
     return sanitized;
-  }
-
-  /**
-   * Sanitize choices data (remove correct answer indicators)
-   */
-  private sanitizeChoices(choicesJSON: Choice[] | null): Choice[] | undefined {
-    if (!choicesJSON || !Array.isArray(choicesJSON)) return undefined;
-
-    return choicesJSON.map((choice) => {
-      // Create a copy using JSON serialization to handle union types safely
-      const sanitized = JSON.parse(JSON.stringify(choice)) as Record<
-        string,
-        any
-      >;
-
-      // Remove fields that indicate correct answers
-      delete sanitized.isCorrect;
-      delete sanitized.correctness;
-      delete sanitized.weight;
-      delete sanitized.explanation;
-
-      return sanitized as Choice;
-    });
-  }
-
-  /**
-   * Sanitize media references
-   */
-  private sanitizeMedia(mediaJSON: MediaRef[] | null): MediaRef[] | undefined {
-    if (!mediaJSON || !Array.isArray(mediaJSON)) return undefined;
-
-    return mediaJSON.map((media) => {
-      const sanitized = { ...media };
-
-      // Remove internal media processing fields
-      delete (sanitized as any).internalPath;
-      delete (sanitized as any).processingStatus;
-      delete (sanitized as any).adminNotes;
-
-      return sanitized;
-    });
   }
 
   /**
@@ -315,8 +251,8 @@ export class TemplateService {
       }
 
       // Count media references
-      if (question.media) {
-        mediaCount += question.media.length;
+      if (question.mediaRefs) {
+        mediaCount += question.mediaRefs.length;
       }
     }
 
@@ -392,12 +328,11 @@ export class TemplateService {
         qid: q.id,
         type: q.questionType,
         payload: {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           prompt: q.prompt,
 
           choices: q.choices,
 
-          media: q.media,
+          media: q.mediaRefs,
           themes: q.themes,
           difficulty: q.difficulty,
         },
