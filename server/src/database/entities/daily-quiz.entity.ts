@@ -15,7 +15,7 @@ export class DailyQuiz {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'timestamptz' })
+  @Column({ type: 'timestamptz', name: 'drop_at_utc' })
   dropAtUTC!: Date;
 
   /**
@@ -38,10 +38,10 @@ export class DailyQuiz {
    * }
    * This allows flexible daily modes (mix, spotlight, event) and stores structured theme-related data for each quiz instance.
    */
-  @Column({ type: 'jsonb', default: () => "'{}'" })
+  @Column({ type: 'jsonb', default: () => "'{}'", name: 'theme_plan_json' })
   themePlanJSON!: Record<string, any>;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', name: 'template_version' })
   templateVersion!: number;
 
   /**
@@ -50,9 +50,9 @@ export class DailyQuiz {
    * Example: https://cdn.example.com/quiz/2025-09-01/v4.json
    * This allows clients to fetch the quiz content efficiently and ensures all players in a region get the same set.
    */
-  @Column({ type: 'varchar', length: 512 })
+  @Column({ type: 'varchar', length: 512, name: 'template_cdn_url' })
   templateCdnUrl!: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt!: Date;
 }

@@ -5,6 +5,7 @@ import {
   ManyToOne,
   CreateDateColumn,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { Attempt } from './attempt.entity';
 import type { Answer } from './answers/answer.interface';
@@ -20,29 +21,35 @@ export class AttemptAnswer {
   id!: string;
 
   @ManyToOne(() => Attempt, (attempt) => attempt.id, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'attempt_id' })
   attempt!: Attempt;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ name: 'question_id', type: 'varchar', length: 255 })
   questionId!: string;
 
-  @Column({ type: 'jsonb' })
+  @Column({ name: 'answer_json', type: 'jsonb' })
   answerJSON!: Answer;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
+  @Column({
+    name: 'idempotency_key',
+    type: 'varchar',
+    length: 255,
+    unique: true,
+  })
   idempotencyKey!: string;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'time_spent_ms', type: 'int', default: 0 })
   timeSpentMs!: number;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'shuffle_proof', type: 'jsonb', nullable: true })
   shuffleProof!: any;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'accuracy_points', type: 'int', default: 0 })
   accuracyPoints!: number;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'is_correct', type: 'boolean', default: false })
   isCorrect!: boolean;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ name: 'submitted_at', type: 'timestamptz' })
   submittedAt!: Date;
 }

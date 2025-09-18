@@ -208,10 +208,6 @@ ON provider_transactions(provider, provider_transaction_id);
 -- BUSINESS RULES
 -- ===============================================
 
--- Provider transactions must be globally idempotent per provider
-ALTER TABLE provider_transactions
-ADD CONSTRAINT uq_provider_transactions UNIQUE (provider, provider_transaction_id);
-
 -- Non-negative amounts (catch data drifts and provider quirks)
 ALTER TABLE provider_transactions
 ADD CONSTRAINT ck_tx_amount_nonneg CHECK (gross_amount_micros >= 0),

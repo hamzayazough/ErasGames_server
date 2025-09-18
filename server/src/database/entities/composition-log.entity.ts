@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { DailyQuiz } from './daily-quiz.entity';
 import { DailyQuizMode } from '../enums/daily-quiz-mode.enum';
@@ -21,9 +22,10 @@ export class CompositionLogEntity {
   id!: string;
 
   @ManyToOne(() => DailyQuiz, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'daily_quiz_id' })
   dailyQuiz!: DailyQuiz;
 
-  @Column({ type: 'timestamptz' })
+  @Column({ name: 'target_date', type: 'timestamptz' })
   targetDate!: Date;
 
   @Column({ type: 'enum', enum: DailyQuizMode })
@@ -61,7 +63,7 @@ export class CompositionLogEntity {
     dbQueries: number;
   };
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'has_errors', type: 'boolean', default: false })
   hasErrors!: boolean;
 
   @Column({ name: 'error_message', type: 'text', nullable: true })

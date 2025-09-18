@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   Index,
+  JoinColumn,
 } from 'typeorm';
 import { DailyQuiz } from './daily-quiz.entity';
 import { Question } from './question.entity';
@@ -18,14 +19,16 @@ export class DailyQuizQuestion {
   id!: string;
 
   @ManyToOne(() => DailyQuiz, (dq) => dq.id, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'daily_quiz_id' })
   dailyQuiz!: DailyQuiz;
 
   @ManyToOne(() => Question, (q) => q.id, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'question_id' })
   question!: Question;
 
   @Column({ type: 'varchar', length: 16 })
   difficulty!: string;
 
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'varchar', length: 32, name: 'question_type' })
   questionType!: string;
 }

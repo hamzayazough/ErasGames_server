@@ -1,24 +1,16 @@
 -- 12_partition_attempts.sql
 -- Convert attempt table to partitioned table for better performance
--- Partition by month based on created_at timestamp
+-- Simplified version for fresh database initialization
 
 -- ===============================================
--- BACKUP EXISTING DATA & CREATE PARTITIONED TABLE
+-- CREATE PARTITIONED ATTEMPT TABLE
 -- ===============================================
 
--- Step 1: Rename existing table to backup
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'attempt' AND table_type = 'BASE TABLE') THEN
-        -- Check if table is already partitioned
-        IF NOT EXISTS (SELECT 1 FROM pg_partitioned_table WHERE partrelid = 'attempt'::regclass) THEN
-            ALTER TABLE attempt RENAME TO attempt_backup_pre_partition;
-        END IF;
-    END IF;
-END $$;
+-- Drop existing non-partitioned table if it exists
+DROP TABLE IF EXISTS attempt CASCADE;
 
--- Step 2: Create new partitioned table
-CREATE TABLE IF NOT EXISTS attempt (
+-- Create new partitioned table with TypeORM-compatible column names
+CREATE TABLE attempt (
     id UUID DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
     daily_quiz_id UUID NOT NULL,
@@ -89,28 +81,6 @@ CREATE INDEX idx_attempt_2025_12_status ON attempt_2025_12 (status);
 CREATE INDEX idx_attempt_2025_12_score ON attempt_2025_12 (score DESC) WHERE status = 'finished';
 
 -- ===============================================
--- MIGRATE EXISTING DATA (if backup table exists)
--- ===============================================
-
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'attempt_backup_pre_partition') THEN
-        -- Insert data from backup table to partitioned table
-        INSERT INTO attempt (
-            id, user_id, daily_quiz_id, start_at, deadline, finish_at,
-            answers_json, acc_points, speed_sec, early_sec, score, status, created_at
-        )
-        SELECT 
-            id, user_id, daily_quiz_id, start_at, deadline, finish_at,
-            answers_json, acc_points, speed_sec, early_sec, score, status, created_at
-        FROM attempt_backup_pre_partition;
-        
-        RAISE NOTICE 'Migrated % rows from attempt_backup_pre_partition to partitioned attempt table', 
-                     (SELECT COUNT(*) FROM attempt_backup_pre_partition);
-    END IF;
-END $$;
-
--- ===============================================
 -- PARTITION MANAGEMENT FUNCTIONS
 -- ===============================================
 
@@ -133,7 +103,7 @@ BEGIN
     EXECUTE FORMAT('CREATE TABLE IF NOT EXISTS %I PARTITION OF attempt FOR VALUES FROM (%L) TO (%L)',
                    partition_name, start_date, end_date);
                    
-    -- Create indexes
+    -- Create indexes with snake_case column names
     EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_user_dailyquiz ON %I (user_id, daily_quiz_id)',
                    index_prefix, partition_name);
     EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_user_created ON %I (user_id, created_at)',
@@ -180,7 +150,7 @@ $$ LANGUAGE plpgsql;
 -- ===============================================
 
 COMMENT ON TABLE attempt IS 
-'Partitioned table storing user quiz attempts. Partitioned by month on created_at for optimal performance with time-based queries.';
+'Partitioned table storing user quiz attempts. Partitioned by month on createdAt for optimal performance with time-based queries.';
 
 COMMENT ON FUNCTION create_monthly_attempt_partition() IS 
 'Creates next month partition for attempt table. Should be called monthly via cron job or application scheduler.';

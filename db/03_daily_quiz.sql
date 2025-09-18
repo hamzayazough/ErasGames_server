@@ -1,4 +1,5 @@
 -- 03_daily_quiz.sql: Create the daily_quiz and daily_quiz_question tables
+-- Refactored to match TypeORM entity structure
 
 CREATE TABLE IF NOT EXISTS daily_quiz (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

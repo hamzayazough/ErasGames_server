@@ -1,6 +1,7 @@
 -- 13_partition_daily_quiz_questions.sql
 -- Convert daily_quiz_question table to partitioned table for better performance
 -- Partition by year based on daily_quiz.drop_at_utc (via JOIN) - simpler yearly partitions since less volume
+-- FIXED VERSION: Removes references to non-existent created_at column
 
 -- ===============================================
 -- BACKUP EXISTING DATA & CREATE PARTITIONED TABLE
@@ -17,8 +18,8 @@ BEGIN
     END IF;
 END $$;
 
--- Step 2: Add partition key column to help with partitioning
--- We'll add a quiz_year column derived from daily_quiz.drop_at_utc for efficient partitioning
+-- Step 2: Create new partitioned table (matching TypeORM entity structure)
+-- Note: TypeORM entity does NOT have created_at, so we don't include it
 CREATE TABLE IF NOT EXISTS daily_quiz_question (
     id UUID DEFAULT gen_random_uuid(),
     daily_quiz_id UUID NOT NULL,
@@ -26,7 +27,6 @@ CREATE TABLE IF NOT EXISTS daily_quiz_question (
     difficulty VARCHAR(16) NOT NULL,
     question_type VARCHAR(32) NOT NULL,
     quiz_year INTEGER NOT NULL, -- Partition key: EXTRACT(YEAR FROM daily_quiz.drop_at_utc)
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
     -- Constraints (note: unique constraints must include partition key)
     CONSTRAINT pk_daily_quiz_question_id_year PRIMARY KEY (id, quiz_year),
@@ -42,15 +42,15 @@ CREATE TABLE IF NOT EXISTS daily_quiz_question (
 -- CREATE INITIAL PARTITIONS (2025 - 2027)
 -- ===============================================
 
--- 2025 (current year)
+-- 2025 partition
 CREATE TABLE daily_quiz_question_2025 PARTITION OF daily_quiz_question
     FOR VALUES FROM (2025) TO (2026);
 
--- 2026
+-- 2026 partition 
 CREATE TABLE daily_quiz_question_2026 PARTITION OF daily_quiz_question
     FOR VALUES FROM (2026) TO (2027);
 
--- 2027
+-- 2027 partition
 CREATE TABLE daily_quiz_question_2027 PARTITION OF daily_quiz_question
     FOR VALUES FROM (2027) TO (2028);
 
@@ -59,22 +59,19 @@ CREATE TABLE daily_quiz_question_2027 PARTITION OF daily_quiz_question
 -- ===============================================
 
 -- 2025 indexes
-CREATE INDEX idx_daily_quiz_question_2025_dq ON daily_quiz_question_2025 (daily_quiz_id);
-CREATE INDEX idx_daily_quiz_question_2025_qid ON daily_quiz_question_2025 (question_id);
+CREATE INDEX idx_daily_quiz_question_2025_daily_quiz ON daily_quiz_question_2025 (daily_quiz_id);
+CREATE INDEX idx_daily_quiz_question_2025_question ON daily_quiz_question_2025 (question_id);
 CREATE INDEX idx_daily_quiz_question_2025_difficulty ON daily_quiz_question_2025 (difficulty);
-CREATE INDEX idx_daily_quiz_question_2025_type ON daily_quiz_question_2025 (question_type);
 
 -- 2026 indexes
-CREATE INDEX idx_daily_quiz_question_2026_dq ON daily_quiz_question_2026 (daily_quiz_id);
-CREATE INDEX idx_daily_quiz_question_2026_qid ON daily_quiz_question_2026 (question_id);
+CREATE INDEX idx_daily_quiz_question_2026_daily_quiz ON daily_quiz_question_2026 (daily_quiz_id);
+CREATE INDEX idx_daily_quiz_question_2026_question ON daily_quiz_question_2026 (question_id);
 CREATE INDEX idx_daily_quiz_question_2026_difficulty ON daily_quiz_question_2026 (difficulty);
-CREATE INDEX idx_daily_quiz_question_2026_type ON daily_quiz_question_2026 (question_type);
 
 -- 2027 indexes
-CREATE INDEX idx_daily_quiz_question_2027_dq ON daily_quiz_question_2027 (daily_quiz_id);
-CREATE INDEX idx_daily_quiz_question_2027_qid ON daily_quiz_question_2027 (question_id);
+CREATE INDEX idx_daily_quiz_question_2027_daily_quiz ON daily_quiz_question_2027 (daily_quiz_id);
+CREATE INDEX idx_daily_quiz_question_2027_question ON daily_quiz_question_2027 (question_id);
 CREATE INDEX idx_daily_quiz_question_2027_difficulty ON daily_quiz_question_2027 (difficulty);
-CREATE INDEX idx_daily_quiz_question_2027_type ON daily_quiz_question_2027 (question_type);
 
 -- ===============================================
 -- MIGRATE EXISTING DATA (if backup table exists)
@@ -86,7 +83,7 @@ BEGIN
         -- Insert data from backup table to partitioned table
         -- Calculate quiz_year from daily_quiz.drop_at_utc
         INSERT INTO daily_quiz_question (
-            id, daily_quiz_id, question_id, difficulty, question_type, quiz_year, created_at
+            id, daily_quiz_id, question_id, difficulty, question_type, quiz_year
         )
         SELECT 
             dqq.id, 
@@ -94,8 +91,7 @@ BEGIN
             dqq.question_id, 
             dqq.difficulty, 
             dqq.question_type,
-            EXTRACT(YEAR FROM dq.drop_at_utc)::INTEGER as quiz_year,
-            COALESCE(dqq.created_at, NOW()) as created_at
+            EXTRACT(YEAR FROM dq.drop_at_utc)::INTEGER as quiz_year
         FROM daily_quiz_question_backup_pre_partition dqq
         JOIN daily_quiz dq ON dqq.daily_quiz_id = dq.id;
         
@@ -122,17 +118,15 @@ BEGIN
     index_prefix := 'idx_daily_quiz_question_' || next_year;
     
     -- Create partition if it doesn't exist
-    EXECUTE FORMAT('CREATE TABLE IF NOT EXISTS %I PARTITION OF daily_quiz_question FOR VALUES FROM (%s) TO (%s)',
+    EXECUTE FORMAT('CREATE TABLE IF NOT EXISTS %I PARTITION OF daily_quiz_question FOR VALUES FROM (%L) TO (%L)',
                    partition_name, next_year, next_year + 1);
                    
-    -- Create indexes
-    EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_dq ON %I (daily_quiz_id)',
+    -- Create indexes with snake_case column names
+    EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_daily_quiz ON %I (daily_quiz_id)',
                    index_prefix, partition_name);
-    EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_qid ON %I (question_id)',
+    EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_question ON %I (question_id)',
                    index_prefix, partition_name);
     EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_difficulty ON %I (difficulty)',
-                   index_prefix, partition_name);
-    EXECUTE FORMAT('CREATE INDEX IF NOT EXISTS %I_type ON %I (question_type)',
                    index_prefix, partition_name);
     
     RETURN partition_name || ' created successfully';
@@ -168,30 +162,24 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ===============================================
--- TRIGGER FOR AUTO-POPULATING quiz_year
+-- TRIGGER TO AUTO-SET QUIZ_YEAR
 -- ===============================================
 
--- Function to automatically set quiz_year based on daily_quiz.drop_at_utc
+-- Function to automatically set quiz_year from daily_quiz.drop_at_utc
 CREATE OR REPLACE FUNCTION set_quiz_year_from_daily_quiz()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Auto-populate quiz_year if not provided
-    IF NEW.quiz_year IS NULL THEN
-        SELECT EXTRACT(YEAR FROM dq.drop_at_utc)::INTEGER
-        INTO NEW.quiz_year
-        FROM daily_quiz dq
-        WHERE dq.id = NEW.daily_quiz_id;
-        
-        IF NEW.quiz_year IS NULL THEN
-            RAISE EXCEPTION 'Could not determine quiz_year for daily_quiz_id %', NEW.daily_quiz_id;
-        END IF;
-    END IF;
+    -- Get the year from the associated daily_quiz.drop_at_utc
+    SELECT EXTRACT(YEAR FROM drop_at_utc)::INTEGER 
+    INTO NEW.quiz_year
+    FROM daily_quiz 
+    WHERE id = NEW.daily_quiz_id;
     
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to auto-populate quiz_year
+-- Create trigger to automatically set quiz_year on INSERT
 CREATE TRIGGER tr_daily_quiz_question_set_quiz_year
     BEFORE INSERT ON daily_quiz_question
     FOR EACH ROW
@@ -210,7 +198,6 @@ SELECT
     dqq.difficulty,
     dqq.question_type,
     dqq.quiz_year,
-    dqq.created_at,
     dq.drop_at_utc,
     dq.mode as quiz_mode,
     dq.template_version
@@ -225,16 +212,13 @@ COMMENT ON TABLE daily_quiz_question IS
 'Partitioned table storing questions for each daily quiz. Partitioned by year (quiz_year) for optimal performance.';
 
 COMMENT ON COLUMN daily_quiz_question.quiz_year IS 
-'Year extracted from daily_quiz.drop_at_utc. Used as partition key and auto-populated via trigger.';
+'Partition key derived from daily_quiz.drop_at_utc. Automatically set by trigger.';
 
 COMMENT ON FUNCTION create_yearly_daily_quiz_question_partition() IS 
-'Creates next year partition for daily_quiz_question table. Should be called annually.';
+'Creates next year partition for daily_quiz_question table. Should be called annually via cron job.';
 
 COMMENT ON FUNCTION drop_old_daily_quiz_question_partitions(INTEGER) IS 
 'Drops old daily_quiz_question partitions beyond retention period. Default keeps 5 years of data.';
-
-COMMENT ON VIEW v_daily_quiz_question_with_quiz IS 
-'Convenient view joining daily_quiz_question with daily_quiz. Hides partitioning complexity for common queries.';
 
 -- ===============================================
 -- USAGE EXAMPLES
@@ -252,6 +236,6 @@ COMMENT ON VIEW v_daily_quiz_question_with_quiz IS
 -- WHERE tablename LIKE 'daily_quiz_question_20%' 
 -- ORDER BY tablename;
 
--- Example: Query using the convenience view
+-- Example: Query via view (recommended for apps)
 -- SELECT * FROM v_daily_quiz_question_with_quiz 
--- WHERE quiz_year = 2025 AND difficulty = 'hard';
+-- WHERE quiz_year = 2025 AND difficulty = 'medium';

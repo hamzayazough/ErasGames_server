@@ -76,18 +76,18 @@ CREATE INDEX IF NOT EXISTS idx_attempt_answer_correctness ON attempt_answer (is_
 -- ===========================================
 
 -- Index for composition logs (if using them for analytics)
-CREATE INDEX IF NOT EXISTS idx_composition_logs_date ON composition_log (created_at);
+CREATE INDEX IF NOT EXISTS idx_composition_logs_date ON composition_logs (created_at);
 
 -- ===========================================
 -- PARTITIONING SUPPORT INDEXES
 -- ===========================================
 
 -- For future partitioning by date, these indexes will help:
--- Index for monthly partitioning of attempts
-CREATE INDEX IF NOT EXISTS idx_attempts_created_month ON attempt (EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at));
+-- Index for monthly partitioning of attempts (disabled due to EXTRACT not being immutable)
+-- CREATE INDEX IF NOT EXISTS idx_attempts_created_month ON attempt (EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at));
 
--- Index for monthly partitioning of attempt answers
-CREATE INDEX IF NOT EXISTS idx_attempt_answer_submitted_month ON attempt_answer (EXTRACT(YEAR FROM submitted_at), EXTRACT(MONTH FROM submitted_at));
+-- Index for monthly partitioning of attempt answers (disabled due to EXTRACT not being immutable)
+-- CREATE INDEX IF NOT EXISTS idx_attempt_answer_submitted_month ON attempt_answer (EXTRACT(YEAR FROM submitted_at), EXTRACT(MONTH FROM submitted_at));
 
 -- ===========================================
 -- QUERY OPTIMIZATION NOTES
