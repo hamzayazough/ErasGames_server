@@ -149,19 +149,14 @@ export class DailyQuizComposerService {
       );
       dbQueries += 2; // Quiz creation + batch question insert
 
-      // Generate CDN template
+      // Generate CDN template (but don't upload yet - that happens at T-5m)
       const template = this.templateService.generateTemplate(
         dailyQuiz,
         selectionResult.questions,
         themePlan,
       );
 
-      // Update template CDN URL in quiz record
-      const cdnUrl = this.templateService.generateTemplateCdnUrl(dailyQuiz);
-      await this.dailyQuizRepository.update(dailyQuiz.id, {
-        templateCdnUrl: cdnUrl,
-      });
-      dbQueries++;
+      // Note: templateCdnUrl will be set during the warmup job after actual upload
 
       // Update question usage tracking
       await this.antiRepeatService.updateQuestionUsage(

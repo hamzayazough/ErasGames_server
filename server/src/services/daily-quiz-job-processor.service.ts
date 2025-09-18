@@ -103,10 +103,10 @@ export class DailyQuizJobProcessor {
         return;
       }
 
-      // Check if template is already ready
+      // Check if template is already uploaded (URL will only be set after successful upload)
       if (quiz.templateCdnUrl) {
         this.logger.log(
-          `Template already exists for quiz ${quiz.id}: ${quiz.templateCdnUrl}`,
+          `Template already uploaded for quiz ${quiz.id}: ${quiz.templateCdnUrl}`,
         );
         return;
       }
@@ -131,6 +131,11 @@ export class DailyQuizJobProcessor {
           questions,
           quiz.themePlanJSON as any, // Type assertion for JSON field
         );
+
+      // Update the quiz record with the actual CDN URL after successful upload
+      await this.dailyQuizRepository.update(quiz.id, {
+        templateCdnUrl: templateUrl,
+      });
 
       this.logger.log(
         `Template uploaded successfully for quiz ${quiz.id}: ${templateUrl} (v${version})`,
@@ -186,6 +191,11 @@ export class DailyQuizJobProcessor {
         questions,
         quiz.themePlanJSON as any,
       );
+
+    // Update the quiz record with the actual CDN URL after successful upload
+    await this.dailyQuizRepository.update(quiz.id, {
+      templateCdnUrl: templateUrl,
+    });
 
     this.logger.log(
       `Manual template warmup completed: ${templateUrl} (v${version})`,

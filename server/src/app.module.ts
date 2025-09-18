@@ -62,7 +62,7 @@ import { QuestionController } from './admin/controllers/question.controller';
 import { AdminJobController } from './admin/controllers/admin-job.controller';
 import { DailyQuizController } from './controllers/daily-quiz.controller';
 import { AttemptsController } from './controllers/attempts.controller';
-import { TestController } from './controllers/test.controller';
+import { TestController } from './controllers/cdn-test.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
