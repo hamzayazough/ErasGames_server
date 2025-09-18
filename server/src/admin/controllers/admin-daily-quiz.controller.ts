@@ -13,6 +13,7 @@ import {
   ComposerConfig,
   DailyQuizMode,
 } from '../../database/services/daily-quiz-composer';
+import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.service';
 
 /**
  * Admin controller for manual daily quiz composition and monitoring
@@ -27,7 +28,10 @@ import {
 export class AdminDailyQuizController {
   private readonly logger = new Logger(AdminDailyQuizController.name);
 
-  constructor(private readonly composerService: DailyQuizComposerService) {}
+  constructor(
+    private readonly composerService: DailyQuizComposerService,
+    private readonly jobProcessor: DailyQuizJobProcessor,
+  ) {}
 
   /**
    * Manually compose a daily quiz for a specific date/time
@@ -247,6 +251,167 @@ export class AdminDailyQuizController {
 
       throw new HttpException(
         'Failed to retrieve composition logs',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Manually trigger daily composition job
+   * POST /admin/daily-quiz/jobs/trigger-composition
+   */
+  @Post('jobs/trigger-composition')
+  async triggerDailyComposition(@Body() request: { dropAtUTC: string }) {
+    try {
+      const dropDate = new Date(request.dropAtUTC);
+
+      if (isNaN(dropDate.getTime())) {
+        throw new HttpException(
+          'Invalid dropAtUTC format. Use ISO 8601 format.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      this.logger.log(
+        `Manual job composition trigger requested for ${dropDate.toISOString()}`,
+      );
+
+      await this.jobProcessor.triggerDailyComposition(dropDate);
+
+      return {
+        success: true,
+        message: `Daily composition job triggered successfully for ${dropDate.toISOString()}`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to trigger composition job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        `Failed to trigger daily composition job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Manually trigger template warmup job
+   * POST /admin/daily-quiz/jobs/trigger-warmup
+   */
+  @Post('jobs/trigger-warmup')
+  async triggerTemplateWarmup(@Body() request: { quizId: string }) {
+    try {
+      if (!request.quizId) {
+        throw new HttpException('quizId is required', HttpStatus.BAD_REQUEST);
+      }
+
+      this.logger.log(
+        `Manual template warmup trigger requested for quiz ${request.quizId}`,
+      );
+
+      await this.jobProcessor.triggerTemplateWarmup(request.quizId);
+
+      return {
+        success: true,
+        message: `Template warmup job triggered successfully for quiz ${request.quizId}`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to trigger warmup job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        `Failed to trigger template warmup job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Get job status and scheduling information
+   * GET /admin/daily-quiz/jobs/status
+   */
+  @Get('jobs/status')
+  getJobStatus() {
+    try {
+      const status = this.jobProcessor.getJobStatus();
+
+      return {
+        success: true,
+        data: status,
+        message: 'Job status retrieved successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get job status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+
+      throw new HttpException(
+        'Failed to retrieve job status',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Test the complete daily quiz workflow (composition + warmup)
+   * POST /admin/daily-quiz/jobs/test-workflow
+   */
+  @Post('jobs/test-workflow')
+  async testCompleteWorkflow(
+    @Body() request: { dropAtUTC: string; mode?: DailyQuizMode },
+  ) {
+    try {
+      const dropDate = new Date(request.dropAtUTC);
+
+      if (isNaN(dropDate.getTime())) {
+        throw new HttpException(
+          'Invalid dropAtUTC format. Use ISO 8601 format.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      this.logger.log(
+        `Testing complete workflow for ${dropDate.toISOString()}`,
+      );
+
+      // Step 1: Trigger composition
+      this.logger.log('Step 1: Running composition...');
+      await this.jobProcessor.triggerDailyComposition(dropDate);
+
+      // Step 2: Find the created quiz
+      this.logger.log('Step 2: Finding created quiz...');
+      // We need to get the quiz ID from the database
+      // For now, we'll return the composition result and let the user manually trigger warmup
+
+      return {
+        success: true,
+        message: `Composition completed for ${dropDate.toISOString()}. Use the quiz ID from the logs endpoint to trigger warmup manually.`,
+        nextSteps: [
+          '1. Call GET /admin/daily-quiz/logs to find the quiz ID',
+          '2. Call POST /admin/daily-quiz/jobs/trigger-warmup with the quiz ID',
+          '3. Verify templateCdnUrl is set in the quiz record',
+        ],
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to test workflow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        `Failed to test complete workflow: ${error instanceof Error ? error.message : 'Unknown error'}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
