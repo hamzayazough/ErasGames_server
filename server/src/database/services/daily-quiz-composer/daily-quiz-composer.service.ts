@@ -846,7 +846,7 @@ export class DailyQuizComposerService {
     // Get daily quizzes with question counts in a single query
     const results = await this.dailyQuizRepository
       .createQueryBuilder('dq')
-      .leftJoin('daily_quiz_question', 'dqq', 'dqq.dailyQuizId = dq.id')
+      .leftJoin('daily_quiz_question', 'dqq', 'dqq.daily_quiz_id = dq.id')
       .select([
         'dq.id',
         'dq.dropAtUTC',
