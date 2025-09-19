@@ -72,6 +72,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 2,
+    minHeight: 60,
+    justifyContent: 'center',
   },
   selectedChoice: {
     borderWidth: 2,

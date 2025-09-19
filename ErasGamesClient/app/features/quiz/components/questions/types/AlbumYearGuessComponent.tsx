@@ -27,12 +27,12 @@ export const AlbumYearGuessComponent: React.FC<AlbumYearGuessComponentProps> = (
 
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text variant="h3" style={[styles.questionText, { color: theme.colors.text }]}>
         {question.prompt.task}
       </Text>
       
       <View style={[styles.albumContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="heading2" style={[styles.albumName, { color: theme.colors.primary }]}>
+        <Text variant="h2" style={[styles.albumName, { color: theme.colors.primary }]}>
           "{question.prompt.album}"
         </Text>
       </View>
@@ -57,6 +57,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     lineHeight: 28,
+    flexWrap: 'wrap',
   },
   albumContainer: {
     padding: 20,
@@ -66,5 +67,6 @@ const styles = StyleSheet.create({
   albumName: {
     fontWeight: 'bold',
     textAlign: 'center',
+    flexWrap: 'wrap',
   },
 });

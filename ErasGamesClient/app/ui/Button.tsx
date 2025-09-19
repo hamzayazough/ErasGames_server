@@ -19,7 +19,8 @@ interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
-  children: React.ReactNode;
+  title?: string;
+  children?: React.ReactNode;
 }
 
 export function Button({
@@ -32,6 +33,7 @@ export function Button({
   disabled,
   style,
   textStyle,
+  title,
   children,
   ...props
 }: ButtonProps) {
@@ -146,7 +148,7 @@ export function Button({
               textStyle,
             ]}
           >
-            {children}
+            {title || children}
           </Text>
           {rightIcon && <View marginLeft={1}>{rightIcon}</View>}
         </View>
