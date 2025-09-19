@@ -29,6 +29,7 @@ export interface QuestionComponentProps {
   correctAnswer?: any;
   showHint?: boolean;
   seed?: string;
+  onAutoSubmit?: () => void; // New prop for auto-submission (e.g., when timer ends)
 }
 
 interface QuestionRendererProps extends QuestionComponentProps {}

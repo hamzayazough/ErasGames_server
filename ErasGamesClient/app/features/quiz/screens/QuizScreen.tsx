@@ -198,6 +198,7 @@ export default function QuizScreen({navigation, route}: Props) {
               showCorrect={isAnswered}
               correctAnswer={currentQuestion.correct}
               showHint={showHint}
+              onAutoSubmit={handleSubmitAnswer}
             />
             
             {/* Hint display - keeping the original hint system for now */}

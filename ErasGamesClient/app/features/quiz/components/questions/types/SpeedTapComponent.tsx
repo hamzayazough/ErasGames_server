@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { SpeedTapQuestion } from '../../../../../shared/interfaces/questions/speed-tap.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../../../ui/Text';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
 interface SpeedTapComponentProps extends Omit<QuestionComponentProps, 'question'> {
@@ -21,7 +22,8 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
   disabled,
   showCorrect,
   correctAnswer,
-  showHint
+  showHint,
+  onAutoSubmit
 }) => {
   const theme = useTheme();
   const [timeLeft, setTimeLeft] = useState<number>(question.prompt.roundSeconds);
@@ -82,8 +84,11 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
         events,
         clientSummary,
       });
+      
+      // Auto-submit when timer ends
+      onAutoSubmit?.();
     }
-  }, [isFinished, events, tappedItems, onAnswerChange, question.correct?.targets, question.prompt.roundSeconds]);
+  }, [isFinished, events, tappedItems, onAnswerChange, question.correct?.targets, question.prompt.roundSeconds, onAutoSubmit]);
 
   const handleItemTap = (item: string) => {
     if (!isActive || disabled) return;
@@ -106,6 +111,13 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
       const newEvent: TapEvent = { ts: relativeTime, option: item, action: 'tap' };
       setEvents(prev => [...prev, newEvent]);
     }
+  };
+
+  const handleManualSubmit = () => {
+    if (!isActive || disabled) return;
+    
+    setIsActive(false);
+    setIsFinished(true);
   };
 
   const getItemStyle = (item: string) => {
@@ -162,7 +174,7 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text variant="h3" style={[styles.questionText, { color: theme.colors.text }]}>
         {question.prompt.task}
       </Text>
 
@@ -171,7 +183,7 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
       </Text>
 
       <View style={[styles.statusContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="heading2" style={[styles.timer, { color: isActive ? theme.colors.primary : theme.colors.textSecondary }]}>
+        <Text variant="h2" style={[styles.timer, { color: isActive ? theme.colors.primary : theme.colors.textSecondary }]}>
           {timeLeft}s
         </Text>
         
@@ -195,9 +207,20 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
         ))}
       </View>
 
+      {isActive && !disabled && (
+        <Pressable 
+          style={[styles.submitButton, { backgroundColor: theme.colors.primary }]}
+          onPress={handleManualSubmit}
+        >
+          <Text variant="body" weight="semibold" style={[styles.submitButtonText, { color: theme.colors.textOnPrimary }]}>
+            Submit Answer
+          </Text>
+        </Pressable>
+      )}
+
       {isFinished && showCorrect && (
         <View style={[styles.resultsContainer, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="heading4" style={[styles.resultsTitle, { color: theme.colors.text }]}>
+          <Text variant="h3" style={[styles.resultsTitle, { color: theme.colors.text }]}>
             Results:
           </Text>
           <View style={styles.resultsRow}>
@@ -302,5 +325,17 @@ const styles = StyleSheet.create({
   hintText: {
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  submitButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
