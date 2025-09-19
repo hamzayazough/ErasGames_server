@@ -8,6 +8,7 @@ import type {RootStackParamList} from './types';
 // Import our quiz screens
 import DailyDropScreen from '../features/quiz/screens/DailyDropScreen';
 import StartQuizScreen from '../features/quiz/screens/StartQuizScreen';
+import QuizSelectionScreen from '../features/quiz/screens/QuizSelectionScreen';
 import QuizScreen from '../features/quiz/screens/QuizScreen';
 import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 
@@ -47,6 +48,11 @@ export function RootNavigator() {
         <Stack.Screen 
           name="StartQuiz" 
           component={StartQuizScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen 
+          name="QuizSelection" 
+          component={QuizSelectionScreen}
           options={{headerShown: false}}
         />
         <Stack.Screen 

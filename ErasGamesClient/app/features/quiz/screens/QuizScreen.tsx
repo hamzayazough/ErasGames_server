@@ -6,122 +6,23 @@ import type {RootStackScreenProps} from '../../../navigation/types';
 import { QuestionRenderer } from '../components/questions/QuestionRenderer';
 import { AnswerHandler, QuestionAnswer } from '../utils/AnswerHandler';
 import { AnyQuestion } from '../../../shared/interfaces/questions/any-question.type';
+import { basicQuizMock } from '../constants/quizMocks';
 
 type Props = RootStackScreenProps<'Quiz'>;
 
-// Mock questions that follow the new interface structure
-const mockQuestions: AnyQuestion[] = [
-  {
-    id: '1',
-    questionType: 'album-year-guess',
-    difficulty: 'easy',
-    themes: ['timeline'],
-    subjects: ['album:folklore'],
-    prompt: {
-      task: 'What year was the album "folklore" released?',
-      album: 'folklore'
-    },
-    choices: [
-      { id: 'choice1', text: '2019' },
-      { id: 'choice2', text: '2020' },
-      { id: 'choice3', text: '2021' },
-      { id: 'choice4', text: '2022' }
-    ],
-    correct: { choiceIndex: 1 }
-  },
-  {
-    id: '2',
-    questionType: 'fill-blank',
-    difficulty: 'easy',
-    themes: ['lyrics'],
-    subjects: ['song:blank-space'],
-    prompt: {
-      task: 'Complete the lyric from "Blank Space"',
-      text: "I've got a blank space baby, and I'll _______"
-    },
-    choices: [
-      { id: 'choice1', text: 'write your name' },
-      { id: 'choice2', text: 'sing your song' },
-      { id: 'choice3', text: 'dance all night' },
-      { id: 'choice4', text: 'call you mine' }
-    ],
-    correct: { choiceIndex: 0 }
-  },
-  {
-    id: '3',
-    questionType: 'song-album-match',
-    difficulty: 'medium',
-    themes: ['albums'],
-    subjects: ['albums'],
-    prompt: {
-      task: 'Match each song to its correct album',
-      left: ['cardigan', 'Anti-Hero', 'Shake It Off'],
-      right: ['folklore', 'Midnights', '1989', 'Lover']
-    },
-    correct: {
-      'cardigan': 'folklore',
-      'Anti-Hero': 'Midnights',
-      'Shake It Off': '1989'
-    }
-  },
-  {
-    id: '4',
-    questionType: 'odd-one-out',
-    difficulty: 'medium',
-    themes: ['eras'],
-    subjects: ['albums'],
-    prompt: {
-      task: 'Which album doesn\'t belong with the others?',
-      setRule: 'Taylor Swift albums from the 2010s'
-    },
-    choices: [
-      { id: 'choice1', text: 'Lover' },
-      { id: 'choice2', text: 'folklore' },
-      { id: 'choice3', text: '1989' },
-      { id: 'choice4', text: 'reputation' }
-    ],
-    correct: { choiceIndex: 1 }
-  },
-  {
-    id: '5',
-    questionType: 'guess-by-lyric',
-    difficulty: 'easy',
-    themes: ['lyrics'],
-    subjects: ['song:all-too-well'],
-    prompt: {
-      task: 'Which song contains this lyric?',
-      lyric: 'And you were tossing me the car keys, "Fuck the patriarchy" keychain'
-    },
-    choices: [
-      { id: 'choice1', text: 'All Too Well (10 Minute Version)' },
-      { id: 'choice2', text: 'Red' },
-      { id: 'choice3', text: 'We Are Never Getting Back Together' },
-      { id: 'choice4', text: 'I Knew You Were Trouble' }
-    ],
-    correct: { choiceIndex: 0 }
-  },
-  {
-    id: '6',
-    questionType: 'timeline-order',
-    difficulty: 'hard',
-    themes: ['timeline'],
-    subjects: ['albums'],
-    prompt: {
-      task: 'Arrange these albums in chronological release order',
-      items: ['Red', 'Speak Now', 'Fearless', '1989']
-    },
-    correct: ['Fearless', 'Speak Now', 'Red', '1989']
-  }
-];
-
-export default function QuizScreen({navigation}: Props) {
+export default function QuizScreen({navigation, route}: Props) {
   const theme = useTheme();
+  
+  // Get the selected quiz from navigation params, fallback to basic quiz
+  const selectedQuiz = route.params?.selectedQuiz || basicQuizMock;
+  const mockQuestions = selectedQuiz.questions;
+  
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(() => 
     AnswerHandler.getDefaultAnswer(mockQuestions[0])
   );
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
-  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(selectedQuiz.estimatedTime * 60); // Convert minutes to seconds
   const [hintsUsed, setHintsUsed] = useState<{[key: string]: boolean}>({});
   const [showHint, setShowHint] = useState(false);
   const [retriesUsed, setRetriesUsed] = useState(0);
@@ -220,27 +121,33 @@ export default function QuizScreen({navigation}: Props) {
       {/* Header with timer and progress */}
       <View style={[styles.header, {backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border}]}>
         <View style={styles.headerTop}>
-          <View style={styles.progressContainer}>
+          <View style={styles.quizInfo}>
+            <Text variant="caption" style={[styles.quizTitle, {color: theme.colors.primary}]}>
+              {selectedQuiz.title}
+            </Text>
             <Text variant="caption" style={[styles.progressText, {color: theme.colors.textSecondary}]}>
               Question {currentQuestionIndex + 1} of {mockQuestions.length}
             </Text>
-            <View style={[styles.progressBar, {backgroundColor: theme.colors.surface}]}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  {
-                    backgroundColor: theme.colors.primary,
-                    width: `${((currentQuestionIndex + 1) / mockQuestions.length) * 100}%`
-                  }
-                ]} 
-              />
-            </View>
           </View>
           
           <View style={[styles.timerContainer, {backgroundColor: theme.colors.red}]}>
             <Text variant="body" style={[styles.timerText, {color: theme.colors.textOnPrimary}]}>
               ⏱️ {formatTime(timeRemaining)}
             </Text>
+          </View>
+        </View>
+        
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressBar, {backgroundColor: theme.colors.surface}]}>
+            <View 
+              style={[
+                styles.progressFill, 
+                {
+                  backgroundColor: theme.colors.primary,
+                  width: `${((currentQuestionIndex + 1) / mockQuestions.length) * 100}%`
+                }
+              ]} 
+            />
           </View>
         </View>
       </View>
@@ -339,11 +246,22 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  progressContainer: {
+  quizInfo: {
     flex: 1,
     marginRight: 16,
+  },
+  quizTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginBottom: 2,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  progressContainer: {
+    marginTop: 4,
   },
   progressText: {
     fontSize: 12,

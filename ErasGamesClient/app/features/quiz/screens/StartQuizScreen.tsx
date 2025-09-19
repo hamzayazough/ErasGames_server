@@ -32,10 +32,10 @@ export default function StartQuizScreen({navigation}: Props) {
   const handleStartQuiz = () => {
     Alert.alert(
       '🎵 Ready to Begin?',
-      'Once you start, you\'ll have 10 minutes (plus any bonus time) to complete 6 questions!',
+      'Choose from different quiz types to test various question formats!',
       [
         {text: 'Not Yet', style: 'cancel'},
-        {text: 'Start Quiz!', onPress: () => navigation.navigate('Quiz')},
+        {text: 'Choose Quiz!', onPress: () => navigation.navigate('QuizSelection')},
       ]
     );
   };

@@ -1,4 +1,5 @@
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import type {QuizMock} from '../features/quiz/constants/quizMocks';
 
 // Root Stack Navigator
 export type RootStackParamList = {
@@ -10,7 +11,8 @@ export type RootStackParamList = {
   // Quiz Flow
   DailyDrop: undefined;
   StartQuiz: undefined;
-  Quiz: undefined;
+  QuizSelection: undefined;
+  Quiz: {selectedQuiz?: QuizMock};
   Results: undefined;
 
   // Main App Stack (future)
