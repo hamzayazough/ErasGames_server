@@ -8,6 +8,12 @@ interface SpeedTapComponentProps extends Omit<QuestionComponentProps, 'question'
   question: SpeedTapQuestion;
 }
 
+interface TapEvent {
+  ts: number;
+  option: string;
+  action: 'tap' | 'undo';
+}
+
 export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
   question,
   selectedAnswer,
@@ -18,10 +24,25 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
   showHint
 }) => {
   const theme = useTheme();
-  const [timeLeft, setTimeLeft] = useState<number>(question.timeLimit || 10);
-  const [tapCount, setTapCount] = useState<number>(selectedAnswer?.tapCount || 0);
+  const [timeLeft, setTimeLeft] = useState<number>(question.prompt.roundSeconds);
+  const [tappedItems, setTappedItems] = useState<Set<string>>(new Set());
+  const [events, setEvents] = useState<TapEvent[]>([]);
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isFinished, setIsFinished] = useState<boolean>(false);
+  const [startTime, setStartTime] = useState<number>(0);
+
+  // Auto-start timer when component mounts (using setTimeout to avoid render issues)
+  useEffect(() => {
+    if (!disabled && !isFinished) {
+      const timer = setTimeout(() => {
+        const now = Date.now();
+        setStartTime(now);
+        setIsActive(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [disabled, isFinished]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -32,7 +53,6 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
           if (time <= 1) {
             setIsActive(false);
             setIsFinished(true);
-            onAnswerChange({ tapCount });
             return 0;
           }
           return time - 1;
@@ -43,60 +63,101 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeLeft, tapCount, onAnswerChange]);
+  }, [isActive, timeLeft]);
 
-  const handleStart = () => {
-    if (!disabled && !isFinished) {
-      setIsActive(true);
-      setTapCount(0);
+  // Separate effect for submitting answer when finished
+  useEffect(() => {
+    if (isFinished && events.length > 0) {
+      const clientSummary = {
+        taps: events.length,
+        correct: Array.from(tappedItems).filter(item => 
+          question.correct?.targets.includes(item)
+        ).length,
+        wrong: Array.from(tappedItems).filter(item => 
+          !question.correct?.targets.includes(item)
+        ).length,
+      };
+      onAnswerChange({
+        roundSeconds: question.prompt.roundSeconds,
+        events,
+        clientSummary,
+      });
+    }
+  }, [isFinished, events, tappedItems, onAnswerChange, question.correct?.targets, question.prompt.roundSeconds]);
+
+  const handleItemTap = (item: string) => {
+    if (!isActive || disabled) return;
+
+    const now = Date.now();
+    const relativeTime = now - startTime;
+    
+    if (tappedItems.has(item)) {
+      // Undo tap
+      setTappedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(item);
+        return newSet;
+      });
+      const newEvent: TapEvent = { ts: relativeTime, option: item, action: 'undo' };
+      setEvents(prev => [...prev, newEvent]);
+    } else {
+      // Add tap
+      setTappedItems(prev => new Set([...prev, item]));
+      const newEvent: TapEvent = { ts: relativeTime, option: item, action: 'tap' };
+      setEvents(prev => [...prev, newEvent]);
     }
   };
 
-  const handleTap = () => {
-    if (isActive && !disabled) {
-      const newTapCount = tapCount + 1;
-      setTapCount(newTapCount);
-      onAnswerChange({ tapCount: newTapCount });
-    }
-  };
-
-  const handleReset = () => {
-    if (!disabled) {
-      setTimeLeft(question.timeLimit || 10);
-      setTapCount(0);
-      setIsActive(false);
-      setIsFinished(false);
-      onAnswerChange({ tapCount: 0 });
-    }
-  };
-
-  const getButtonColor = () => {
-    if (isFinished) {
-      if (showCorrect) {
-        const target = correctAnswer?.tapCount || question.targetTaps || 0;
-        const tolerance = Math.max(1, Math.floor(target * 0.1)); // 10% tolerance
-        const isCorrect = Math.abs(tapCount - target) <= tolerance;
-        return isCorrect ? theme.colors.success : theme.colors.error;
+  const getItemStyle = (item: string) => {
+    const isTapped = tappedItems.has(item);
+    const isCorrect = question.correct?.targets.includes(item);
+    
+    if (showCorrect && isFinished) {
+      if (isTapped && isCorrect) {
+        return [styles.gridItem, { backgroundColor: theme.colors.success, borderColor: theme.colors.success }];
+      } else if (isTapped && !isCorrect) {
+        return [styles.gridItem, { backgroundColor: theme.colors.error, borderColor: theme.colors.error }];
+      } else if (!isTapped && isCorrect) {
+        return [styles.gridItem, { backgroundColor: theme.colors.warning + '40', borderColor: theme.colors.warning }];
       }
-      return theme.colors.textSecondary;
     }
-    return isActive ? theme.colors.primary : theme.colors.secondary;
+    
+    if (isTapped) {
+      return [styles.gridItem, styles.tappedItem, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }];
+    }
+    
+    return [styles.gridItem, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }];
   };
 
-  const getStatusText = () => {
-    if (isFinished) {
-      if (showCorrect) {
-        const target = correctAnswer?.tapCount || question.targetTaps || 0;
-        const tolerance = Math.max(1, Math.floor(target * 0.1));
-        const isCorrect = Math.abs(tapCount - target) <= tolerance;
-        return isCorrect ? '🎉 Great timing!' : `🎯 Target was around ${target} taps`;
+  const getItemTextStyle = (item: string) => {
+    const isTapped = tappedItems.has(item);
+    const isCorrect = question.correct?.targets.includes(item);
+    
+    if (showCorrect && isFinished) {
+      if ((isTapped && isCorrect) || (isTapped && !isCorrect)) {
+        return { color: 'white', fontWeight: 'bold' };
       }
-      return '⏰ Time\'s up!';
     }
-    if (isActive) {
-      return '🔥 Keep tapping!';
+    
+    if (isTapped) {
+      return { color: theme.colors.textOnPrimary, fontWeight: 'bold' };
     }
-    return '👆 Tap "Start" to begin';
+    
+    return { color: theme.colors.text };
+  };
+
+  const getScoreSummary = () => {
+    const correctTaps = Array.from(tappedItems).filter(item => 
+      question.correct?.targets.includes(item)
+    ).length;
+    const wrongTaps = Array.from(tappedItems).filter(item => 
+      !question.correct?.targets.includes(item)
+    ).length;
+    const missedTargets = (question.correct?.targets || []).filter(target => 
+      !tappedItems.has(target)
+    ).length;
+
+    return { correctTaps, wrongTaps, missedTargets };
   };
 
   return (
@@ -105,60 +166,53 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
         {question.prompt.task}
       </Text>
 
-      <View style={[styles.gameContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="heading2" style={[styles.timer, { color: theme.colors.primary }]}>
+      <Text variant="body" style={[styles.ruleText, { color: theme.colors.textSecondary }]}>
+        Rule: {question.prompt.targetRule}
+      </Text>
+
+      <View style={[styles.statusContainer, { backgroundColor: theme.colors.surface }]}>
+        <Text variant="heading2" style={[styles.timer, { color: isActive ? theme.colors.primary : theme.colors.textSecondary }]}>
           {timeLeft}s
         </Text>
-
-        <Text variant="heading1" style={[styles.tapCounter, { color: theme.colors.text }]}>
-          {tapCount}
-        </Text>
-        <Text variant="caption" style={[styles.tapLabel, { color: theme.colors.textSecondary }]}>
-          taps
-        </Text>
-
-        <Text variant="body" style={[styles.statusText, { color: theme.colors.text }]}>
-          {getStatusText()}
+        
+        <Text variant="body" style={[styles.tapCount, { color: theme.colors.text }]}>
+          Tapped: {tappedItems.size}
         </Text>
       </View>
 
-      <View style={styles.buttonContainer}>
-        {!isActive && !isFinished && (
+      <View style={styles.gridContainer}>
+        {question.prompt.grid.map((item, index) => (
           <Pressable
-            style={[styles.startButton, { backgroundColor: theme.colors.primary }]}
-            onPress={handleStart}
-            disabled={disabled}
+            key={index}
+            style={getItemStyle(item)}
+            onPress={() => handleItemTap(item)}
+            disabled={!isActive || disabled}
           >
-            <Text style={[styles.buttonText, { color: theme.colors.textOnPrimary }]}>
-              Start Tapping
+            <Text variant="body" style={[styles.itemText, getItemTextStyle(item)]}>
+              {item}
             </Text>
           </Pressable>
-        )}
-
-        {isActive && (
-          <Pressable
-            style={[styles.tapButton, { backgroundColor: getButtonColor() }]}
-            onPress={handleTap}
-            disabled={disabled}
-          >
-            <Text style={[styles.tapButtonText, { color: theme.colors.textOnPrimary }]}>
-              TAP!
-            </Text>
-          </Pressable>
-        )}
-
-        {isFinished && (
-          <Pressable
-            style={[styles.resetButton, { backgroundColor: theme.colors.secondary }]}
-            onPress={handleReset}
-            disabled={disabled}
-          >
-            <Text style={[styles.buttonText, { color: theme.colors.textOnSecondary }]}>
-              Try Again
-            </Text>
-          </Pressable>
-        )}
+        ))}
       </View>
+
+      {isFinished && showCorrect && (
+        <View style={[styles.resultsContainer, { backgroundColor: theme.colors.surface }]}>
+          <Text variant="heading4" style={[styles.resultsTitle, { color: theme.colors.text }]}>
+            Results:
+          </Text>
+          <View style={styles.resultsRow}>
+            <Text variant="body" style={{ color: theme.colors.success }}>
+              ✅ Correct: {getScoreSummary().correctTaps}
+            </Text>
+            <Text variant="body" style={{ color: theme.colors.error }}>
+              ❌ Wrong: {getScoreSummary().wrongTaps}
+            </Text>
+            <Text variant="body" style={{ color: theme.colors.warning }}>
+              ⚠️ Missed: {getScoreSummary().missedTargets}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {showHint && question.hint && (
         <View style={[styles.hintContainer, { backgroundColor: theme.colors.warning + '20' }]}>
@@ -173,67 +227,72 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
+    gap: 16,
   },
   questionText: {
     fontWeight: '600',
     textAlign: 'center',
     lineHeight: 28,
   },
-  gameContainer: {
-    padding: 32,
-    borderRadius: 16,
+  ruleText: {
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   timer: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
   },
-  tapCounter: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    marginVertical: 8,
-  },
-  tapLabel: {
-    fontSize: 14,
-    textTransform: 'uppercase',
-  },
-  statusText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  buttonContainer: {
-    gap: 12,
-  },
-  startButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  tapButton: {
-    paddingVertical: 24,
-    paddingHorizontal: 48,
-    borderRadius: 16,
-    alignItems: 'center',
-    minHeight: 80,
-    justifyContent: 'center',
-  },
-  resetButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
+  tapCount: {
     fontSize: 16,
     fontWeight: '600',
   },
-  tapButtonText: {
-    fontSize: 24,
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  gridItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tappedItem: {
+    transform: [{ scale: 0.95 }],
+  },
+  itemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  resultsContainer: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  resultsTitle: {
     fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  resultsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 8,
   },
   hintContainer: {
     padding: 12,
