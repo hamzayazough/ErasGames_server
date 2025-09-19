@@ -31,4 +31,7 @@ export class DailyQuizQuestion {
 
   @Column({ type: 'varchar', length: 32, name: 'question_type' })
   questionType!: string;
+
+  @Column({ type: 'integer', name: 'quiz_year' })
+  quizYear!: number;
 }

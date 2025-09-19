@@ -121,16 +121,16 @@ export class AntiRepeatService {
 
     // Theme preferences
     if (criteria.preferredThemes && criteria.preferredThemes.length > 0) {
-      queryBuilder.andWhere('question.themesJSON::jsonb ?| array[:...themes]', {
-        themes: criteria.preferredThemes as unknown as string[],
+      queryBuilder.andWhere('question.themes_json::jsonb ?| :themes', {
+        themes: criteria.preferredThemes,
       });
     }
 
     // Subject diversity
     if (criteria.subjectDiversity && criteria.subjectDiversity.length > 0) {
       queryBuilder.andWhere(
-        'NOT (question.subjectsJSON::jsonb ?| array[:...subjects])',
-        { subjects: criteria.subjectDiversity as unknown as string[] },
+        'NOT (question.subjects_json::jsonb ?| :subjects)',
+        { subjects: criteria.subjectDiversity },
       );
     }
 

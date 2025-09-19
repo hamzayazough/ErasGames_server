@@ -337,12 +337,15 @@ export class DailyQuizComposerService {
     questions: Question[],
     entityManager: any,
   ): Promise<DailyQuizQuestion[]> {
+    const quizYear = dailyQuiz.dropAtUTC.getFullYear();
+
     const quizQuestions = questions.map((question) => {
       return entityManager.create(DailyQuizQuestion, {
         dailyQuiz,
         question,
         difficulty: question.difficulty,
         questionType: question.questionType,
+        quizYear,
       });
     });
 

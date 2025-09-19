@@ -342,16 +342,22 @@ export class QuestionSelectorService {
 
     const allExcluded = [...excludeQuestionIds, ...alreadySelectedIds];
 
-    const emergencyQuestions = await this.questionRepository
+    const queryBuilder = this.questionRepository
       .createQueryBuilder('question')
       .where('question.approved = :approved', { approved: true })
       .andWhere('question.disabled = :disabled', { disabled: false })
       .andWhere('question.difficulty = :difficulty', {
         difficulty: difficulty as unknown as string,
-      })
-      .andWhere('question.id NOT IN (:...excludeIds)', {
+      });
+
+    // Only add NOT IN clause if there are IDs to exclude
+    if (allExcluded.length > 0) {
+      queryBuilder.andWhere('question.id NOT IN (:...excludeIds)', {
         excludeIds: allExcluded,
-      })
+      });
+    }
+
+    const emergencyQuestions = await queryBuilder
       .orderBy('question.exposureCount', 'ASC')
       .addOrderBy('question.lastUsedAt', 'ASC', 'NULLS FIRST')
       .limit(count)
