@@ -3,81 +3,124 @@ import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
 import type {RootStackScreenProps} from '../../../navigation/types';
+import { QuestionRenderer } from '../components/questions/QuestionRenderer';
+import { AnswerHandler, QuestionAnswer } from '../utils/AnswerHandler';
+import { AnyQuestion } from '../../../shared/interfaces/questions/any-question.type';
 
 type Props = RootStackScreenProps<'Quiz'>;
 
-interface Question {
-  id: string;
-  type: string;
-  question: string;
-  choices: string[];
-  correctAnswer: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  hintText?: string;
-}
-
-const mockQuestions: Question[] = [
+// Mock questions that follow the new interface structure
+const mockQuestions: AnyQuestion[] = [
   {
     id: '1',
-    type: 'album_year_guess',
-    question: 'What year was the album "folklore" released?',
-    choices: ['2019', '2020', '2021', '2022'],
-    correctAnswer: 1,
+    questionType: 'album-year-guess',
     difficulty: 'easy',
-    hintText: 'It was released during the pandemic year'
+    themes: ['timeline'],
+    subjects: ['album:folklore'],
+    prompt: {
+      task: 'What year was the album "folklore" released?',
+      album: 'folklore'
+    },
+    choices: [
+      { id: 'choice1', text: '2019' },
+      { id: 'choice2', text: '2020' },
+      { id: 'choice3', text: '2021' },
+      { id: 'choice4', text: '2022' }
+    ],
+    correct: { choiceIndex: 1 }
   },
   {
     id: '2',
-    type: 'song_lyrics',
-    question: 'Complete the lyric: "I\'ve got a blank space baby, and I\'ll..."',
-    choices: ['write your name', 'sing your song', 'dance all night', 'call you mine'],
-    correctAnswer: 0,
+    questionType: 'fill-blank',
     difficulty: 'easy',
-    hintText: 'This is from one of her biggest pop hits'
+    themes: ['lyrics'],
+    subjects: ['song:blank-space'],
+    prompt: {
+      task: 'Complete the lyric from "Blank Space"',
+      text: "I've got a blank space baby, and I'll _______"
+    },
+    choices: [
+      { id: 'choice1', text: 'write your name' },
+      { id: 'choice2', text: 'sing your song' },
+      { id: 'choice3', text: 'dance all night' },
+      { id: 'choice4', text: 'call you mine' }
+    ],
+    correct: { choiceIndex: 0 }
   },
   {
     id: '3',
-    type: 'album_match',
-    question: 'Which album features the song "cardigan"?',
-    choices: ['Lover', 'folklore', 'evermore', '1989'],
-    correctAnswer: 1,
+    questionType: 'song-album-match',
     difficulty: 'medium',
-    hintText: 'It\'s from her indie-folk era'
+    themes: ['albums'],
+    subjects: ['albums'],
+    prompt: {
+      task: 'Match each song to its correct album',
+      left: ['cardigan', 'Anti-Hero', 'Shake It Off'],
+      right: ['folklore', 'Midnights', '1989', 'Lover']
+    },
+    correct: {
+      'cardigan': 'folklore',
+      'Anti-Hero': 'Midnights',
+      'Shake It Off': '1989'
+    }
   },
   {
     id: '4',
-    type: 'era_trivia',
-    question: 'What color was prominently associated with the "Lover" era?',
-    choices: ['Red', 'Purple', 'Pink', 'Gold'],
-    correctAnswer: 2,
+    questionType: 'odd-one-out',
     difficulty: 'medium',
-    hintText: 'Think about the album\'s overall aesthetic and mood'
+    themes: ['eras'],
+    subjects: ['albums'],
+    prompt: {
+      task: 'Which album doesn\'t belong with the others?',
+      setRule: 'Taylor Swift albums from the 2010s'
+    },
+    choices: [
+      { id: 'choice1', text: 'Lover' },
+      { id: 'choice2', text: 'folklore' },
+      { id: 'choice3', text: '1989' },
+      { id: 'choice4', text: 'reputation' }
+    ],
+    correct: { choiceIndex: 1 }
   },
   {
     id: '5',
-    type: 'deep_cut',
-    question: 'In "All Too Well (10 Minute Version)", what item of clothing is mentioned?',
-    choices: ['Red scarf', 'Blue dress', 'Black hat', 'White shirt'],
-    correctAnswer: 0,
+    questionType: 'guess-by-lyric',
     difficulty: 'easy',
-    hintText: 'It\'s a key symbol in the song that represents lost love'
+    themes: ['lyrics'],
+    subjects: ['song:all-too-well'],
+    prompt: {
+      task: 'Which song contains this lyric?',
+      lyric: 'And you were tossing me the car keys, "Fuck the patriarchy" keychain'
+    },
+    choices: [
+      { id: 'choice1', text: 'All Too Well (10 Minute Version)' },
+      { id: 'choice2', text: 'Red' },
+      { id: 'choice3', text: 'We Are Never Getting Back Together' },
+      { id: 'choice4', text: 'I Knew You Were Trouble' }
+    ],
+    correct: { choiceIndex: 0 }
   },
   {
     id: '6',
-    type: 'timeline',
-    question: 'Which of these albums was released FIRST?',
-    choices: ['Red', 'Speak Now', 'Fearless', '1989'],
-    correctAnswer: 2,
+    questionType: 'timeline-order',
     difficulty: 'hard',
-    hintText: 'Think about her early career chronology'
+    themes: ['timeline'],
+    subjects: ['albums'],
+    prompt: {
+      task: 'Arrange these albums in chronological release order',
+      items: ['Red', 'Speak Now', 'Fearless', '1989']
+    },
+    correct: ['Fearless', 'Speak Now', 'Red', '1989']
   }
 ];
 
 export default function QuizScreen({navigation}: Props) {
   const theme = useTheme();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: number}>({});
+  const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(() => 
+    AnswerHandler.getDefaultAnswer(mockQuestions[0])
+  );
+  const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
   const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
   const [hintsUsed, setHintsUsed] = useState<{[key: string]: boolean}>({});
   const [showHint, setShowHint] = useState(false);
@@ -113,12 +156,12 @@ export default function QuizScreen({navigation}: Props) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleAnswerSelect = (answerIndex: number) => {
-    setSelectedAnswer(answerIndex);
+  const handleAnswerChange = (answer: QuestionAnswer) => {
+    setSelectedAnswer(answer);
   };
 
   const handleSubmitAnswer = () => {
-    if (selectedAnswer === null) return;
+    if (!selectedAnswer || !AnswerHandler.isAnswerComplete(currentQuestion, selectedAnswer)) return;
 
     setAnsweredQuestions(prev => ({
       ...prev,
@@ -135,7 +178,7 @@ export default function QuizScreen({navigation}: Props) {
     } else {
       setTimeout(() => {
         setCurrentQuestionIndex(prev => prev + 1);
-        setSelectedAnswer(null);
+        setSelectedAnswer(AnswerHandler.getDefaultAnswer(mockQuestions[currentQuestionIndex + 1]));
         setShowHint(false);
       }, 500);
     }
@@ -152,7 +195,7 @@ export default function QuizScreen({navigation}: Props) {
     if (retriesUsed >= 1) return; // Only 1 retry allowed
     
     setRetriesUsed(prev => prev + 1);
-    setSelectedAnswer(null);
+    setSelectedAnswer(AnswerHandler.getDefaultAnswer(currentQuestion));
     // Remove the current answer to allow retry
     setAnsweredQuestions(prev => {
       const newAnswers = {...prev};
@@ -167,22 +210,6 @@ export default function QuizScreen({navigation}: Props) {
       case 'medium': return theme.colors.warning;
       case 'hard': return theme.colors.error;
       default: return theme.colors.textSecondary;
-    }
-  };
-
-  const getChoiceStyle = (index: number) => {
-    const isSelected = selectedAnswer === index;
-    const isCorrect = isAnswered && index === currentQuestion.correctAnswer;
-    const isWrong = isAnswered && index === selectedAnswer && index !== currentQuestion.correctAnswer;
-
-    if (isCorrect) {
-      return [styles.choice, {backgroundColor: theme.colors.success, borderColor: theme.colors.success}];
-    } else if (isWrong) {
-      return [styles.choice, {backgroundColor: theme.colors.error, borderColor: theme.colors.error}];
-    } else if (isSelected) {
-      return [styles.choice, styles.selectedChoice, {backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary}];
-    } else {
-      return [styles.choice, {backgroundColor: theme.colors.card, borderColor: theme.colors.border}];
     }
   };
 
@@ -229,37 +256,30 @@ export default function QuizScreen({navigation}: Props) {
               </Text>
             </View>
             
-            {/* Question text */}
-            <Text variant="heading3" style={[styles.questionText, {color: theme.colors.text}]}>
-              {currentQuestion.question}
-            </Text>
+            {/* Question Renderer - Handles all 19 question types */}
+            <QuestionRenderer
+              question={currentQuestion}
+              selectedAnswer={selectedAnswer}
+              onAnswerChange={handleAnswerChange}
+              disabled={isAnswered}
+              showCorrect={isAnswered}
+              correctAnswer={currentQuestion.correct}
+              showHint={showHint}
+            />
             
-            {/* Hint display */}
-            {showHint && currentQuestion.hintText && (
+            {/* Hint display - keeping the original hint system for now */}
+            {showHint && (currentQuestion as any).hintText && (
               <View style={[styles.hintContainer, {backgroundColor: theme.colors.surface}]}>
                 <Text variant="caption" style={[styles.hintLabel, {color: theme.colors.primary}]}>
                   💡 HINT:
                 </Text>
                 <Text variant="body" style={[styles.hintText, {color: theme.colors.text}]}>
-                  {currentQuestion.hintText}
+                  {(currentQuestion as any).hintText}
                 </Text>
               </View>
             )}
           </View>
         </Card>
-
-        {/* Answer Choices */}
-        <View style={styles.choicesContainer}>
-          {currentQuestion.choices.map((choice, index) => (
-            <Button
-              key={index}
-              title={choice}
-              onPress={() => !isAnswered && handleAnswerSelect(index)}
-              style={getChoiceStyle(index)}
-              disabled={isAnswered}
-            />
-          ))}
-        </View>
 
         {/* Action buttons */}
         <View style={styles.actionButtons}>
@@ -268,7 +288,7 @@ export default function QuizScreen({navigation}: Props) {
               <Button
                 title="Submit Answer"
                 onPress={handleSubmitAnswer}
-                disabled={selectedAnswer === null}
+                disabled={!selectedAnswer || !AnswerHandler.isAnswerComplete(currentQuestion, selectedAnswer)}
                 style={[styles.submitButton, {backgroundColor: theme.colors.primary}]}
               />
               
@@ -370,10 +390,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
-  questionText: {
-    fontWeight: '600',
-    lineHeight: 28,
-  },
   hintContainer: {
     marginTop: 16,
     padding: 16,
@@ -387,20 +403,6 @@ const styles = StyleSheet.create({
   hintText: {
     fontSize: 14,
     lineHeight: 20,
-  },
-  choicesContainer: {
-    marginHorizontal: 24,
-    marginTop: 24,
-    gap: 12,
-  },
-  choice: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  selectedChoice: {
-    borderWidth: 2,
   },
   actionButtons: {
     marginHorizontal: 24,
