@@ -2,18 +2,18 @@ import React from 'react';
 import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useColorScheme} from 'react-native';
-import {useAppStore} from '../core/state/appStore';
 import {useTheme} from '../core/theme/ThemeProvider';
 import type {RootStackParamList} from './types';
 
-// Import screens (we'll create these in features)
-import LoginScreen from '../features/auth/screens/LoginScreen';
-import FeedScreen from '../features/feed/screens/FeedScreen';
+// Import our quiz screens
+import DailyDropScreen from '../features/quiz/screens/DailyDropScreen';
+import StartQuizScreen from '../features/quiz/screens/StartQuizScreen';
+import QuizScreen from '../features/quiz/screens/QuizScreen';
+import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
-  const isAuthenticated = useAppStore(state => state.isAuthenticated);
   const theme = useTheme();
   const colorScheme = useColorScheme();
   
@@ -33,64 +33,39 @@ export function RootNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
+        initialRouteName="DailyDrop"
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
         }}>
-        {isAuthenticated ? (
-          <>
-            {/* Authenticated Stack */}
-            <Stack.Screen 
-              name="MainTabs" 
-              component={FeedScreen} // Temporary, will be replaced with TabNavigator
-              options={{headerShown: false}}
-            />
-            {/* Modal Screens */}
-            <Stack.Group screenOptions={{presentation: 'modal'}}>
-              <Stack.Screen 
-                name="Profile" 
-                component={FeedScreen} // Placeholder
-                options={{
-                  headerShown: true,
-                  title: 'Profile',
-                }}
-              />
-              <Stack.Screen 
-                name="Settings" 
-                component={FeedScreen} // Placeholder
-                options={{
-                  headerShown: true,
-                  title: 'Settings',
-                }}
-              />
-            </Stack.Group>
-          </>
-        ) : (
-          <>
-            {/* Unauthenticated Stack */}
-            <Stack.Screen 
-              name="Login" 
-              component={LoginScreen}
-              options={{headerShown: false}}
-            />
-            <Stack.Screen 
-              name="Register" 
-              component={LoginScreen} // Placeholder
-              options={{
-                headerShown: true,
-                title: 'Create Account',
-              }}
-            />
-            <Stack.Screen 
-              name="ForgotPassword" 
-              component={LoginScreen} // Placeholder
-              options={{
-                headerShown: true,
-                title: 'Reset Password',
-              }}
-            />
-          </>
-        )}
+        {/* Quiz Flow */}
+        <Stack.Screen 
+          name="DailyDrop" 
+          component={DailyDropScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen 
+          name="StartQuiz" 
+          component={StartQuizScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen 
+          name="Quiz" 
+          component={QuizScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen 
+          name="Results" 
+          component={ResultsScreen}
+          options={{headerShown: false}}
+        />
+        
+        {/* Future screens */}
+        {/* <Stack.Screen 
+          name="MainTabs" 
+          component={TabNavigator}
+          options={{headerShown: false}}
+        /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );
