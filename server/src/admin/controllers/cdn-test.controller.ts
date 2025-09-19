@@ -1,5 +1,5 @@
 import { Controller, Get, Logger } from '@nestjs/common';
-import { CdnService } from '../database/services/daily-quiz-composer/cdn.service';
+import { CdnService } from '../../database/services/daily-quiz-composer/cdn.service';
 
 @Controller('test')
 export class TestController {
