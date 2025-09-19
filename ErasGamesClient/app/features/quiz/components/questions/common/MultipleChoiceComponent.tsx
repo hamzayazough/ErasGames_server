@@ -41,6 +41,20 @@ export const MultipleChoiceComponent: React.FC<MultipleChoiceProps> = ({
     }
   };
 
+  const getTextStyle = (index: number) => {
+    const isSelected = selectedIndex === index;
+    const isCorrect = showCorrect && index === correctIndex;
+    const isWrong = showCorrect && index === selectedIndex && index !== correctIndex;
+
+    if (isCorrect || isWrong) {
+      return [styles.choiceText, { color: theme.colors.textOnPrimary }];
+    } else if (isSelected) {
+      return [styles.choiceText, { color: theme.colors.primary }];
+    } else {
+      return [styles.choiceText, { color: theme.colors.text }];
+    }
+  };
+
   const getChoiceText = (choice: Choice): string => {
     if (typeof choice === 'string') return choice;
     if ('text' in choice) return choice.text;
@@ -56,6 +70,7 @@ export const MultipleChoiceComponent: React.FC<MultipleChoiceProps> = ({
           title={getChoiceText(choice)}
           onPress={() => !disabled && onSelect(index)}
           style={getChoiceStyle(index)}
+          textStyle={getTextStyle(index)}
           disabled={disabled}
         />
       ))}
@@ -77,5 +92,10 @@ const styles = StyleSheet.create({
   },
   selectedChoice: {
     borderWidth: 2,
+  },
+  choiceText: {
+    fontSize: 16,
+    textAlign: 'center',
+    flexWrap: 'wrap',
   },
 });
