@@ -42,7 +42,7 @@ export default function DailyDropScreen({navigation}: Props) {
   };
 
   const navigateToQuiz = () => {
-    navigation.navigate('Quiz');
+    navigation.navigate('QuizSelection');
   };
 
   return (
@@ -161,7 +161,7 @@ export default function DailyDropScreen({navigation}: Props) {
             style={styles.devButton}
           />
           <Button
-            title="📝 Go to Quiz Screen (Dev)"
+            title="📝 Choose Quiz (Dev)"
             onPress={navigateToQuiz}
             variant="outline"
             style={styles.devButton}

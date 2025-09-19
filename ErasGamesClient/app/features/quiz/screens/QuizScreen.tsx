@@ -130,7 +130,7 @@ export default function QuizScreen({navigation, route}: Props) {
             </Text>
           </View>
           
-          <View style={[styles.timerContainer, {backgroundColor: theme.colors.red}]}>
+          <View style={[styles.timerContainer, {backgroundColor: theme.colors.error}]}>
             <Text variant="body" style={[styles.timerText, {color: theme.colors.textOnPrimary}]}>
               ⏱️ {formatTime(timeRemaining)}
             </Text>
@@ -138,7 +138,7 @@ export default function QuizScreen({navigation, route}: Props) {
         </View>
         
         <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, {backgroundColor: theme.colors.surface}]}>
+          <View style={[styles.progressBar, {backgroundColor: theme.colors.surface || theme.colors.card}]}>
             <View 
               style={[
                 styles.progressFill, 
@@ -163,6 +163,32 @@ export default function QuizScreen({navigation, route}: Props) {
               </Text>
             </View>
             
+            {/* Question metadata */}
+            <View style={styles.questionMeta}>
+              <View style={styles.metaRow}>
+                <Text variant="caption" style={[styles.metaLabel, {color: theme.colors.textSecondary}]}>
+                  Type:
+                </Text>
+                <Text variant="caption" style={[styles.metaValue, {color: theme.colors.text}]}>
+                  {currentQuestion.questionType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text variant="caption" style={[styles.metaLabel, {color: theme.colors.textSecondary}]}>
+                  Themes:
+                </Text>
+                <View style={styles.themesList}>
+                  {currentQuestion.themes.map((questionTheme, index) => (
+                    <View key={index} style={[styles.themeTag, {backgroundColor: theme.colors.surface || theme.colors.card}]}>
+                      <Text variant="caption" style={[styles.themeText, {color: theme.colors.text}]}>
+                        {questionTheme}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+            
             {/* Question Renderer - Handles all 19 question types */}
             <QuestionRenderer
               question={currentQuestion}
@@ -176,7 +202,7 @@ export default function QuizScreen({navigation, route}: Props) {
             
             {/* Hint display - keeping the original hint system for now */}
             {showHint && (currentQuestion as any).hintText && (
-              <View style={[styles.hintContainer, {backgroundColor: theme.colors.surface}]}>
+              <View style={[styles.hintContainer, {backgroundColor: theme.colors.surface || theme.colors.card}]}>
                 <Text variant="caption" style={[styles.hintLabel, {color: theme.colors.primary}]}>
                   💡 HINT:
                 </Text>
@@ -307,6 +333,40 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 0.5,
+  },
+  questionMeta: {
+    marginBottom: 20,
+    gap: 8,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  metaLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    minWidth: 50,
+  },
+  metaValue: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  themesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    flex: 1,
+  },
+  themeTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  themeText: {
+    fontSize: 10,
+    fontWeight: '500',
+    textTransform: 'capitalize',
   },
   hintContainer: {
     marginTop: 16,
