@@ -137,16 +137,14 @@ export const advancedQuizMock: QuizMock = {
       subjects: ['eras'],
       prompt: {
         task: 'Which era does this outfit belong to?',
-        imageUrl: 'https://example.com/outfit1.jpg',
-        description: 'Sparkly dress with fringe and cowboy boots',
       },
-      choices: [
-        {id: 'choice1', text: 'Fearless Era'},
-        {id: 'choice2', text: '1989 Era'},
-        {id: 'choice3', text: 'folklore Era'},
-        {id: 'choice4', text: 'Midnights Era'},
+      mediaRefs: [
+        {type: 'image', url: 'https://example.com/outfit1.jpg'},
+        {type: 'image', url: 'https://example.com/outfit1_alt.jpg'},
       ],
+      choices: ['Fearless Era', '1989 Era', 'folklore Era', 'Midnights Era'],
       correct: {choiceIndex: 0},
+      hint: 'Think about which era featured the most country-style outfits and performances',
     },
     {
       id: '8',
@@ -157,7 +155,12 @@ export const advancedQuizMock: QuizMock = {
       prompt: {
         task: 'Which album cover is shown in this AI-generated image?',
       },
-      mediaRefs: [{type: 'image', url: 'https://example.com/ai-album.jpg'}],
+      mediaRefs: [
+        {
+          type: 'image',
+          url: 'https://httpbin.org/image/jpeg',
+        },
+      ],
       choices: [
         {id: 'choice1', text: 'Midnights'},
         {id: 'choice2', text: 'folklore'},

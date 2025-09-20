@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AiVisualQuestion } from '../../../../../shared/interfaces/questions/ai-visual.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Text, Image, Pressable } from 'react-native';
+import { View, Image, Pressable, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { Text } from '../../../../../ui/Text';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
-import { StyleSheet } from 'react-native';
 
 interface AiVisualComponentProps extends Omit<QuestionComponentProps, 'question'> {
   question: AiVisualQuestion;
 }
+
+const { width: screenWidth } = Dimensions.get('window');
+const imageWidth = Math.min(screenWidth - 48, 280);
 
 export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
   question,
@@ -16,12 +19,44 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
   disabled,
   showCorrect,
   correctAnswer,
-  showHint
+  showHint,
+  onAutoSubmit
 }) => {
   const theme = useTheme();
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
-  const handleChoiceSelect = (index: number) => {
-    onAnswerChange({ choiceIndex: index });
+  // Debug logging
+  console.log('AiVisualComponent Debug:', {
+    mediaRefs: question.mediaRefs,
+    mediaRefsLength: question.mediaRefs?.length,
+    firstMediaRef: question.mediaRefs?.[0],
+    imageUrl: question.mediaRefs?.[0]?.url
+  });
+
+  const imageUrl = question.mediaRefs?.[0]?.url;
+  
+  const handleImageLoad = () => {
+    console.log('Image loaded successfully:', imageUrl);
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = (error: any) => {
+    console.error('Image failed to load:', imageUrl);
+    console.error('Error nativeEvent:', error?.nativeEvent);
+    
+    // Check if it's a network error vs other type
+    if (error?.nativeEvent?.error) {
+      console.error('Native error:', error.nativeEvent.error);
+    }
+    
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  const handleChoiceSelect = (choiceIndex: number) => {
+    onAnswerChange({ choiceIndex });
   };
 
   const getChoiceStyle = (index: number) => {
@@ -30,51 +65,144 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
     const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer?.choiceIndex;
 
     if (isCorrect) {
-      return [styles.imageChoice, { borderColor: theme.colors.success, borderWidth: 3 }];
+      return [
+        styles.choiceButton, 
+        { 
+          backgroundColor: theme.colors.success + '20', 
+          borderColor: theme.colors.success,
+          borderWidth: 2
+        }
+      ];
     } else if (isWrong) {
-      return [styles.imageChoice, { borderColor: theme.colors.error, borderWidth: 3 }];
+      return [
+        styles.choiceButton, 
+        { 
+          backgroundColor: theme.colors.error + '20', 
+          borderColor: theme.colors.error,
+          borderWidth: 2
+        }
+      ];
     } else if (isSelected) {
-      return [styles.imageChoice, { borderColor: theme.colors.primary, borderWidth: 3 }];
+      return [
+        styles.choiceButton, 
+        { 
+          backgroundColor: theme.colors.primary + '15', 
+          borderColor: theme.colors.primary,
+          borderWidth: 2
+        }
+      ];
     } else {
-      return [styles.imageChoice, { borderColor: theme.colors.border, borderWidth: 2 }];
+      return [
+        styles.choiceButton, 
+        { 
+          backgroundColor: theme.colors.surface, 
+          borderColor: theme.colors.border,
+          borderWidth: 1
+        }
+      ];
     }
+  };
+
+  const getChoiceTextStyle = (index: number) => {
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+    const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer?.choiceIndex;
+
+    if (isCorrect) {
+      return { color: theme.colors.success };
+    } else if (isWrong) {
+      return { color: theme.colors.error };
+    } else if (isSelected) {
+      return { color: theme.colors.primary };
+    }
+    return { color: theme.colors.text };
   };
 
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text variant="h3" weight="semibold" style={[styles.questionText, { color: theme.colors.text }]}>
         {question.prompt.task}
       </Text>
       
-      <View style={[styles.instructionContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="caption" style={[styles.instructionText, { color: theme.colors.textSecondary }]}>
-          🎨 Choose the image that best matches the description
-        </Text>
-      </View>
+      {/* Simple AI Image Display */}
+      {question.mediaRefs && question.mediaRefs.length > 0 && (
+        <View style={styles.imageContainer}>
+          {imageError ? (
+            <View style={[styles.aiImage, styles.errorContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+              <Text variant="caption" style={{ color: theme.colors.error, textAlign: 'center' }}>
+                Failed to load image
+              </Text>
+              <Text variant="caption" style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 4, fontSize: 10 }}>
+                {imageUrl}
+              </Text>
+              <Pressable 
+                style={{ marginTop: 8, padding: 4, backgroundColor: theme.colors.primary + '20', borderRadius: 4 }}
+                onPress={() => {
+                  setImageError(false);
+                  setImageLoading(true);
+                }}
+              >
+                <Text variant="caption" style={{ color: theme.colors.primary }}>
+                  Retry
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              {imageLoading && (
+                <View style={[styles.aiImage, styles.loadingContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
+                  <ActivityIndicator size="large" color={theme.colors.primary} />
+                  <Text variant="caption" style={{ color: theme.colors.textSecondary, marginTop: 8 }}>
+                    Loading image...
+                  </Text>
+                </View>
+              )}
+              <Image
+                source={{ 
+                  uri: imageUrl,
+                  cache: 'default'
+                }}
+                style={[
+                  styles.aiImage, 
+                  { borderColor: theme.colors.border },
+                  imageLoading && { position: 'absolute', opacity: 0 }
+                ]}
+                resizeMode="cover"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+                onLoadStart={() => {
+                  console.log('Image load started:', imageUrl);
+                  setImageLoading(true);
+                }}
+              />
+            </>
+          )}
+        </View>
+      )}
 
-      <View style={styles.imageGrid}>
-        {question.mediaRefs?.map((mediaRef, index) => (
+      {/* Simple Choice Grid - 2 per row */}
+      <View style={styles.choicesGrid}>
+        {question.choices?.map((choice, index) => (
           <Pressable
-            key={index}
+            key={choice.id || index}
             style={getChoiceStyle(index)}
             onPress={() => !disabled && handleChoiceSelect(index)}
             disabled={disabled}
           >
-            <Image
-              source={{ uri: mediaRef.url }}
-              style={styles.image}
-              resizeMode="cover"
-            />
-            <View style={[styles.choiceLabel, { backgroundColor: theme.colors.card }]}>
-              <Text variant="caption" style={[styles.choiceLabelText, { color: theme.colors.text }]}>
-                Option {index + 1}
-              </Text>
-            </View>
+            <Text 
+              variant="body" 
+              weight="medium" 
+              style={[styles.choiceText, getChoiceTextStyle(index)]}
+            >
+              {choice.text || choice}
+            </Text>
           </Pressable>
         )) || (
-          <Text variant="body" style={[styles.noMediaText, { color: theme.colors.textSecondary }]}>
-            No images available
-          </Text>
+          <View style={styles.noChoicesContainer}>
+            <Text variant="body" style={{ color: theme.colors.textSecondary }}>
+              No album options available
+            </Text>
+          </View>
         )}
       </View>
     </View>
@@ -84,51 +212,55 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
 const styles = StyleSheet.create({
   container: {
     gap: 20,
+    paddingHorizontal: 16,
   },
   questionText: {
-    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 24,
   },
-  instructionContainer: {
-    padding: 16,
+  imageContainer: {
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  aiImage: {
+    width: imageWidth,
+    height: imageWidth,
     borderRadius: 12,
+    borderWidth: 1,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  instructionText: {
-    fontSize: 13,
-    textAlign: 'center',
+  errorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
-  imageGrid: {
+  choicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    justifyContent: 'center',
-  },
-  imageChoice: {
-    width: 150,
-    height: 150,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  image: {
+    justifyContent: 'space-between',
     width: '100%',
-    height: '100%',
   },
-  choiceLabel: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 8,
+  choiceButton: {
+    width: '48%', // Fixed percentage width for exactly 2 per row
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 6,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 36,
+    marginBottom: 12, // Add bottom margin instead of gap
   },
-  choiceLabelText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  noMediaText: {
+  choiceText: {
+    fontSize: 13,
     textAlign: 'center',
-    fontStyle: 'italic',
+    lineHeight: 16,
+  },
+  noChoicesContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 32,
   },
 });

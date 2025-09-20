@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow all HTTPS traffic for development -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">s3.amazonaws.com</domain>
+        <domain includeSubdomains="true">s3.ca-central-1.amazonaws.com</domain>
+        <domain includeSubdomains="true">crowdprom.s3.ca-central-1.amazonaws.com</domain>
+        <domain includeSubdomains="true">cloudfront.net</domain>
+        <domain includeSubdomains="true">images.unsplash.com</domain>
+        <domain includeSubdomains="true">picsum.photos</domain>
+    </domain-config>
+    
+    <!-- For development, allow all secure connections -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,12 +1,16 @@
 import React from 'react';
 import { OutfitEraQuestion } from '../../../../../shared/interfaces/questions/outfit-era.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
+import { View, Pressable, Image, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { Text } from '../../../../../ui/Text';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
 interface OutfitEraComponentProps extends Omit<QuestionComponentProps, 'question'> {
   question: OutfitEraQuestion;
 }
+
+const { width: screenWidth } = Dimensions.get('window');
+const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with margins
 
 export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
   question,
@@ -15,76 +19,173 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
   disabled,
   showCorrect,
   correctAnswer,
-  showHint
+  showHint,
+  onAutoSubmit
 }) => {
   const theme = useTheme();
 
-  const handleEraSelect = (eraIndex: number) => {
-    onAnswerChange({ eraIndex });
+  const handleChoiceSelect = (choiceIndex: number) => {
+    onAnswerChange({ choiceIndex });
   };
 
-  const getEraStyle = (index: number) => {
-    const isSelected = selectedAnswer?.eraIndex === index;
-    const isCorrect = showCorrect && index === correctAnswer?.eraIndex;
-    const isWrong = showCorrect && index === selectedAnswer?.eraIndex && index !== correctAnswer?.eraIndex;
+  const getChoiceStyle = (index: number) => {
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+    const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer?.choiceIndex;
 
     if (isCorrect) {
-      return [styles.eraOption, { backgroundColor: theme.colors.success, borderColor: theme.colors.success }];
+      return [
+        styles.eraCard, 
+        { 
+          backgroundColor: theme.colors.success + '20', 
+          borderColor: theme.colors.success,
+          borderWidth: 3,
+          transform: [{ scale: 1.02 }]
+        }
+      ];
     } else if (isWrong) {
-      return [styles.eraOption, { backgroundColor: theme.colors.error, borderColor: theme.colors.error }];
+      return [
+        styles.eraCard, 
+        { 
+          backgroundColor: theme.colors.error + '20', 
+          borderColor: theme.colors.error,
+          borderWidth: 3,
+          transform: [{ scale: 0.98 }]
+        }
+      ];
     } else if (isSelected) {
-      return [styles.eraOption, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }];
+      return [
+        styles.eraCard, 
+        { 
+          backgroundColor: theme.colors.primary + '15', 
+          borderColor: theme.colors.primary,
+          borderWidth: 2,
+          transform: [{ scale: 1.05 }]
+        }
+      ];
     } else {
-      return [styles.eraOption, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }];
+      return [
+        styles.eraCard, 
+        { 
+          backgroundColor: theme.colors.surface, 
+          borderColor: theme.colors.border,
+          borderWidth: 1
+        }
+      ];
     }
+  };
+
+  const getChoiceTextStyle = (index: number) => {
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+    const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer?.choiceIndex;
+
+    if (isCorrect) {
+      return { color: theme.colors.success };
+    } else if (isWrong) {
+      return { color: theme.colors.error };
+    } else if (isSelected) {
+      return { color: theme.colors.primary };
+    }
+    return { color: theme.colors.text };
+  };
+
+  const getEraEmoji = (eraText: string) => {
+    const era = eraText.toLowerCase();
+    if (era.includes('fearless')) return '🤠';
+    if (era.includes('speak now')) return '💜';
+    if (era.includes('red')) return '❤️';
+    if (era.includes('1989')) return '🌈';
+    if (era.includes('reputation')) return '🐍';
+    if (era.includes('lover')) return '💗';
+    if (era.includes('folklore')) return '🌲';
+    if (era.includes('evermore')) return '🍂';
+    if (era.includes('midnights')) return '🌙';
+    return '✨';
   };
 
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text variant="h2" weight="bold" style={[styles.questionText, { color: theme.colors.text }]}>
         {question.prompt.task}
       </Text>
 
-      {question.outfitDescription && (
-        <View style={[styles.outfitContainer, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="body" style={[styles.outfitDescription, { color: theme.colors.text }]}>
-            👗 {question.outfitDescription}
+      {/* Outfit Images Section */}
+      {question.mediaRefs && question.mediaRefs.length > 0 && (
+        <View style={[styles.outfitSection, { backgroundColor: theme.colors.surface }]}>
+          <Text variant="h3" weight="semibold" style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Outfit Images
           </Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.imageScrollContainer}
+          >
+            {question.mediaRefs
+              .filter(ref => ref.type === 'image')
+              .map((mediaRef, index) => (
+                <View key={index} style={styles.imageContainer}>
+                  <Image 
+                    source={{ uri: mediaRef.url }} 
+                    style={styles.outfitImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.imageOverlay}>
+                    <Text variant="caption" weight="medium" style={styles.imageLabel}>
+                      Outfit {index + 1}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+          </ScrollView>
         </View>
       )}
 
-      {question.outfitImageUrl && (
-        <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: question.outfitImageUrl }} 
-            style={styles.outfitImage}
-            resizeMode="contain"
-          />
-        </View>
-      )}
+      {/* Era Selection Grid */}
+      <View style={styles.sectionDivider}>
+        <Text variant="h3" weight="semibold" style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Which Era?
+        </Text>
+      </View>
 
-      <View style={styles.eraOptions}>
-        {question.eras?.map((era, index) => (
+      <View style={styles.eraGrid}>
+        {question.choices?.map((choice, index) => (
           <Pressable
             key={index}
-            style={getEraStyle(index)}
-            onPress={() => !disabled && handleEraSelect(index)}
+            style={getChoiceStyle(index)}
+            onPress={() => !disabled && handleChoiceSelect(index)}
             disabled={disabled}
           >
-            <Text variant="body" style={[styles.eraText, { color: theme.colors.text }]}>
-              {era}
+            <Text variant="h1" style={styles.eraEmoji}>
+              {getEraEmoji(choice)}
             </Text>
+            <Text 
+              variant="body" 
+              weight="semibold" 
+              style={[styles.eraText, getChoiceTextStyle(index)]}
+            >
+              {choice}
+            </Text>
+            {selectedAnswer?.choiceIndex === index && (
+              <View style={[styles.selectedIndicator, { backgroundColor: theme.colors.primary }]}>
+                <Text variant="caption" weight="bold" style={styles.selectedText}>
+                  SELECTED
+                </Text>
+              </View>
+            )}
           </Pressable>
         )) || (
-          <Text variant="body" style={[styles.noErasText, { color: theme.colors.textSecondary }]}>
-            No era options available
-          </Text>
+          <View style={styles.noChoicesContainer}>
+            <Text variant="body" style={{ color: theme.colors.textSecondary }}>
+              No era options available
+            </Text>
+          </View>
         )}
       </View>
 
       {showHint && question.hint && (
-        <View style={[styles.hintContainer, { backgroundColor: theme.colors.warning + '20' }]}>
-          <Text variant="caption" style={[styles.hintText, { color: theme.colors.text }]}>
+        <View style={[styles.hintContainer, { backgroundColor: theme.colors.primary + '10' }]}>
+          <Text variant="caption" weight="medium" style={[styles.hintText, { color: theme.colors.text }]}>
             💡 Hint: {question.hint}
           </Text>
         </View>
@@ -95,57 +196,116 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
+    gap: 24,
   },
   questionText: {
-    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 32,
+    marginBottom: 8,
   },
-  outfitContainer: {
+  outfitSection: {
+    borderRadius: 16,
     padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+    gap: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  outfitDescription: {
+  sectionTitle: {
     textAlign: 'center',
-    lineHeight: 22,
-    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  imageScrollContainer: {
+    gap: 16,
+    paddingHorizontal: 8,
   },
   imageContainer: {
-    alignItems: 'center',
-    paddingVertical: 10,
+    position: 'relative',
   },
   outfitImage: {
-    width: 200,
-    height: 250,
+    width: cardWidth * 1.2,
+    height: cardWidth * 1.5,
     borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
-  eraOptions: {
-    gap: 12,
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  eraOption: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 2,
+  imageLabel: {
+    color: 'white',
+    fontSize: 12,
+  },
+  sectionDivider: {
     alignItems: 'center',
+    paddingVertical: 8,
+  },
+  eraGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    justifyContent: 'space-between',
+  },
+  eraCard: {
+    width: cardWidth,
+    aspectRatio: 1,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    position: 'relative',
+  },
+  eraEmoji: {
+    fontSize: 32,
+    textAlign: 'center',
   },
   eraText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  noErasText: {
+    fontSize: 14,
     textAlign: 'center',
-    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  selectedText: {
+    color: 'white',
+    fontSize: 10,
+  },
+  noChoicesContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 32,
   },
   hintContainer: {
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     marginTop: 8,
   },
   hintText: {
     textAlign: 'center',
     fontStyle: 'italic',
+    lineHeight: 20,
   },
 });
