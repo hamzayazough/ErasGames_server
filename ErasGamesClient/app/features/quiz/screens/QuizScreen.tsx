@@ -222,7 +222,6 @@ export default function QuizScreen({navigation, route}: Props) {
               <Button
                 title="Submit Answer"
                 onPress={handleSubmitAnswer}
-                disabled={!selectedAnswer || !AnswerHandler.isAnswerComplete(currentQuestion, selectedAnswer)}
                 style={[styles.submitButton, {backgroundColor: theme.colors.primary}]}
               />
               
