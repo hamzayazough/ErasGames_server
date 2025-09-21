@@ -1,13 +1,12 @@
-import { BasicQuestion, MediaRef } from './basic-question.interface';
-import { Choice } from '../choices/choice.type';
-import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
-import { MoodMatchPrompt } from '../prompts/prompt-interfaces';
+import {BasicQuestion, MediaRef} from './basic-question.interface';
+import {SingleChoiceCorrect} from '../corrects/single-choice-correct.interface';
+import {MoodMatchPrompt} from '../prompts/prompt-interfaces';
 
 export interface MoodMatchQuestion extends BasicQuestion {
   questionType: 'mood-match';
   prompt: MoodMatchPrompt;
   mediaRefs: MediaRef[];
-  choices: Choice[];
+  choices: string[];
   correct?: SingleChoiceCorrect;
 }
 /**

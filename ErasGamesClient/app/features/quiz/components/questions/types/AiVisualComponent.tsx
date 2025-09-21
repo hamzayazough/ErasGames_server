@@ -130,20 +130,20 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
           {imageError ? (
             <View style={[styles.aiImage, styles.errorContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
               <Text variant="caption" style={{ color: theme.colors.error, textAlign: 'center' }}>
-                Failed to load image
+                ❌ Failed to load image
               </Text>
               <Text variant="caption" style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 4, fontSize: 10 }}>
-                {imageUrl}
+                Network error - Please check your connection
               </Text>
               <Pressable 
-                style={{ marginTop: 8, padding: 4, backgroundColor: theme.colors.primary + '20', borderRadius: 4 }}
+                style={{ marginTop: 8, padding: 8, backgroundColor: theme.colors.primary + '20', borderRadius: 6 }}
                 onPress={() => {
                   setImageError(false);
                   setImageLoading(true);
                 }}
               >
-                <Text variant="caption" style={{ color: theme.colors.primary }}>
-                  Retry
+                <Text variant="caption" style={{ color: theme.colors.primary, textAlign: 'center' }}>
+                  🔄 Retry
                 </Text>
               </Pressable>
             </View>
@@ -160,7 +160,10 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
               <Image
                 source={{ 
                   uri: imageUrl,
-                  cache: 'default'
+                  cache: 'default',
+                  headers: {
+                    'User-Agent': 'ErasGames/1.0',
+                  }
                 }}
                 style={[
                   styles.aiImage, 
@@ -174,6 +177,7 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
                   console.log('Image load started:', imageUrl);
                   setImageLoading(true);
                 }}
+                defaultSource={{ uri: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOUI5Q0E0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZTwvdGV4dD4KPHN2Zz4=' }}
               />
             </>
           )}
@@ -184,7 +188,7 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
       <View style={styles.choicesGrid}>
         {question.choices?.map((choice, index) => (
           <Pressable
-            key={choice.id || index}
+            key={choice.url || index}
             style={getChoiceStyle(index)}
             onPress={() => !disabled && handleChoiceSelect(index)}
             disabled={disabled}
@@ -194,7 +198,7 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
               weight="medium" 
               style={[styles.choiceText, getChoiceTextStyle(index)]}
             >
-              {choice.text || choice}
+              {choice.alt || `Option ${index + 1}`}
             </Text>
           </Pressable>
         )) || (

@@ -200,16 +200,12 @@ export const advancedQuizMock: QuizMock = {
       themes: ['emotions'],
       subjects: ['songs'],
       prompt: {
-        task: 'Match each song to its mood/vibe',
-        songs: ['All Too Well', 'Shake It Off', 'Delicate', 'Bad Blood'],
-        moods: ['Melancholic', 'Upbeat', 'Romantic', 'Angry'],
+        task: 'Which mood best describes the song "All Too Well"?',
+        moodTags: ['emotional', 'nostalgic', 'heartbreak'],
+        note: 'Consider the overall feeling and lyrics of the song',
       },
-      correct: {
-        'All Too Well': 'Melancholic',
-        'Shake It Off': 'Upbeat',
-        Delicate: 'Romantic',
-        'Bad Blood': 'Angry',
-      },
+      choices: ['Melancholic', 'Upbeat', 'Romantic', 'Angry'],
+      correct: 0, // Melancholic is the correct answer
     },
     {
       id: '11',
