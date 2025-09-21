@@ -3,10 +3,10 @@ import type {QuizMock} from '../features/quiz/constants/quizMocks';
 
 // Root Stack Navigator
 export type RootStackParamList = {
-  // Auth Stack (temporarily disabled)
-  // Login: undefined;
-  // Register: undefined;
-  // ForgotPassword: undefined;
+  // Auth Stack
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
 
   // Quiz Flow
   DailyDrop: undefined;

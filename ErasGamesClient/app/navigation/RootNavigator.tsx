@@ -1,8 +1,9 @@
 import React from 'react';
 import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {useColorScheme} from 'react-native';
+import {useColorScheme, ActivityIndicator, View} from 'react-native';
 import {useTheme} from '../core/theme/ThemeProvider';
+import {useAuth} from '../core/context/AuthContext';
 import type {RootStackParamList} from './types';
 
 // Import our quiz screens
@@ -12,11 +13,16 @@ import QuizSelectionScreen from '../features/quiz/screens/QuizSelectionScreen';
 import QuizScreen from '../features/quiz/screens/QuizScreen';
 import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 
+// Import auth screens
+import LoginScreen from '../features/auth/screens/LoginScreen';
+import RegisterScreen from '../features/auth/screens/RegisterScreen';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const theme = useTheme();
   const colorScheme = useColorScheme();
+  const { isAuthenticated, isLoading } = useAuth();
   
   // Create navigation theme based on our app theme
   const navigationTheme = {
@@ -30,48 +36,67 @@ export function RootNavigator() {
       border: theme.colors.border,
     },
   };
+
+  // Show loading screen while checking authentication state
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
   
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
-        initialRouteName="DailyDrop"
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
         }}>
-        {/* Quiz Flow */}
-        <Stack.Screen 
-          name="DailyDrop" 
-          component={DailyDropScreen}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen 
-          name="StartQuiz" 
-          component={StartQuizScreen}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen 
-          name="QuizSelection" 
-          component={QuizSelectionScreen}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen 
-          name="Quiz" 
-          component={QuizScreen}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen 
-          name="Results" 
-          component={ResultsScreen}
-          options={{headerShown: false}}
-        />
-        
-        {/* Future screens */}
-        {/* <Stack.Screen 
-          name="MainTabs" 
-          component={TabNavigator}
-          options={{headerShown: false}}
-        /> */}
+        {isAuthenticated ? (
+          // Authenticated user screens
+          <>
+            <Stack.Screen 
+              name="DailyDrop" 
+              component={DailyDropScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="StartQuiz" 
+              component={StartQuizScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="QuizSelection" 
+              component={QuizSelectionScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="Quiz" 
+              component={QuizScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="Results" 
+              component={ResultsScreen}
+              options={{headerShown: false}}
+            />
+          </>
+        ) : (
+          // Authentication screens
+          <>
+            <Stack.Screen 
+              name="Login" 
+              component={LoginScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="Register" 
+              component={RegisterScreen}
+              options={{headerShown: false}}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

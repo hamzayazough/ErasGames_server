@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "843296055286",
+    "project_id": "eras-games",
+    "storage_bucket": "eras-games.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:843296055286:android:e0109388c00748b529b1d7",
+        "android_client_info": {
+          "package_name": "com.erasgamesclient"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "843296055286-298a869ut8eo9d8dei9ttl5hkno0sa2t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-3zFU8_Ag_0jDlpjajB74JH5vezSwGjk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "843296055286-298a869ut8eo9d8dei9ttl5hkno0sa2t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

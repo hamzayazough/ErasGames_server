@@ -6,48 +6,53 @@ import {useTheme} from '../../../core/theme/ThemeProvider';
 import {useAuth} from '../../../core/context/AuthContext';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
-type Props = RootStackScreenProps<'Login'>;
+type Props = RootStackScreenProps<'Register'>;
 
-export default function LoginScreen({navigation}: Props) {
+export default function RegisterScreen({navigation}: Props) {
   const {t} = useTranslation();
   const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
-  const { signIn, isLoading } = useAuth();
+  const { signUp, isLoading } = useAuth();
   
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleRegister = async () => {
+    if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
     
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+    
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+    
     try {
-      await signIn(email.trim(), password);
+      await signUp(email.trim(), password);
       // Navigation is handled automatically by the auth state change
     } catch (error: any) {
       let errorMessage = 'Something went wrong';
       
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password';
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email address';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak';
       }
       
-      Alert.alert('Login Failed', errorMessage);
+      Alert.alert('Registration Failed', errorMessage);
     }
   };
   
-  const navigateToRegister = () => {
-    navigation.navigate('Register');
-  };
-  
-  const navigateToForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
+  const navigateToLogin = () => {
+    navigation.navigate('Login');
   };
   
   return (
@@ -58,7 +63,7 @@ export default function LoginScreen({navigation}: Props) {
             🎮 ErasGames
           </Text>
           <Text variant="body" color="secondary" align="center" style={styles.subtitle}>
-            {t('auth.welcome_back')}
+            {t('auth.create_account')}
           </Text>
         </View>
         
@@ -82,30 +87,32 @@ export default function LoginScreen({navigation}: Props) {
             style={styles.input}
           />
           
-          <Button
-            title={t('auth.login')}
-            onPress={handleLogin}
-            loading={isLoading}
-            style={styles.loginButton}
+          <Input
+            label={t('auth.confirm_password')}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder={t('auth.confirm_password_placeholder')}
+            secureTextEntry
+            style={styles.input}
           />
           
           <Button
-            title={t('auth.forgot_password')}
-            variant="ghost"
-            onPress={navigateToForgotPassword}
-            style={styles.forgotButton}
+            title={t('auth.sign_up')}
+            onPress={handleRegister}
+            loading={isLoading}
+            style={styles.registerButton}
           />
         </Card>
         
         <View style={styles.footer}>
           <Text variant="caption" color="secondary" align="center">
-            {t('auth.no_account')}
+            {t('auth.have_account')}
           </Text>
           <Button
-            title={t('auth.sign_up')}
+            title={t('auth.login')}
             variant="outline"
-            onPress={navigateToRegister}
-            style={styles.registerButton}
+            onPress={navigateToLogin}
+            style={styles.loginButton}
           />
         </View>
       </View>
@@ -138,17 +145,13 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 16,
   },
-  loginButton: {
+  registerButton: {
     marginTop: 8,
-    marginBottom: 16,
-  },
-  forgotButton: {
-    marginBottom: 0,
   },
   footer: {
     alignItems: 'center',
   },
-  registerButton: {
+  loginButton: {
     marginTop: 16,
     width: '100%',
   },
