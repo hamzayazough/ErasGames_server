@@ -9,6 +9,118 @@ export interface QuizMock {
   questions: AnyQuestion[];
 }
 
+// Daily Quiz - Always 6 questions: 3 easy, 2 medium, 1 hard
+export const dailyQuizMock: QuizMock = {
+  id: 'daily-quiz',
+  title: "Today's Daily Quiz",
+  description:
+    'Complete 6 questions in 5 minutes. No hints, no retries - just your Taylor Swift knowledge!',
+  difficulty: 'mixed',
+  estimatedTime: 5,
+  questions: [
+    // 3 Easy Questions
+    {
+      id: '1',
+      questionType: 'album-year-guess',
+      difficulty: 'easy',
+      themes: ['timeline'],
+      subjects: ['album:folklore'],
+      prompt: {
+        task: 'What year was the album "folklore" released?',
+        album: 'folklore',
+      },
+      choices: [
+        {id: 'choice1', text: '2019'},
+        {id: 'choice2', text: '2020'},
+        {id: 'choice3', text: '2021'},
+        {id: 'choice4', text: '2022'},
+      ],
+      correct: {choiceIndex: 1},
+    },
+    {
+      id: '2',
+      questionType: 'guess-by-lyric',
+      difficulty: 'easy',
+      themes: ['lyrics'],
+      subjects: ['song:love-story'],
+      prompt: {
+        task: 'Which song contains this lyric?',
+        lyric: 'Romeo, take me somewhere we can be alone',
+      },
+      choices: [
+        {id: 'choice1', text: 'Love Story'},
+        {id: 'choice2', text: 'You Belong With Me'},
+        {id: 'choice3', text: 'White Horse'},
+        {id: 'choice4', text: 'Teardrops On My Guitar'},
+      ],
+      correct: {choiceIndex: 0},
+    },
+    {
+      id: '3',
+      questionType: 'inspiration-map',
+      difficulty: 'easy',
+      themes: ['influences'],
+      subjects: ['songs'],
+      prompt: {
+        task: 'Who is widely believed to have inspired the song "All Too Well"?',
+        disclaimer:
+          'Based on fan interpretations and media reports, not officially confirmed.',
+      },
+      choices: ['Joe Jonas', 'Jake Gyllenhaal', 'Harry Styles', 'John Mayer'],
+      correct: 1,
+    },
+    // 2 Medium Questions
+    {
+      id: '4',
+      questionType: 'mood-match',
+      difficulty: 'medium',
+      themes: ['emotions'],
+      subjects: ['songs'],
+      prompt: {
+        task: 'Which mood best describes the song "All Too Well"?',
+        moodTags: ['emotional', 'nostalgic', 'heartbreak'],
+        note: 'Consider the overall feeling and lyrics of the song',
+      },
+      choices: ['Melancholic', 'Upbeat', 'Romantic', 'Angry'],
+      correct: 0,
+    },
+    {
+      id: '5',
+      questionType: 'popularity-match',
+      difficulty: 'medium',
+      themes: ['charts', 'popularity'],
+      subjects: ['songs'],
+      prompt: {
+        task: 'Order these songs by total Spotify streams (highest to lowest)',
+        asOf: '2025-09-01',
+      },
+      choices: ['Shake It Off', 'Anti-Hero', 'Love Story', 'Cruel Summer'],
+      correct: {
+        values: ['Anti-Hero', 'Shake It Off', 'Cruel Summer', 'Love Story'],
+      },
+    },
+    // 1 Hard Question
+    {
+      id: '6',
+      questionType: 'one-second',
+      difficulty: 'hard',
+      themes: ['audio', 'challenge'],
+      subjects: ['songs'],
+      prompt: {
+        task: 'Identify the song from this 1-second audio clip',
+      },
+      mediaRefs: [{type: 'audio', url: 'https://example.com/one-second.mp3'}],
+      choices: [
+        'We Are Never Getting Back Together',
+        'I Knew You Were Trouble',
+        '22',
+        'Everything Has Changed',
+      ],
+      correct: 0,
+    },
+  ],
+};
+
 // Quiz 1: Basic Question Types
 export const basicQuizMock: QuizMock = {
   id: 'basic-quiz',
@@ -411,6 +523,7 @@ export const challengeQuizMock: QuizMock = {
 };
 
 export const allQuizMocks: QuizMock[] = [
+  dailyQuizMock,
   basicQuizMock,
   advancedQuizMock,
   interactiveQuizMock,
