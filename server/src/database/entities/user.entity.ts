@@ -1,4 +1,11 @@
-import { Column, Entity, Index, OneToMany, Unique } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  OneToMany,
+  Unique,
+  PrimaryColumn,
+} from 'typeorm';
 
 import { UserRole, UserStatus, AuthProvider } from '../enums/user.enums';
 import { BaseEntityTimestamps } from './base.entity';
@@ -17,13 +24,15 @@ import { PracticeAttempt } from './practice-attempt.entity';
 @Index('idx_users_country_tz', ['country', 'tz'])
 @Index('idx_users_lastseen', ['lastSeenAt'])
 export class User extends BaseEntityTimestamps {
+  @PrimaryColumn({ type: 'varchar', length: 128 })
+  id!: string; // Firebase UID as primary key
   @Column({ type: 'citext', nullable: true })
   email!: string | null;
 
   @Column({ type: 'boolean', default: false })
   emailVerified!: boolean;
 
-  @Column({ type: 'enum', enum: AuthProvider, default: AuthProvider.EMAIL })
+  @Column({ type: 'enum', enum: AuthProvider, default: AuthProvider.FIREBASE })
   authProvider!: AuthProvider;
 
   @Column({ type: 'varchar', length: 190, nullable: true })

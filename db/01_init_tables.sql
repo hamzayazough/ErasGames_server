@@ -7,15 +7,15 @@ CREATE EXTENSION IF NOT EXISTS citext;
 -- BaseEntityTimestamps columns are included in each table as needed
 
 CREATE TABLE IF NOT EXISTS users (
-	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	id VARCHAR(128) PRIMARY KEY, -- Firebase UID as primary key
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
 	-- Identity / auth
 	email CITEXT,
 	email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-	auth_provider VARCHAR(16) NOT NULL DEFAULT 'email',
-	provider_user_id VARCHAR(190),
+	auth_provider VARCHAR(16) NOT NULL DEFAULT 'firebase',
+	provider_user_id VARCHAR(190), -- This will be the same as id for Firebase users
 
 	-- Profile
 	name VARCHAR(120),

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -63,9 +63,13 @@ import { AdminJobController } from './admin/controllers/admin-job.controller';
 import { DailyQuizController } from './controllers/daily-quiz.controller';
 import { AttemptsController } from './controllers/attempts.controller';
 import { TestController } from './admin/controllers/cdn-test.controller';
+import { AuthController } from './controllers/auth.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
+import { FirebaseService } from './services/firebase.service';
+import { AuthService } from './services/auth.service';
+import { FirebaseAuthMiddleware } from './middleware/firebase-auth.middleware';
 
 // Question Creation Services
 import { QuestionCreationService } from './database/services/question-creation/question-creation.service';
@@ -151,6 +155,7 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     DailyQuizController,
     AttemptsController,
     TestController,
+    AuthController,
   ],
   providers: [
     AppService,
@@ -164,6 +169,13 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     VisualAestheticQuestionService,
     // Job Processing Services
     DailyQuizJobProcessor,
+    // Authentication Services
+    FirebaseService,
+    AuthService,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(FirebaseAuthMiddleware).forRoutes('auth/authenticate');
+  }
+}
