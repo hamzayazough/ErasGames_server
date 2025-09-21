@@ -41,9 +41,6 @@ export const PopularityMatchComponent: React.FC<PopularityMatchComponentProps> =
       </Text>
       
       <View style={[styles.instructionContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="caption" style={[styles.instructionText, { color: theme.colors.textSecondary }]}>
-          📊 Arrange from most to least popular
-        </Text>
         {question.prompt.asOf && (
           <Text variant="caption" style={[styles.asOfText, { color: theme.colors.textSecondary }]}>
             (As of {question.prompt.asOf})
@@ -57,7 +54,7 @@ export const PopularityMatchComponent: React.FC<PopularityMatchComponentProps> =
         onReorder={handleReorder}
         disabled={disabled}
         showCorrect={showCorrect}
-        correctOrder={correctAnswer}
+        correctOrder={correctAnswer?.values}
       />
     </View>
   );

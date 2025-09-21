@@ -271,15 +271,12 @@ export const interactiveQuizMock: QuizMock = {
       themes: ['charts', 'popularity'],
       subjects: ['songs'],
       prompt: {
-        task: 'Match each song to its peak chart position',
-        songs: ['Shake It Off', 'Anti-Hero', 'Love Story', 'Cruel Summer'],
-        positions: ['#1', '#1', '#4', '#1'],
+        task: 'Order these songs by total Spotify streams (highest to lowest)',
+        asOf: '2025-09-01',
       },
+      choices: ['Shake It Off', 'Anti-Hero', 'Love Story', 'Cruel Summer'],
       correct: {
-        'Shake It Off': '#1',
-        'Anti-Hero': '#1',
-        'Love Story': '#4',
-        'Cruel Summer': '#1',
+        values: ['Anti-Hero', 'Shake It Off', 'Cruel Summer', 'Love Story'],
       },
     },
     {
