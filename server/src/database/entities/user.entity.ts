@@ -25,7 +25,7 @@ import { PracticeAttempt } from './practice-attempt.entity';
 @Index('idx_users_lastseen', ['lastSeenAt'])
 export class User extends BaseEntityTimestamps {
   @PrimaryColumn({ type: 'varchar', length: 128 })
-  id!: string; // Firebase UID as primary key
+  declare id: string; // Firebase UID as primary key
   @Column({ type: 'citext', nullable: true })
   email!: string | null;
 
