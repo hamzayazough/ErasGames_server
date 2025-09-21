@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
@@ -24,9 +24,17 @@ export default function QuizScreen({navigation, route}: Props) {
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
   const [timeRemaining, setTimeRemaining] = useState(5 * 60); // Fixed 5 minutes = 300 seconds
   const [quizStarted, setQuizStarted] = useState(false);
+  const isMountedRef = useRef(true);
 
   const currentQuestion = mockQuestions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === mockQuestions.length - 1;
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Timer countdown - only runs when quiz is started
   useEffect(() => {
@@ -35,12 +43,18 @@ export default function QuizScreen({navigation, route}: Props) {
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
-          // Time's up! Auto-submit quiz
-          Alert.alert(
-            'Time\'s Up! ⏰',
-            'Your 5-minute quiz time has expired. Submitting your answers...',
-            [{text: 'OK', onPress: handleQuizSubmit}]
-          );
+          // Time's up! Auto-submit quiz safely
+          if (isMountedRef.current) {
+            setTimeout(() => {
+              if (isMountedRef.current) {
+                Alert.alert(
+                  'Time\'s Up! ⏰',
+                  'Your 5-minute quiz time has expired. Submitting your answers...',
+                  [{text: 'OK', onPress: handleQuizSubmit}]
+                );
+              }
+            }, 100);
+          }
           return 0;
         }
         return prev - 1;
@@ -74,11 +88,20 @@ export default function QuizScreen({navigation, route}: Props) {
     console.log('Submitting quiz answers:', finalAnswers);
     // TODO: Send answers to server API
     
-    Alert.alert(
-      'Quiz Submitted! 🎉',
-      'Your answers have been submitted successfully.',
-      [{text: 'OK', onPress: () => navigation.goBack()}]
-    );
+    if (isMountedRef.current) {
+      Alert.alert(
+        'Quiz Submitted! 🎉',
+        'Your answers have been submitted successfully.',
+        [{text: 'OK', onPress: () => {
+          if (isMountedRef.current) {
+            navigation.goBack();
+          }
+        }}]
+      );
+    } else {
+      // If component is unmounted, just navigate back
+      navigation.goBack();
+    }
   };
 
   const handleSubmitAnswer = () => {
