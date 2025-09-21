@@ -58,13 +58,20 @@ export const TracklistOrderComponent: React.FC<TracklistOrderComponentProps> = (
           <View style={[styles.albumDivider, { backgroundColor: theme.colors.primary + '30' }]} />
         </View>
       </View>
+
+      <View style={[styles.instructionContainer, { backgroundColor: theme.colors.primary + '08' }]}>
+        <Text variant="caption" style={[styles.instructionText, { color: theme.colors.textSecondary }]}>
+          🔄 Drag and drop to arrange tracks in album order
+        </Text>
+      </View>
+
       <OrderingComponent
         items={items}
         orderedItems={currentOrder}
         onReorder={handleReorder}
         disabled={disabled}
         showCorrect={showCorrect}
-        correctOrder={correctAnswer}
+        correctOrder={correctAnswer?.values}
       />
     </View>
   );

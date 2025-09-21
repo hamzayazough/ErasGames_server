@@ -231,7 +231,8 @@ export const advancedQuizMock: QuizMock = {
         album: 'folklore',
         tracks: ['cardigan', 'the 1', 'august', 'exile'],
       },
-      correct: ['the 1', 'cardigan', 'exile', 'august'],
+      choices: [],
+      correct: {values: ['the 1', 'cardigan', 'exile', 'august']},
     },
   ],
 };

@@ -69,7 +69,7 @@ export class AnswerHandler {
         };
 
       case 'tracklist-order':
-        return {orderedItems: (question as any).prompt?.tracks || []};
+        return {orderedTracks: (question as any).prompt?.tracks || []};
 
       case 'speed-tap':
         return {
@@ -111,8 +111,10 @@ export class AnswerHandler {
 
       case 'timeline-order':
       case 'popularity-match':
-      case 'tracklist-order':
         return 'orderedItems' in answer && answer.orderedItems.length > 0;
+
+      case 'tracklist-order':
+        return 'orderedTracks' in answer && answer.orderedTracks.length > 0;
 
       case 'speed-tap':
         return 'events' in answer && answer.events.length > 0;
@@ -157,9 +159,12 @@ export class AnswerHandler {
         return true;
 
       case 'timeline-order':
-      case 'tracklist-order':
         if (!('orderedItems' in answer)) return false;
         return Array.isArray(answer.orderedItems);
+
+      case 'tracklist-order':
+        if (!('orderedTracks' in answer)) return false;
+        return Array.isArray(answer.orderedTracks);
 
       case 'popularity-match':
         if (!('orderedItems' in answer)) return false;
