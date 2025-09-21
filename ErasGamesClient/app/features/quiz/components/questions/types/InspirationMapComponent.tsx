@@ -1,7 +1,8 @@
 import React from 'react';
 import { InspirationMapQuestion } from '../../../../../shared/interfaces/questions/inspiration-map.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { MatchingComponent } from '../common/MatchingComponent';
+import { View } from '../../../../../ui';
+import { MultipleChoiceComponent } from '../common/MultipleChoiceComponent';
 
 interface InspirationMapComponentProps extends Omit<QuestionComponentProps, 'question'> {
   question: InspirationMapQuestion;
@@ -16,49 +17,34 @@ export const InspirationMapComponent: React.FC<InspirationMapComponentProps> = (
   correctAnswer,
   showHint
 }) => {
-  const leftItems = question.songs?.map((song, index) => ({
-    id: index.toString(),
-    content: song,
-    subtitle: 'Taylor Swift Song'
-  })) || [];
-
-  const rightItems = question.sources?.map((source, index) => ({
-    id: index.toString(),
-    content: source,
-    subtitle: 'Inspiration Source'
-  })) || [];
-
-  const handleMatchingChange = (pairs: Array<{ leftId: string; rightId: string }>) => {
-    const connections = pairs.map(pair => ({
-      songIndex: parseInt(pair.leftId),
-      sourceIndex: parseInt(pair.rightId)
-    }));
-    onAnswerChange({ connections });
+  const handleChoiceSelect = (choiceIndex: number) => {
+    onAnswerChange({ choiceIndex });
   };
 
-  const currentMatches = selectedAnswer?.connections?.map(connection => ({
-    leftId: connection.songIndex.toString(),
-    rightId: connection.sourceIndex.toString()
-  })) || [];
+  const selectedChoiceIndex = typeof selectedAnswer === 'object' && selectedAnswer?.choiceIndex !== undefined 
+    ? selectedAnswer.choiceIndex 
+    : typeof selectedAnswer === 'number' 
+    ? selectedAnswer 
+    : null;
 
-  const correctMatches = correctAnswer?.connections?.map(connection => ({
-    leftId: connection.songIndex.toString(),
-    rightId: connection.sourceIndex.toString()
-  })) || [];
+  const correctChoiceIndex = typeof correctAnswer === 'number' 
+    ? correctAnswer 
+    : null;
 
   return (
-    <MatchingComponent
-      title={question.prompt.task}
-      leftTitle="🎵 Songs"
-      rightTitle="💡 Inspirations"
-      leftItems={leftItems}
-      rightItems={rightItems}
-      selectedMatches={currentMatches}
-      onMatchingChange={handleMatchingChange}
-      disabled={disabled}
-      showCorrect={showCorrect}
-      correctMatches={correctMatches}
-      showHint={showHint}
-    />
+    <View style={{ flex: 1 }}>
+      <MultipleChoiceComponent
+        title={question.prompt.task}
+        disclaimer={question.prompt.disclaimer}
+        choices={question.choices}
+        selectedChoice={selectedChoiceIndex}
+        onChoiceSelect={handleChoiceSelect}
+        disabled={disabled}
+        showCorrect={showCorrect}
+        correctChoice={correctChoiceIndex}
+        showHint={showHint}
+        hint={question.hint}
+      />
+    </View>
   );
 };

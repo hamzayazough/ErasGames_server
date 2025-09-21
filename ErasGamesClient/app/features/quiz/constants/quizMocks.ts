@@ -308,21 +308,12 @@ export const interactiveQuizMock: QuizMock = {
       themes: ['influences'],
       subjects: ['songs'],
       prompt: {
-        task: 'Match each song to its reported inspiration or influence',
-        songs: ['Style', 'All Too Well', 'august', 'Ronan'],
-        inspirations: [
-          'Relationship reference',
-          'Personal experience',
-          'Fictional story',
-          'Charity cause',
-        ],
+        task: 'Who is widely believed to have inspired the song "All Too Well"?',
+        disclaimer:
+          'Based on fan interpretations and media reports, not officially confirmed.',
       },
-      correct: {
-        Style: 'Relationship reference',
-        'All Too Well': 'Personal experience',
-        august: 'Fictional story',
-        Ronan: 'Charity cause',
-      },
+      choices: ['Joe Jonas', 'Jake Gyllenhaal', 'Harry Styles', 'John Mayer'],
+      correct: 1,
     },
     {
       id: '17',
