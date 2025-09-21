@@ -1,17 +1,23 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import firebaseService from '../services/firebaseService';
+import { authApiService } from '../api/auth';
+import { AuthenticatedUser } from '../api/config';
 
 interface AuthContextType {
   user: FirebaseAuthTypes.User | null;
+  serverUser: AuthenticatedUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isServerAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<FirebaseAuthTypes.UserCredential>;
   signUp: (email: string, password: string) => Promise<FirebaseAuthTypes.UserCredential>;
   signOut: () => Promise<void>;
   sendPasswordResetEmail: (email: string) => Promise<void>;
   updateProfile: (updates: { displayName?: string; photoURL?: string }) => Promise<void>;
   deleteAccount: () => Promise<void>;
+  authenticateWithServer: () => Promise<AuthenticatedUser>;
+  refreshServerUserData: () => Promise<AuthenticatedUser>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +28,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [serverUser, setServerUser] = useState<AuthenticatedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,8 +36,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     firebaseService.initialize().catch(console.error);
 
     // Listen to authentication state changes
-    const unsubscribe = firebaseService.onAuthStateChanged((authUser) => {
+    const unsubscribe = firebaseService.onAuthStateChanged(async (authUser) => {
       setUser(authUser);
+      
+      if (authUser) {
+        // User is logged in with Firebase, now authenticate with server
+        try {
+          const serverUserData = await authApiService.authenticate();
+          setServerUser(serverUserData);
+          console.log('✅ Authenticated with server:', serverUserData.id);
+        } catch (error) {
+          console.error('❌ Failed to authenticate with server:', error);
+          setServerUser(null);
+        }
+      } else {
+        // User is logged out
+        setServerUser(null);
+        authApiService.logout();
+      }
+      
       setIsLoading(false);
     });
 
@@ -62,6 +86,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       await firebaseService.signOut();
+      // Clear server user data and auth token
+      setServerUser(null);
+      authApiService.logout();
     } finally {
       setIsLoading(false);
     }
@@ -79,21 +106,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       await firebaseService.deleteAccount();
+      // Clear server user data and auth token
+      setServerUser(null);
+      authApiService.logout();
     } finally {
       setIsLoading(false);
     }
   };
 
+  const authenticateWithServer = async (): Promise<AuthenticatedUser> => {
+    try {
+      const serverUserData = await authApiService.authenticate();
+      setServerUser(serverUserData);
+      return serverUserData;
+    } catch (error) {
+      console.error('Failed to authenticate with server:', error);
+      throw error;
+    }
+  };
+
+  const refreshServerUserData = async (): Promise<AuthenticatedUser> => {
+    try {
+      const serverUserData = await authApiService.refreshUserData();
+      setServerUser(serverUserData);
+      return serverUserData;
+    } catch (error) {
+      console.error('Failed to refresh server user data:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     user,
+    serverUser,
     isLoading,
     isAuthenticated: !!user,
+    isServerAuthenticated: !!serverUser,
     signIn,
     signUp,
     signOut,
     sendPasswordResetEmail,
     updateProfile,
     deleteAccount,
+    authenticateWithServer,
+    refreshServerUserData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
