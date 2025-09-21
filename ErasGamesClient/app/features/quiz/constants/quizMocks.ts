@@ -217,12 +217,7 @@ export const advancedQuizMock: QuizMock = {
         task: 'Identify the song from this reversed audio clip',
       },
       mediaRefs: [{type: 'audio', url: 'https://example.com/reversed.mp3'}],
-      choices: [
-        {id: 'choice1', text: 'Love Story'},
-        {id: 'choice2', text: 'You Belong With Me'},
-        {id: 'choice3', text: 'Shake It Off'},
-        {id: 'choice4', text: '22'},
-      ],
+      choices: ['Love Story', 'You Belong With Me', 'Shake It Off', '22'],
       correct: {choiceIndex: 2},
     },
     {

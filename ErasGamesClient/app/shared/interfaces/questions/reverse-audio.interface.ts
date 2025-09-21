@@ -1,13 +1,12 @@
-import { BasicQuestion, MediaRef } from './basic-question.interface';
-import { AudioChoice } from '../choices/audio-choice.interface';
-import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
-import { ReverseAudioPrompt } from '../prompts/prompt-interfaces';
+import {BasicQuestion, MediaRef} from './basic-question.interface';
+import {SingleChoiceCorrect} from '../corrects/single-choice-correct.interface';
+import {ReverseAudioPrompt} from '../prompts/prompt-interfaces';
 
 export interface ReverseAudioQuestion extends BasicQuestion {
   questionType: 'reverse-audio';
   prompt: ReverseAudioPrompt;
   mediaRefs: MediaRef[];
-  choices: AudioChoice[];
+  choices: string[];
   correct?: SingleChoiceCorrect;
 }
 /**

@@ -18,31 +18,46 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
   showHint
 }) => {
   const theme = useTheme();
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isPlayingReversed, setIsPlayingReversed] = useState<boolean>(false);
 
-  const handleSongSelect = (songIndex: number) => {
-    onAnswerChange({ songIndex });
+  const handleChoiceSelect = (choiceIndex: number) => {
+    if (!disabled) {
+      onAnswerChange({ choiceIndex });
+    }
   };
 
-  const handlePlayAudio = () => {
-    // TODO: Implement actual audio playback
-    setIsPlaying(true);
-    setTimeout(() => setIsPlaying(false), 3000); // Simulate 3-second playback
+  const handlePlayReversedAudio = () => {
+    // TODO: Implement actual audio playback for the reversed clip
+    setIsPlayingReversed(true);
+    setTimeout(() => setIsPlayingReversed(false), 3000); // Simulate 3-second playback
   };
 
-  const getSongStyle = (index: number) => {
-    const isSelected = selectedAnswer?.songIndex === index;
-    const isCorrect = showCorrect && index === correctAnswer?.songIndex;
-    const isWrong = showCorrect && index === selectedAnswer?.songIndex && index !== correctAnswer?.songIndex;
+  const getChoiceStyle = (index: number) => {
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+    const isWrong = showCorrect && isSelected && index !== correctAnswer?.choiceIndex;
 
     if (isCorrect) {
-      return [styles.songOption, { backgroundColor: theme.colors.success, borderColor: theme.colors.success }];
+      return [styles.choiceContainer, styles.correctChoice, { borderColor: theme.colors.success }];
     } else if (isWrong) {
-      return [styles.songOption, { backgroundColor: theme.colors.error, borderColor: theme.colors.error }];
+      return [styles.choiceContainer, styles.wrongChoice, { borderColor: theme.colors.error }];
     } else if (isSelected) {
-      return [styles.songOption, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }];
+      return [styles.choiceContainer, styles.selectedChoice, { borderColor: theme.colors.primary }];
     } else {
-      return [styles.songOption, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }];
+      return [styles.choiceContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }];
+    }
+  };
+
+  const getChoiceTextStyle = (index: number) => {
+    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+    const isWrong = showCorrect && selectedAnswer?.choiceIndex === index && index !== correctAnswer?.choiceIndex;
+
+    if (isCorrect) {
+      return [styles.choiceText, { color: theme.colors.textOnSuccess }];
+    } else if (isWrong) {
+      return [styles.choiceText, { color: theme.colors.textOnError }];
+    } else {
+      return [styles.choiceText, { color: theme.colors.text }];
     }
   };
 
@@ -59,15 +74,15 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
         
         <Pressable
           style={[styles.playButton, { backgroundColor: theme.colors.primary }]}
-          onPress={handlePlayAudio}
-          disabled={disabled || isPlaying}
+          onPress={handlePlayReversedAudio}
+          disabled={disabled || isPlayingReversed}
         >
           <Text style={[styles.playButtonText, { color: theme.colors.textOnPrimary }]}>
-            {isPlaying ? '🔄 Playing...' : '▶️ Play Reversed Audio'}
+            {isPlayingReversed ? '🔄 Playing...' : '▶️ Play Reversed Audio'}
           </Text>
         </Pressable>
 
-        {isPlaying && (
+        {isPlayingReversed && (
           <View style={styles.playingIndicator}>
             <Text variant="caption" style={[styles.playingText, { color: theme.colors.primary }]}>
               🎵 Audio playing in reverse...
@@ -76,25 +91,27 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
         )}
       </View>
 
-      <View style={styles.songOptions}>
+      <View style={styles.choicesSection}>
         <Text variant="heading4" style={[styles.sectionTitle, { color: theme.colors.text }]}>
           Which song is this?
         </Text>
         
-        {question.songs?.map((song, index) => (
-          <Pressable
-            key={index}
-            style={getSongStyle(index)}
-            onPress={() => !disabled && handleSongSelect(index)}
-            disabled={disabled}
-          >
-            <Text variant="body" style={[styles.songText, { color: theme.colors.text }]}>
-              {song}
-            </Text>
-          </Pressable>
-        )) || (
-          <Text variant="body" style={[styles.noSongsText, { color: theme.colors.textSecondary }]}>
-            No song options available
+        {question.choices && question.choices.length > 0 ? (
+          question.choices.map((choice, index) => (
+            <Pressable
+              key={index}
+              style={getChoiceStyle(index)}
+              onPress={() => handleChoiceSelect(index)}
+              disabled={disabled}
+            >
+              <Text variant="body" style={getChoiceTextStyle(index)}>
+                {typeof choice === 'string' ? choice : `Choice ${index + 1}`}
+              </Text>
+            </Pressable>
+          ))
+        ) : (
+          <Text variant="body" style={[styles.noChoicesText, { color: theme.colors.textSecondary }]}>
+            No song choices available
           </Text>
         )}
       </View>
@@ -147,7 +164,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
-  songOptions: {
+  choicesSection: {
     gap: 12,
   },
   sectionTitle: {
@@ -155,18 +172,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
-  songOption: {
+  choiceContainer: {
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
   },
-  songText: {
+  selectedChoice: {
+    backgroundColor: '#E7F3FF',
+  },
+  correctChoice: {
+    backgroundColor: '#E8F5E8',
+  },
+  wrongChoice: {
+    backgroundColor: '#FFEBEE',
+  },
+  choiceText: {
     fontSize: 15,
     fontWeight: '500',
   },
-  noSongsText: {
+  noChoicesText: {
     textAlign: 'center',
     fontStyle: 'italic',
   },
