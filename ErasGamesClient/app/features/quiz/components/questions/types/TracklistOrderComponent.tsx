@@ -39,21 +39,25 @@ export const TracklistOrderComponent: React.FC<TracklistOrderComponentProps> = (
         {question.prompt.task}
       </Text>
       
-      <View style={[styles.albumContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="caption" style={[styles.albumLabel, { color: theme.colors.primary }]}>
-          💿 ALBUM:
-        </Text>
-        <Text variant="heading2" style={[styles.albumName, { color: theme.colors.text }]}>
-          {question.prompt.album}
-        </Text>
+      <View style={[styles.albumContainer, { 
+        backgroundColor: theme.colors.surface,
+        borderColor: theme.colors.primary + '20',
+        shadowColor: theme.colors.shadow || '#000'
+      }]}>
+        <View style={[styles.albumIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+          <Text style={styles.albumIcon}>💿</Text>
+        </View>
+        
+        <View style={styles.albumTextContainer}>
+          <Text variant="caption" style={[styles.albumLabel, { color: theme.colors.primary }]}>
+            ALBUM
+          </Text>
+          <Text variant="heading2" style={[styles.albumName, { color: theme.colors.text }]}>
+            {question.prompt.album}
+          </Text>
+          <View style={[styles.albumDivider, { backgroundColor: theme.colors.primary + '30' }]} />
+        </View>
       </View>
-
-      <View style={[styles.instructionContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="caption" style={[styles.instructionText, { color: theme.colors.textSecondary }]}>
-          🎵 Arrange tracks in the correct album order
-        </Text>
-      </View>
-
       <OrderingComponent
         items={items}
         orderedItems={currentOrder}
@@ -76,26 +80,62 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
   albumContainer: {
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    marginVertical: 8,
+  },
+  albumIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  albumIcon: {
+    fontSize: 28,
+  },
+  albumTextContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  albumLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  albumName: {
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 32,
+  },
+  albumDivider: {
+    height: 2,
+    width: 60,
+    borderRadius: 1,
+  },
+  instructionContainer: {
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-  },
-  albumLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  albumName: {
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  instructionContainer: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+    marginBottom: 8,
   },
   instructionText: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
 });

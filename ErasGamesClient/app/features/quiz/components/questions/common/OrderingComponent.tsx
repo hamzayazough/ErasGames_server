@@ -104,35 +104,7 @@ export const OrderingComponent: React.FC<OrderingComponentProps> = ({
         </View>
       ))}
       
-      {!disabled && (
-        <View style={styles.quickActions}>
-          <Text variant="caption" style={[styles.quickActionsLabel, { color: theme.colors.textSecondary }]}>
-            Quick Actions:
-          </Text>
-          <View style={styles.quickActionsButtons}>
-            <Button
-              title="🔀 Shuffle"
-              onPress={() => {
-                const shuffled = [...orderedItems].sort(() => Math.random() - 0.5);
-                onReorder(shuffled);
-              }}
-              variant="outline"
-              style={styles.quickActionButton}
-              textStyle={styles.quickActionText}
-            />
-            <Button
-              title="↩️ Reverse"
-              onPress={() => {
-                const reversed = [...orderedItems].reverse();
-                onReorder(reversed);
-              }}
-              variant="outline"
-              style={styles.quickActionButton}
-              textStyle={styles.quickActionText}
-            />
-          </View>
-        </View>
-      )}
+
     </View>
   );
 };
