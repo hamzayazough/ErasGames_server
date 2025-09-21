@@ -252,9 +252,9 @@ export const interactiveQuizMock: QuizMock = {
       themes: ['biography'],
       subjects: ['personal'],
       prompt: {
-        task: 'What significant event happened in this year?',
-        year: 2016,
-        category: 'personal',
+        task: "Select the correct answer about Taylor Swift's life",
+        question:
+          "What significant event happened in Taylor Swift's life in 2016?",
       },
       choices: [
         {id: 'choice1', text: 'First Grammy win'},
