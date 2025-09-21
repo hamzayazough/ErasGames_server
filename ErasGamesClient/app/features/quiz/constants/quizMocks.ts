@@ -354,12 +354,12 @@ export const interactiveQuizMock: QuizMock = {
       },
       mediaRefs: [{type: 'audio', url: 'https://example.com/one-second.mp3'}],
       choices: [
-        {id: 'choice1', text: 'We Are Never Getting Back Together'},
-        {id: 'choice2', text: 'I Knew You Were Trouble'},
-        {id: 'choice3', text: '22'},
-        {id: 'choice4', text: 'Everything Has Changed'},
+        'We Are Never Getting Back Together',
+        'I Knew You Were Trouble',
+        '22',
+        'Everything Has Changed',
       ],
-      correct: {choiceIndex: 0},
+      correct: 0,
     },
   ],
 };

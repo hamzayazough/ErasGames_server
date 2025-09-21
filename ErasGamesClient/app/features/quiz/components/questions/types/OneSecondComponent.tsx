@@ -20,8 +20,8 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
   const theme = useTheme();
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
-  const handleSongSelect = (songIndex: number) => {
-    onAnswerChange({ songIndex });
+  const handleSongSelect = (choiceIndex: number) => {
+    onAnswerChange({ choiceIndex });
   };
 
   const handlePlayAudio = () => {
@@ -31,9 +31,9 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
   };
 
   const getSongStyle = (index: number) => {
-    const isSelected = selectedAnswer?.songIndex === index;
-    const isCorrect = showCorrect && index === correctAnswer?.songIndex;
-    const isWrong = showCorrect && index === selectedAnswer?.songIndex && index !== correctAnswer?.songIndex;
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    const isCorrect = showCorrect && index === correctAnswer;
+    const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer;
 
     if (isCorrect) {
       return [styles.songOption, { backgroundColor: theme.colors.success, borderColor: theme.colors.success }];
@@ -90,7 +90,7 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
           Which song is this?
         </Text>
         
-        {question.songs?.map((song, index) => (
+        {question.choices?.map((choice, index) => (
           <Pressable
             key={index}
             style={getSongStyle(index)}
@@ -98,7 +98,7 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
             disabled={disabled}
           >
             <Text variant="body" style={[styles.songText, { color: theme.colors.text }]}>
-              {song}
+              {choice}
             </Text>
           </Pressable>
         )) || (
