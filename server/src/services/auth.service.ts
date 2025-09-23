@@ -30,11 +30,26 @@ export class AuthService {
 
     // If user doesn't exist, create a new one
     if (!user) {
-      user = await this.createUserFromFirebase(
-        uid,
-        email || null,
-        name || null,
-      );
+      try {
+        user = await this.createUserFromFirebase(
+          uid,
+          email || null,
+          name || null,
+        );
+      } catch (error) {
+        // Handle race condition: if user was created by another request
+        if (error.code === '23505' && error.constraint === 'users_pkey') {
+          // User was created by another concurrent request, fetch it
+          user = await this.userRepository.findOne({
+            where: { id: uid },
+          });
+          if (!user) {
+            throw new Error('Failed to retrieve user after duplicate key error');
+          }
+        } else {
+          throw error;
+        }
+      }
     }
 
     // Return user information that the client needs

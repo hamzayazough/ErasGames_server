@@ -32,10 +32,20 @@ export class User extends BaseEntityTimestamps {
   @Column({ type: 'boolean', default: false, name: 'email_verified' })
   emailVerified!: boolean;
 
-  @Column({ type: 'enum', enum: AuthProvider, default: AuthProvider.FIREBASE, name: 'auth_provider' })
+  @Column({
+    type: 'enum',
+    enum: AuthProvider,
+    default: AuthProvider.FIREBASE,
+    name: 'auth_provider',
+  })
   authProvider!: AuthProvider;
 
-  @Column({ type: 'varchar', length: 190, nullable: true, name: 'provider_user_id' })
+  @Column({
+    type: 'varchar',
+    length: 190,
+    nullable: true,
+    name: 'provider_user_id',
+  })
   providerUserId!: string | null;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
@@ -86,13 +96,22 @@ export class User extends BaseEntityTimestamps {
   @Column({ type: 'timestamptz', nullable: true, name: 'tz_stable_since' })
   tzStableSince!: Date | null;
 
-  @Column({ type: 'timestamptz', nullable: true, name: 'tz_change_frozen_until' })
+  @Column({
+    type: 'timestamptz',
+    nullable: true,
+    name: 'tz_change_frozen_until',
+  })
   tzChangeFrozenUntil!: Date | null;
 
   @Column({ type: 'int', default: 0, name: 'tz_change_count_30d' })
   tzChangeCount30d!: number;
 
-  @Column({ type: 'varchar', length: 100, nullable: true, name: 'stripe_customer_id' })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+    name: 'stripe_customer_id',
+  })
   stripeCustomerId!: string | null;
 
   // Relations
