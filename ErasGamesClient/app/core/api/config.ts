@@ -1,8 +1,21 @@
+import {Platform} from 'react-native';
+
+// Get the appropriate localhost URL based on platform
+const getDevServerUrl = () => {
+  if (Platform.OS === 'android') {
+    // Android emulator needs 10.0.2.2 to access localhost
+    return 'http://10.0.2.2:3000';
+  } else {
+    // iOS simulator and other platforms can use localhost
+    return 'http://localhost:3000';
+  }
+};
+
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: __DEV__
-    ? 'http://localhost:3000' // Development server
-    : 'https://your-production-api.com', // Replace with your production URL
+    ? getDevServerUrl() // Development server with platform-specific URL
+    : 'https://ErasGames.com/api', // Replace with your production URL
   TIMEOUT: 10000, // 10 seconds
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json',

@@ -57,11 +57,20 @@ export class HttpService {
       ...config?.headers,
     };
 
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutMs = config?.timeout || this.timeout;
+
+    // Set timeout
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
     // Build request configuration
     const requestConfig: RequestInit = {
       method,
       headers,
-      signal: AbortSignal.timeout(config?.timeout || this.timeout),
+      signal: controller.signal,
     };
 
     // Add body for POST/PUT/PATCH requests
@@ -114,6 +123,9 @@ export class HttpService {
 
       return responseData;
     } catch (error) {
+      // Clear the timeout
+      clearTimeout(timeoutId);
+
       console.error(`❌ ${method} ${finalUrl}`, error);
 
       if (error instanceof ApiError) {
@@ -121,7 +133,7 @@ export class HttpService {
       }
 
       // Handle network errors, timeouts, etc.
-      if (error.name === 'TimeoutError') {
+      if (error.name === 'AbortError') {
         throw new ApiError('Request timeout', 408);
       }
 
@@ -130,6 +142,9 @@ export class HttpService {
       }
 
       throw new ApiError(error.message || 'An unexpected error occurred');
+    } finally {
+      // Always clear the timeout
+      clearTimeout(timeoutId);
     }
   }
 
