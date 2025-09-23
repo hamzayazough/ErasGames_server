@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS daily_quiz_question (
     question_id UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
     difficulty VARCHAR(16) NOT NULL,
     question_type VARCHAR(32) NOT NULL,
+    quiz_year INTEGER NOT NULL DEFAULT 2025,
     -- Partitioning by date can be handled at the DB or app level
     UNIQUE (daily_quiz_id, question_id)
 );
