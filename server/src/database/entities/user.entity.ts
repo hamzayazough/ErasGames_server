@@ -29,13 +29,13 @@ export class User extends BaseEntityTimestamps {
   @Column({ type: 'citext', nullable: true })
   email!: string | null;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false, name: 'email_verified' })
   emailVerified!: boolean;
 
-  @Column({ type: 'enum', enum: AuthProvider, default: AuthProvider.FIREBASE })
+  @Column({ type: 'enum', enum: AuthProvider, default: AuthProvider.FIREBASE, name: 'auth_provider' })
   authProvider!: AuthProvider;
 
-  @Column({ type: 'varchar', length: 190, nullable: true })
+  @Column({ type: 'varchar', length: 190, nullable: true, name: 'provider_user_id' })
   providerUserId!: string | null;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
@@ -50,28 +50,28 @@ export class User extends BaseEntityTimestamps {
   @Column({ type: 'varchar', length: 64, default: 'America/Toronto' })
   tz!: string;
 
-  @Column({ type: 'smallint', nullable: true })
+  @Column({ type: 'smallint', nullable: true, name: 'last_seen_offset' })
   lastSeenOffset!: number | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'last_seen_at' })
   lastSeenAt!: Date | null;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, name: 'notif_window_json' })
   notifWindowJSON!: { start: string; end: string } | null;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: true, name: 'push_enabled' })
   pushEnabled!: boolean;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false, name: 'leaderboard_opt_out' })
   leaderboardOptOut!: boolean;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: true, name: 'share_country_on_lb' })
   shareCountryOnLB!: boolean;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: true, name: 'analytics_consent' })
   analyticsConsent!: boolean;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false, name: 'marketing_consent' })
   marketingConsent!: boolean;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
@@ -80,19 +80,19 @@ export class User extends BaseEntityTimestamps {
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
   status!: UserStatus;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true, name: 'suspension_reason' })
   suspensionReason!: string | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'tz_stable_since' })
   tzStableSince!: Date | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'tz_change_frozen_until' })
   tzChangeFrozenUntil!: Date | null;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 0, name: 'tz_change_count_30d' })
   tzChangeCount30d!: number;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'stripe_customer_id' })
   stripeCustomerId!: string | null;
 
   // Relations
