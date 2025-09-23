@@ -1,4 +1,22 @@
-import { API_CONFIG, ApiError, RequestConfig, HttpMethod } from './config';
+import {
+  API_CONFIG,
+  ApiError as ApiErrorInterface,
+  RequestConfig,
+  HttpMethod,
+} from './config';
+
+// Custom error class that implements the ApiError interface
+class ApiError extends Error implements ApiErrorInterface {
+  status?: number;
+  code?: string;
+
+  constructor(message: string, status?: number, code?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
 
 export class HttpService {
   private baseUrl: string;
@@ -29,10 +47,10 @@ export class HttpService {
     method: HttpMethod,
     endpoint: string,
     data?: any,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     // Merge headers
     const headers = {
       ...this.defaultHeaders,
@@ -47,7 +65,10 @@ export class HttpService {
     };
 
     // Add body for POST/PUT/PATCH requests
-    if (data && [HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH].includes(method)) {
+    if (
+      data &&
+      [HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH].includes(method)
+    ) {
       requestConfig.body = JSON.stringify(data);
     }
 
@@ -67,43 +88,47 @@ export class HttpService {
     }
 
     try {
-      console.log(`🌐 ${method} ${finalUrl}`, data ? { body: data } : '');
-      
+      console.log(`🌐 ${method} ${finalUrl}`, data ? {body: data} : '');
+
       const response = await fetch(finalUrl, requestConfig);
-      
+
       let responseData: any;
       const contentType = response.headers.get('content-type');
-      
+
       if (contentType?.includes('application/json')) {
         responseData = await response.json();
       } else {
         responseData = await response.text();
       }
 
-      console.log(`📱 ${method} ${finalUrl} - ${response.status}`, responseData);
+      console.log(
+        `📱 ${method} ${finalUrl} - ${response.status}`,
+        responseData,
+      );
 
       if (!response.ok) {
-        const errorMessage = responseData?.message || responseData || `HTTP ${response.status}`;
+        const errorMessage =
+          responseData?.message || responseData || `HTTP ${response.status}`;
         throw new ApiError(errorMessage, response.status);
       }
 
       return responseData;
     } catch (error) {
       console.error(`❌ ${method} ${finalUrl}`, error);
-      
+
       if (error instanceof ApiError) {
         throw error;
       }
-      
+
       // Handle network errors, timeouts, etc.
       if (error.name === 'TimeoutError') {
         throw new ApiError('Request timeout', 408);
       }
-      
+
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         throw new ApiError('Network error - please check your connection', 0);
       }
-      
+
       throw new ApiError(error.message || 'An unexpected error occurred');
     }
   }
@@ -118,14 +143,22 @@ export class HttpService {
   /**
    * POST request
    */
-  async post<T>(endpoint: string, data?: any, config?: RequestConfig): Promise<T> {
+  async post<T>(
+    endpoint: string,
+    data?: any,
+    config?: RequestConfig,
+  ): Promise<T> {
     return this.request<T>(HttpMethod.POST, endpoint, data, config);
   }
 
   /**
    * PUT request
    */
-  async put<T>(endpoint: string, data?: any, config?: RequestConfig): Promise<T> {
+  async put<T>(
+    endpoint: string,
+    data?: any,
+    config?: RequestConfig,
+  ): Promise<T> {
     return this.request<T>(HttpMethod.PUT, endpoint, data, config);
   }
 
@@ -139,21 +172,14 @@ export class HttpService {
   /**
    * PATCH request
    */
-  async patch<T>(endpoint: string, data?: any, config?: RequestConfig): Promise<T> {
+  async patch<T>(
+    endpoint: string,
+    data?: any,
+    config?: RequestConfig,
+  ): Promise<T> {
     return this.request<T>(HttpMethod.PATCH, endpoint, data, config);
   }
 }
 
 // Create and export singleton instance
 export const httpService = new HttpService();
-
-// Custom error class
-class ApiError extends Error {
-  status?: number;
-  
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-  }
-}

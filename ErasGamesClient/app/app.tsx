@@ -3,6 +3,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {StatusBar} from 'react-native';
 import {ThemeProvider} from './core/theme/ThemeProvider';
+import {AuthProvider} from './core/context/AuthContext';
 import {RootNavigator} from './navigation/RootNavigator';
 import './core/i18n/i18n';
 
@@ -25,8 +26,10 @@ export default function App() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-          <RootNavigator />
+          <AuthProvider>
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <RootNavigator />
+          </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
