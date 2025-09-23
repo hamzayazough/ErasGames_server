@@ -44,7 +44,9 @@ export class AuthService {
             where: { id: uid },
           });
           if (!user) {
-            throw new Error('Failed to retrieve user after duplicate key error');
+            throw new Error(
+              'Failed to retrieve user after duplicate key error',
+            );
           }
         } else {
           throw error;
