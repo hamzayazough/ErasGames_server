@@ -45,40 +45,23 @@ export class QuizSimulationService {
   }
 
   /**
-   * 📅 T+1m: Quiz Composition Job
-   * Creates a quiz that will drop in 29 minutes
+   * 📅 Quiz Composition Job for Testing
+   * Creates a quiz that will drop in 7 minutes
    */
-  @Cron('0 */30 * * * *', {
-    // Every 30 minutes
+  @Cron('*/10 * * * * *', {
+    // Every 10 seconds to check for new simulation
     name: 'simulation:composition',
     timeZone: 'UTC',
   })
   async runSimulationComposition(): Promise<void> {
-    this.logger.log('🎯 [T+1m] Starting simulation quiz composition...');
+    // Only run if simulation is active and we haven't created the quiz yet
+    if (!this.simulationStartTime || !this.targetDropTime) {
+      return;
+    }
+
+    this.logger.log('🎯 [T+0s] Starting simulation quiz composition...');
 
     try {
-      // Set simulation start time and target drop time
-      const now = new Date();
-      if (!this.simulationStartTime) {
-        this.simulationStartTime = now;
-        this.targetDropTime = new Date(now.getTime() + 10 * 60 * 1000); // +10 minutes
-
-        this.logger.log('🚀 NEW SIMULATION STARTED!');
-        this.logger.log(
-          `   ⏰ Start Time: ${this.simulationStartTime.toISOString()}`,
-        );
-        this.logger.log(
-          `   🎯 Quiz Drop Time: ${this.targetDropTime.toISOString()}`,
-        );
-        this.logger.log(`   📊 Duration: 10 minutes`);
-      }
-
-      // Ensure targetDropTime is not null before proceeding
-      if (!this.targetDropTime) {
-        this.logger.warn('⚠️  Target drop time not set, skipping composition');
-        return;
-      }
-
       // Check if quiz already exists for this drop time
       const existingQuiz = await this.dailyQuizRepository.findOne({
         where: { dropAtUTC: this.targetDropTime },
@@ -101,27 +84,35 @@ export class QuizSimulationService {
       this.logger.log(`   📋 Quiz ID: ${result.dailyQuiz.id}`);
       this.logger.log(`   📊 Questions: ${result.questions.length}`);
       this.logger.log(`   ⏰ Drop Time: ${this.targetDropTime.toISOString()}`);
-      this.logger.log(`   ⏭️  Next: Template generation at T+6m`);
+      this.logger.log(`   ⏭️  Next: Template generation in 2 minutes`);
     } catch (error) {
       this.logger.error('❌ Quiz composition failed!', error);
     }
   }
 
   /**
-   * 🎨 T+6m: Template Warmup Job
-   * Generates template and uploads to CDN
+   * 🎨 Template Warmup Job for Testing
+   * Generates template and uploads to CDN at T+2m
    */
   @Cron('*/15 * * * * *', {
-    // Every 15 seconds, offset from composition
+    // Every 15 seconds to check for template generation
     name: 'simulation:template',
     timeZone: 'UTC',
   })
   async runSimulationTemplate(): Promise<void> {
-    if (!this.targetDropTime) {
+    if (!this.targetDropTime || !this.simulationStartTime) {
       return; // No simulation running
     }
 
-    this.logger.log('🎨 [T+6m] Starting simulation template generation...');
+    const now = new Date();
+    const timeSinceStart = now.getTime() - this.simulationStartTime.getTime();
+
+    // Only generate template after 2 minutes have passed
+    if (timeSinceStart < 2 * 60 * 1000) {
+      return; // Wait for 2 minutes
+    }
+
+    this.logger.log('🎨 [T+2m] Starting simulation template generation...');
 
     try {
       // Find the quiz for our target drop time
@@ -172,18 +163,18 @@ export class QuizSimulationService {
       this.logger.log(`   📋 Quiz ID: ${quiz.id}`);
       this.logger.log(`   🌐 CDN URL: ${templateUrl}`);
       this.logger.log(`   📦 Version: v${version}`);
-      this.logger.log(`   ⏭️  Next: User notifications at T+10m`);
+      this.logger.log(`   ⏭️  Next: User notifications at T+7m (drop time)`);
     } catch (error) {
       this.logger.error('❌ Template generation failed!', error);
     }
   }
 
   /**
-   * 📱 T+10m: Notification Job
-   * Sends push notifications to all users
+   * 📱 Notification Job for Testing
+   * Sends push notifications to all users at exact drop time
    */
-  @Cron('*/20 * * * * *', {
-    // Every 20 seconds, offset from others
+  @Cron('*/10 * * * * *', {
+    // Every 10 seconds to check for notification time
     name: 'simulation:notification',
     timeZone: 'UTC',
   })
@@ -200,7 +191,7 @@ export class QuizSimulationService {
       return; // Not time yet
     }
 
-    this.logger.log('📱 [T+10m] Starting simulation user notifications...');
+    this.logger.log('📱 [T+7m] Starting simulation user notifications...');
 
     try {
       // Find the quiz for our target drop time
@@ -220,24 +211,44 @@ export class QuizSimulationService {
         return;
       }
 
+      // Check if notification was already sent
+      if (quiz.notificationSent) {
+        return; // Already sent
+      }
+
       // Send push notifications to all users
       await this.notificationService.sendDailyQuizNotification(
         quiz.id,
         this.targetDropTime,
       );
 
+      // Mark notification as sent
+      await this.dailyQuizRepository.update(quiz.id, {
+        notificationSent: true,
+      });
+
       this.logger.log('🎉 SIMULATION COMPLETE! 🎉');
       this.logger.log(
-        `   ⏰ Total Duration: ${Math.round(timeSinceStart / 1000)}s`,
+        `   ⏰ Total Duration: ${Math.round(timeSinceStart / 1000)}s (7 minutes)`,
       );
       this.logger.log(`   📋 Quiz ID: ${quiz.id}`);
       this.logger.log(`   🌐 Template: ${quiz.templateCdnUrl}`);
       this.logger.log(`   📱 Notifications: Sent to all users`);
       this.logger.log(`   ✅ End-to-end workflow successful!`);
+      this.logger.log(
+        `   🎮 Quiz is now LIVE! Frontend should show START button.`,
+      );
 
-      // Reset for next simulation
-      this.simulationStartTime = null;
-      this.targetDropTime = null;
+      // Keep simulation active so frontend can test the quiz experience
+      // Reset for next simulation after additional delay
+      setTimeout(
+        () => {
+          this.simulationStartTime = null;
+          this.targetDropTime = null;
+          this.logger.log('🔄 Simulation reset - ready for next test');
+        },
+        5 * 60 * 1000,
+      ); // Reset after 5 more minutes
     } catch (error) {
       this.logger.error('❌ Notification sending failed!', error);
     }
@@ -251,10 +262,11 @@ export class QuizSimulationService {
     startTime: string;
     dropTime: string;
     status: string;
+    timelineMinutes: { [key: string]: string };
   } {
     const now = new Date();
     this.simulationStartTime = now;
-    this.targetDropTime = new Date(now.getTime() + 10 * 60 * 1000);
+    this.targetDropTime = new Date(now.getTime() + 7 * 60 * 1000); // 7 minutes from now
 
     const simulationId = `sim_${Date.now()}`;
 
@@ -264,12 +276,19 @@ export class QuizSimulationService {
       `   ⏰ Start Time: ${this.simulationStartTime.toISOString()}`,
     );
     this.logger.log(`   🎯 Drop Time: ${this.targetDropTime.toISOString()}`);
+    this.logger.log(`   ⏱️  Timeline: 7-minute countdown test`);
 
     return {
       simulationId,
       startTime: this.simulationStartTime.toISOString(),
       dropTime: this.targetDropTime.toISOString(),
       status: 'started',
+      timelineMinutes: {
+        'T+0m': 'Quiz creation & questions composition',
+        'T+2m': 'Template generation & CDN upload',
+        'T+7m': 'Push notifications sent & quiz goes LIVE',
+        'After drop': 'Frontend should show START button for 1 hour',
+      },
     };
   }
 
@@ -297,12 +316,14 @@ export class QuizSimulationService {
     const timeRemaining = this.targetDropTime.getTime() - now.getTime();
 
     let currentPhase = 'unknown';
-    if (timeRemaining > 4 * 60 * 1000) {
-      currentPhase = 'composition';
+    const timeSinceStart = now.getTime() - this.simulationStartTime.getTime();
+
+    if (timeSinceStart < 2 * 60 * 1000) {
+      currentPhase = 'composition'; // 0-2 minutes: Creating quiz
     } else if (timeRemaining > 0) {
-      currentPhase = 'template_generation';
+      currentPhase = 'template_generation'; // 2-7 minutes: Building template
     } else {
-      currentPhase = 'notification';
+      currentPhase = 'quiz_live'; // 7+ minutes: Quiz is live
     }
 
     return {

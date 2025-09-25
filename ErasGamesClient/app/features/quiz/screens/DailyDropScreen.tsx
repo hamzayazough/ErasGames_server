@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
@@ -27,6 +27,33 @@ export default function DailyDropScreen({navigation}: Props) {
   } = useQuizAvailability();
   
   const { getErrorMessage, shouldShowRetry } = useDailyQuizErrorHandler();
+  
+  // Use refs to track state and prevent excessive API calls
+  const hasDroppedRef = useRef(false);
+  const windowExpiredHandledRef = useRef(false);
+
+  // Check availability when quiz drops (only once)
+  useEffect(() => {
+    if (hasDropped && !hasDroppedRef.current) {
+      console.log('🎯 Quiz has dropped! Checking availability...');
+      hasDroppedRef.current = true;
+      windowExpiredHandledRef.current = false; // Reset for next cycle
+      recheck();
+    } else if (!hasDropped) {
+      hasDroppedRef.current = false; // Reset when countdown starts again
+    }
+  }, [hasDropped, recheck]);
+
+  // If quiz was available but now shows "window expired", fetch next drop time (only once)
+  useEffect(() => {
+    if (reason === 'Quiz window expired' && !countdownLoading && !windowExpiredHandledRef.current) {
+      console.log('⏰ Quiz window expired, fetching next drop time...');
+      windowExpiredHandledRef.current = true;
+      setTimeout(() => {
+        refetchCountdown();
+      }, 2000); // Small delay to let user see the status
+    }
+  }, [reason, countdownLoading, refetchCountdown]);
 
   const handleStartQuiz = async () => {
     if (canStart) {

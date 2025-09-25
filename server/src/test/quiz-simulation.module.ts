@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { QuizSimulationService } from './quiz-simulation.service';
 import { QuizSimulationController } from './quiz-simulation.controller';
+import { DebugQuestionsController } from './debug-questions.controller';
+import { DebugQuestionsResetController } from './debug-questions-reset.controller';
+import { DebugQuizCleanupController } from './debug-quiz-cleanup.controller';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../database/entities/daily-quiz-question.entity';
 import { Question } from '../database/entities/question.entity';
@@ -25,7 +28,7 @@ import { NotificationService } from '../services/notification.service';
     ]),
     DailyQuizComposerModule,
   ],
-  controllers: [QuizSimulationController],
+  controllers: [QuizSimulationController, DebugQuestionsController, DebugQuestionsResetController, DebugQuizCleanupController],
   providers: [QuizSimulationService, NotificationService],
   exports: [QuizSimulationService],
 })

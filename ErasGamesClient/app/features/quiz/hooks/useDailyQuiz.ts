@@ -52,15 +52,14 @@ export function useQuizCountdown() {
 
     setTimeLeft({hours, minutes, seconds});
 
-    // If countdown reached zero, refetch drop data
-    if (diff === 0) {
-      setTimeout(fetchDropTime, 1000);
-    }
-  }, [dropData, fetchDropTime]);
+    // When countdown reaches zero, we'll let the parent component handle the state change
+    // Don't automatically fetch next drop time - let availability check determine what to do
+  }, [dropData]);
 
   useEffect(() => {
     fetchDropTime();
-  }, [fetchDropTime]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch on mount
 
   useEffect(() => {
     if (dropData) {

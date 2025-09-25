@@ -40,12 +40,43 @@ export class DailyQuizController {
     try {
       const now = new Date();
 
-      // First, check if there's a quiz today that hasn't started yet
+      // First, check if there's a quiz today that's currently available (within 1-hour window)
       const startOfToday = new Date(now);
       startOfToday.setUTCHours(0, 0, 0, 0);
       const endOfToday = new Date(now);
       endOfToday.setUTCHours(23, 59, 59, 999);
 
+      const currentQuiz = await this.dailyQuizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.dropAtUTC >= :startOfToday', { startOfToday })
+        .andWhere('quiz.dropAtUTC <= :endOfToday', { endOfToday })
+        .andWhere('quiz.dropAtUTC <= :now', { now }) // Quiz has already dropped
+        .andWhere('quiz.dropAtUTC > :oneHourAgo', {
+          oneHourAgo: new Date(now.getTime() - 60 * 60 * 1000),
+        }) // Still within 1-hour window
+        .orderBy('quiz.dropAtUTC', 'DESC')
+        .getOne();
+
+      if (currentQuiz) {
+        // There's a quiz available right now
+        const dropAtLocal = new Date(
+          currentQuiz.dropAtUTC.toLocaleString('en-US', {
+            timeZone: 'America/Toronto',
+          }),
+        );
+        const localDate = dropAtLocal.toISOString().split('T')[0];
+
+        return {
+          nextDropTime: currentQuiz.dropAtUTC.toISOString(),
+          nextDropTimeLocal: dropAtLocal.toISOString(),
+          localDate,
+          tz: 'America/Toronto',
+          isToday: true,
+          timeUntilDrop: 0, // Quiz is available now
+        };
+      }
+
+      // Check if there's a quiz today that hasn't started yet
       const todaysQuiz = await this.dailyQuizRepository
         .createQueryBuilder('quiz')
         .where('quiz.dropAtUTC >= :startOfToday', { startOfToday })
