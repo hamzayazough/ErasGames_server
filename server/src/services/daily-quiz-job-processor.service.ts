@@ -40,21 +40,33 @@ export class DailyQuizJobProcessor {
   }
 
   /**
-   * Daily quiz composition job (T-60m)
-   * Runs every day at 11:00 AM Toronto time to prepare for 12:00 PM drop
+   * Daily quiz composition job
+   * Runs every day at 2:00 AM UTC to generate tomorrow's quiz with random drop time (5-8 PM Toronto)
    */
-  @Cron('0 16 * * *', {
+  @Cron('0 2 * * *', {
     name: 'composer:daily',
-    timeZone: 'UTC', // 11 AM Toronto = 4 PM UTC (approximate)
+    timeZone: 'UTC',
   })
   async runDailyComposition(): Promise<void> {
     this.logger.log('Starting daily quiz composition job');
 
     try {
-      // Calculate tomorrow's drop time (12:00 PM Toronto)
+      // Calculate tomorrow's drop time with random hour (5-8 PM Toronto)
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setUTCHours(17, 0, 0, 0); // 12 PM Toronto = 5 PM UTC (approximate)
+
+      // Generate random hour between 5 PM and 8 PM Toronto time (22-03 UTC)
+      const randomHour = Math.floor(Math.random() * 3) + 17; // 5 PM (17) to 7 PM (19) Toronto (inclusive range)
+      const randomMinute = Math.floor(Math.random() * 60); // Random minute within the hour
+
+      // Convert Toronto time to UTC (Toronto is UTC-5 in summer, UTC-4 in winter)
+      // For simplicity, assuming UTC-5 offset (Eastern Daylight Time)
+      const utcHour = (randomHour + 5) % 24;
+      tomorrow.setUTCHours(utcHour, randomMinute, 0, 0);
+
+      this.logger.log(
+        `🎲 Random drop time selected: ${tomorrow.toISOString()} (${randomHour}:${randomMinute.toString().padStart(2, '0')} Toronto time)`,
+      );
 
       // Check if quiz already exists for tomorrow
       const existingQuiz = await this.dailyQuizRepository.findOne({
@@ -98,28 +110,39 @@ export class DailyQuizJobProcessor {
   }
 
   /**
-   * Template warmup job (T-5m)
-   * Runs every day at 11:55 AM Toronto time to prepare templates for 12:00 PM drop
+   * Template warmup job (runs every 5 minutes)
+   * Checks for quizzes that need template generation and are dropping soon
    */
-  @Cron('0 55 16 * * *', {
+  @Cron('*/5 * * * *', {
     name: 'warmup:template',
-    timeZone: 'UTC', // 11:55 AM Toronto = 4:55 PM UTC (approximate)
+    timeZone: 'UTC',
   })
   async runTemplateWarmup(): Promise<void> {
     this.logger.log('Starting template warmup job');
 
     try {
-      // Calculate today's drop time (12:00 PM Toronto)
+      // Find today's quiz with any drop time (since it's now random)
       const today = new Date();
-      today.setUTCHours(17, 0, 0, 0); // 12 PM Toronto = 5 PM UTC (approximate)
+      const startOfDay = new Date(today);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(today);
+      endOfDay.setUTCHours(23, 59, 59, 999);
 
-      // Find today's quiz
-      const quiz = await this.dailyQuizRepository.findOne({
-        where: { dropAtUTC: today },
-      });
+      // Find quizzes that need template generation and are dropping within the next 10 minutes
+      const tenMinutesFromNow = new Date(today.getTime() + 10 * 60 * 1000);
+
+      const quiz = await this.dailyQuizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.dropAtUTC > :now', { now: today })
+        .andWhere('quiz.dropAtUTC <= :tenMinutesFromNow', { tenMinutesFromNow })
+        .andWhere("quiz.templateCdnUrl IS NULL OR quiz.templateCdnUrl = ''")
+        .orderBy('quiz.dropAtUTC', 'ASC')
+        .getOne();
 
       if (!quiz) {
-        this.logger.warn(`No quiz found for today (${today.toISOString()})`);
+        this.logger.warn(
+          `No quiz found for today that needs template generation`,
+        );
         return;
       }
 
@@ -274,14 +297,34 @@ export class DailyQuizJobProcessor {
 
   /**
    * Manual trigger for daily composition (for testing/admin)
+   * If no dropAtUTC provided, generates one with random time for tomorrow
    */
-  async triggerDailyComposition(dropAtUTC: Date): Promise<void> {
+  async triggerDailyComposition(dropAtUTC?: Date): Promise<void> {
+    let targetDropTime = dropAtUTC;
+
+    if (!targetDropTime) {
+      // Generate random drop time for tomorrow (5-8 PM Toronto)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const randomHour = Math.floor(Math.random() * 3) + 17; // 5 PM to 7 PM Toronto
+      const randomMinute = Math.floor(Math.random() * 60);
+      const utcHour = (randomHour + 5) % 24; // Convert to UTC
+
+      tomorrow.setUTCHours(utcHour, randomMinute, 0, 0);
+      targetDropTime = tomorrow;
+
+      this.logger.log(
+        `🎲 Generated random drop time: ${targetDropTime.toISOString()} (${randomHour}:${randomMinute.toString().padStart(2, '0')} Toronto time)`,
+      );
+    }
+
     this.logger.log(
-      `Manually triggering composition for ${dropAtUTC.toISOString()}`,
+      `Manually triggering composition for ${targetDropTime.toISOString()}`,
     );
 
     const result = await this.composerService.composeDailyQuiz(
-      dropAtUTC,
+      targetDropTime,
       DailyQuizMode.MIX,
     );
 
@@ -348,10 +391,10 @@ export class DailyQuizJobProcessor {
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setUTCHours(16, 0, 0, 0); // Next composition time
+    tomorrow.setUTCHours(2, 0, 0, 0); // Next composition time (2 AM UTC)
 
-    const todayTemplate = new Date(now);
-    todayTemplate.setUTCHours(16, 55, 0, 0); // Next template time
+    const nextTemplateCheck = new Date(now);
+    nextTemplateCheck.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0); // Next 5-minute interval
 
     return {
       composer: {
@@ -361,7 +404,7 @@ export class DailyQuizJobProcessor {
       },
       template: {
         lastRun: null, // Would track actual last run in production
-        nextRun: todayTemplate.toISOString(),
+        nextRun: nextTemplateCheck.toISOString(),
         status: 'scheduled',
       },
     };

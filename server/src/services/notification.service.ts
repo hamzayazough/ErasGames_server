@@ -250,16 +250,48 @@ export class NotificationService {
    * Send test notification to specific user
    */
   async sendTestNotification(fcmToken: string): Promise<void> {
+    this.logger.log(
+      `🔍 Sending test notification to token: ${fcmToken.substring(0, 20)}...`,
+    );
+
     const message: admin.messaging.Message = {
       notification: {
         title: '🧪 Test Notification',
         body: 'Your notifications are working perfectly!',
       },
+      data: {
+        type: 'test',
+        timestamp: new Date().toISOString(),
+        // This forces the notification to be handled by the system
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'default',
+          priority: 'high',
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          visibility: 'public',
+        },
+        // Always show notification, even when app is in foreground
+        data: {
+          type: 'test',
+          timestamp: new Date().toISOString(),
+        },
+      },
       token: fcmToken,
     };
 
-    await admin.messaging().send(message);
-    this.logger.log('✅ Test notification sent successfully');
+    try {
+      const response = await admin.messaging().send(message);
+      this.logger.log(
+        `✅ Test notification sent successfully. Message ID: ${response}`,
+      );
+    } catch (error) {
+      this.logger.error('❌ Failed to send test notification:', error);
+      throw error;
+    }
   }
 
   /**

@@ -1,48 +1,52 @@
-import React, {useState, useEffect} from 'react';
-import {StyleSheet, ScrollView, StatusBar} from 'react-native';
+import React from 'react';
+import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
-import {EraSelector} from '../../../core/components/EraSelector';
+import {useQuizCountdown, useQuizAvailability, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 type Props = RootStackScreenProps<'DailyDrop'>;
 
 export default function DailyDropScreen({navigation}: Props) {
   const theme = useTheme();
-  const [timeUntilDrop, setTimeUntilDrop] = useState({
-    hours: 3,
-    minutes: 42,
-    seconds: 15,
-  });
+  const { 
+    timeLeft, 
+    isLoading: countdownLoading, 
+    error: countdownError, 
+    dropData,
+    isToday,
+    hasDropped,
+    refetch: refetchCountdown 
+  } = useQuizCountdown();
+  
+  const { 
+    canStart, 
+    reason, 
+    isChecking, 
+    recheck 
+  } = useQuizAvailability();
+  
+  const { getErrorMessage, shouldShowRetry } = useDailyQuizErrorHandler();
 
-  // Mock countdown timer
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeUntilDrop(prev => {
-        if (prev.seconds > 0) {
-          return {...prev, seconds: prev.seconds - 1};
-        } else if (prev.minutes > 0) {
-          return {...prev, minutes: prev.minutes - 1, seconds: 59};
-        } else if (prev.hours > 0) {
-          return {...prev, hours: prev.hours - 1, minutes: 59, seconds: 59};
-        }
-        return prev;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const navigateToStartQuiz = () => {
-    navigation.navigate('StartQuiz');
+  const handleStartQuiz = async () => {
+    if (canStart) {
+      navigation.navigate('StartQuiz');
+    } else {
+      Alert.alert(
+        'Quiz Not Available', 
+        reason || 'Cannot start quiz right now',
+        [
+          { text: 'OK' },
+          ...(shouldShowRetry ? [{ text: 'Retry', onPress: recheck }] : [])
+        ]
+      );
+    }
   };
 
-  const navigateToResults = () => {
-    navigation.navigate('Results');
-  };
 
-  const navigateToQuiz = () => {
-    navigation.navigate('QuizSelection');
+
+  const handleRetryCountdown = () => {
+    refetchCountdown();
   };
 
   return (
@@ -69,110 +73,89 @@ export default function DailyDropScreen({navigation}: Props) {
             
             {/* Countdown */}
             <View style={styles.countdownContainer}>
-              <Text variant="caption" align="center" style={[styles.countdownLabel, {color: theme.colors.textSecondary}]}>
-                Next drop in your local time window (6:00 PM - 10:00 PM)
-              </Text>
-              
-              <View style={styles.timeContainer}>
-                <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent1}]}>
-                  <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                    {timeUntilDrop.hours.toString().padStart(2, '0')}
+              {countdownLoading ? (
+                <Text variant="body" align="center" style={[styles.loadingText, {color: theme.colors.textSecondary}]}>
+                  Loading countdown...
+                </Text>
+              ) : countdownError ? (
+                <View style={styles.errorContainer}>
+                  <Text variant="body" align="center" style={[styles.errorText, {color: theme.colors.error}]}>
+                    {countdownError}
                   </Text>
-                  <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
-                    HOURS
+                  <Button
+                    title="Retry"
+                    variant="outline"
+                    onPress={handleRetryCountdown}
+                    style={styles.retryButton}
+                  />
+                </View>
+              ) : hasDropped && canStart ? (
+                <View style={styles.availableContainer}>
+                  <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
+                    🎉 Quiz is Live!
+                  </Text>
+                  <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
+                    You have 1 hour to complete today's quiz
                   </Text>
                 </View>
-                
-                <Text variant="heading1" style={[styles.separator, {color: theme.colors.primary}]}>:</Text>
-                
-                <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent2}]}>
-                  <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                    {timeUntilDrop.minutes.toString().padStart(2, '0')}
+              ) : (
+                <>
+                  <Text variant="caption" align="center" style={[styles.countdownLabel, {color: theme.colors.textSecondary}]}>
+                    {isToday ? 'Next drop today' : 'Next drop tomorrow'} • Random time between 5-8 PM Toronto
                   </Text>
-                  <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
-                    MINUTES
-                  </Text>
-                </View>
-                
-                <Text variant="heading1" style={[styles.separator, {color: theme.colors.primary}]}>:</Text>
-                
-                <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent3}]}>
-                  <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                    {timeUntilDrop.seconds.toString().padStart(2, '0')}
-                  </Text>
-                  <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
-                    SECONDS
-                  </Text>
-                </View>
-              </View>
+                  
+                  <View style={styles.timeContainer}>
+                    <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent1}]}>
+                      <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
+                        {timeLeft.hours.toString().padStart(2, '0')}
+                      </Text>
+                      <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
+                        HOURS
+                      </Text>
+                    </View>
+                    
+                    <Text variant="heading1" style={[styles.separator, {color: theme.colors.primary}]}>:</Text>
+                    
+                    <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent2}]}>
+                      <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
+                        {timeLeft.minutes.toString().padStart(2, '0')}
+                      </Text>
+                      <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
+                        MINUTES
+                      </Text>
+                    </View>
+                    
+                    <Text variant="heading1" style={[styles.separator, {color: theme.colors.primary}]}>:</Text>
+                    
+                    <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent3}]}>
+                      <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
+                        {timeLeft.seconds.toString().padStart(2, '0')}
+                      </Text>
+                      <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
+                        SECONDS
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
 
-            {/* Era hint */}
-            <View style={[styles.eraHint, {backgroundColor: theme.colors.surface}]}>
-              <Text variant="body" align="center" style={[styles.eraText, {color: theme.colors.text}]}>
-                🎭 Tonight's theme: <Text style={[styles.eraName, {color: theme.colors.primary}]}>Folklore Era</Text>
-              </Text>
-              <Text variant="caption" align="center" style={[styles.eraDescription, {color: theme.colors.textSecondary}]}>
-                Cottagecore vibes and indie folk questions await
-              </Text>
-            </View>
+            {/* Quiz action */}
+            {hasDropped && canStart && (
+              <Button
+                title="🚀 Start Today's Quiz"
+                onPress={handleStartQuiz}
+                style={[styles.startQuizButton, {backgroundColor: theme.colors.success}]}
+              />
+            )}
           </View>
         </Card>
 
-        {/* Quick Stats */}
-        <View style={styles.statsContainer}>
-          <Card style={[styles.statCard, {backgroundColor: theme.colors.card}]}>
-            <Text variant="heading3" align="center" style={[styles.statNumber, {color: theme.colors.accent1}]}>
-              #47
-            </Text>
-            <Text variant="caption" align="center" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-              Global Rank
-            </Text>
-          </Card>
-          
-          <Card style={[styles.statCard, {backgroundColor: theme.colors.card}]}>
-            <Text variant="heading3" align="center" style={[styles.statNumber, {color: theme.colors.accent2}]}>
-              892
-            </Text>
-            <Text variant="caption" align="center" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-              Total Score
-            </Text>
-          </Card>
-          
-          <Card style={[styles.statCard, {backgroundColor: theme.colors.card}]}>
-            <Text variant="heading3" align="center" style={[styles.statNumber, {color: theme.colors.accent3}]}>
-              13
-            </Text>
-            <Text variant="caption" align="center" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-              Day Streak
-            </Text>
-          </Card>
-        </View>
 
-        {/* Era Theme Selector */}
-        <EraSelector />
 
-        {/* Development Navigation Buttons */}
-        <View style={styles.devButtons}>
-          <Button
-            title="🚀 Go to Start Quiz (Dev)"
-            onPress={navigateToStartQuiz}
-            variant="outline"
-            style={styles.devButton}
-          />
-          <Button
-            title="📝 Choose Quiz (Dev)"
-            onPress={navigateToQuiz}
-            variant="outline"
-            style={styles.devButton}
-          />
-          <Button
-            title="🏆 Go to Results (Dev)"
-            onPress={navigateToResults}
-            variant="outline"
-            style={styles.devButton}
-          />
-        </View>
+
+
+
 
         {/* Bottom padding */}
         <View style={styles.bottomPadding} />
@@ -249,51 +232,52 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginHorizontal: 4,
   },
-  eraHint: {
+  bottomPadding: {
+    height: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+  },
+  availableContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  availableText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  availableSubtext: {
+    fontSize: 16,
+  },
+  startQuizButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  statusCard: {
+    marginHorizontal: 24,
+    marginBottom: 24,
     padding: 16,
     borderRadius: 12,
   },
-  eraText: {
+  statusText: {
     fontSize: 16,
     marginBottom: 4,
   },
-  eraName: {
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-  },
-  eraDescription: {
+  checkingText: {
     fontSize: 14,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 24,
-    marginBottom: 32,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  devButtons: {
-    marginHorizontal: 24,
-    marginBottom: 16,
-    gap: 12,
-  },
-  devButton: {
-    marginBottom: 0,
-  },
-  bottomPadding: {
-    height: 40,
+    fontStyle: 'italic',
   },
 });

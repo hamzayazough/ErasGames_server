@@ -12,13 +12,15 @@ export class FCMService {
   static async requestPermissionAndGetToken(): Promise<string | null> {
     try {
       // Check if permission was already requested
-      const permissionRequested = await AsyncStorage.getItem(FCM_PERMISSION_REQUESTED);
-      
+      const permissionRequested = await AsyncStorage.getItem(
+        FCM_PERMISSION_REQUESTED,
+      );
+
       if (!permissionRequested) {
         const authStatus = await messaging().requestPermission();
         await AsyncStorage.setItem(FCM_PERMISSION_REQUESTED, 'true');
-        
-        const enabled = 
+
+        const enabled =
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
           authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
@@ -26,22 +28,25 @@ export class FCMService {
           console.log('Push notification permission denied');
           return null;
         }
-        
+
         console.log('🔔 Push notification permission granted');
       }
 
       // Get FCM token
       const fcmToken = await messaging().getToken();
-      
+
       if (fcmToken) {
-        console.log('📱 FCM Token received:', fcmToken.substring(0, 20) + '...');
-        
+        console.log(
+          '📱 FCM Token received:',
+          fcmToken.substring(0, 20) + '...',
+        );
+
         // Store token locally
         await AsyncStorage.setItem(FCM_TOKEN_KEY, fcmToken);
-        
+
         return fcmToken;
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error getting FCM token:', error);
@@ -64,21 +69,27 @@ export class FCMService {
   /**
    * Register FCM token with server
    */
-  static async registerTokenWithServer(token: string, userId: string): Promise<boolean> {
+  static async registerTokenWithServer(
+    token: string,
+    userId: string,
+  ): Promise<boolean> {
     try {
-      const response = await fetch('http://10.0.2.2:3000/api/notifications/register-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        'http://10.0.2.2:3000/api/notifications/register-token',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            fcmToken: token,
+            platform: Platform.OS,
+            appVersion: '1.0.0', // You can get this from app info
+            deviceModel: Platform.OS === 'ios' ? 'iPhone' : 'Android Device',
+          }),
         },
-        body: JSON.stringify({
-          userId: userId,
-          fcmToken: token,
-          platform: Platform.OS,
-          appVersion: '1.0.0', // You can get this from app info
-          deviceModel: Platform.OS === 'ios' ? 'iPhone' : 'Android Device'
-        }),
-      });
+      );
 
       if (response.ok) {
         console.log('✅ FCM token registered with server');
@@ -99,7 +110,8 @@ export class FCMService {
   static setupForegroundMessageHandler() {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('📩 Foreground notification received:', remoteMessage);
-      
+
+      // Handle different notification types
       if (remoteMessage.data?.type === 'daily_quiz') {
         // Show in-app notification for daily quiz
         Alert.alert(
@@ -112,13 +124,36 @@ export class FCMService {
                 // Navigate to quiz screen
                 console.log('Navigate to quiz:', remoteMessage.data?.quizId);
                 // You'll implement navigation logic here
-              }
+              },
             },
             {
               text: 'Later',
-              style: 'cancel'
-            }
-          ]
+              style: 'cancel',
+            },
+          ],
+        );
+      } else if (remoteMessage.data?.type === 'test') {
+        // Show test notification alert
+        Alert.alert(
+          remoteMessage.notification?.title || '🧪 Test Notification',
+          remoteMessage.notification?.body || 'Test notification received!',
+          [
+            {
+              text: 'OK',
+              onPress: () => console.log('Test notification acknowledged'),
+            },
+          ],
+        );
+      } else {
+        // Generic notification handler
+        Alert.alert(
+          remoteMessage.notification?.title || 'Notification',
+          remoteMessage.notification?.body || 'You have a new notification',
+          [
+            {
+              text: 'OK',
+            },
+          ],
         );
       }
     });
@@ -132,7 +167,7 @@ export class FCMService {
   static setupBackgroundMessageHandler() {
     messaging().setBackgroundMessageHandler(async remoteMessage => {
       console.log('📩 Background notification received:', remoteMessage);
-      
+
       // Handle background notification
       // This runs even when app is closed
     });
@@ -145,30 +180,35 @@ export class FCMService {
     // Handle notification when app is opened from background
     messaging().onNotificationOpenedApp(remoteMessage => {
       console.log('📱 App opened via notification:', remoteMessage);
-      
+
       if (remoteMessage.data?.type === 'daily_quiz') {
         // Navigate to quiz screen
         navigationRef?.current?.navigate('Quiz', {
-          quizId: remoteMessage.data.quizId
+          quizId: remoteMessage.data.quizId,
         });
       }
     });
 
     // Handle notification when app is opened from quit state
-    messaging().getInitialNotification().then(remoteMessage => {
-      if (remoteMessage) {
-        console.log('📱 App opened from quit state via notification:', remoteMessage);
-        
-        if (remoteMessage.data?.type === 'daily_quiz') {
-          // Navigate to quiz screen after app loads
-          setTimeout(() => {
-            navigationRef?.current?.navigate('Quiz', {
-              quizId: remoteMessage.data?.quizId
-            });
-          }, 1000); // Wait for navigation to be ready
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        if (remoteMessage) {
+          console.log(
+            '📱 App opened from quit state via notification:',
+            remoteMessage,
+          );
+
+          if (remoteMessage.data?.type === 'daily_quiz') {
+            // Navigate to quiz screen after app loads
+            setTimeout(() => {
+              navigationRef?.current?.navigate('Quiz', {
+                quizId: remoteMessage.data?.quizId,
+              });
+            }, 1000); // Wait for navigation to be ready
+          }
         }
-      }
-    });
+      });
   }
 
   /**
@@ -177,10 +217,10 @@ export class FCMService {
   static setupTokenRefreshHandler(userId: string) {
     messaging().onTokenRefresh(async token => {
       console.log('🔄 FCM token refreshed:', token.substring(0, 20) + '...');
-      
+
       // Store new token
       await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
-      
+
       // Register new token with server
       await this.registerTokenWithServer(token, userId);
     });

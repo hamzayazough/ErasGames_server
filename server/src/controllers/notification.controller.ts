@@ -8,14 +8,19 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Post('register-token')
-  async registerToken(@Body() body: {
-    userId: string;
-    fcmToken: string;
-    platform: 'ios' | 'android';
-    appVersion?: string;
-    deviceModel?: string;
-  }) {
-    this.logger.log(`Registering FCM token for user ${body.userId} on ${body.platform}`);
+  async registerToken(
+    @Body()
+    body: {
+      userId: string;
+      fcmToken: string;
+      platform: 'ios' | 'android';
+      appVersion?: string;
+      deviceModel?: string;
+    },
+  ) {
+    this.logger.log(
+      `Registering FCM token for user ${body.userId} on ${body.platform}`,
+    );
 
     try {
       await this.notificationService.registerUserToken(
@@ -23,12 +28,12 @@ export class NotificationController {
         body.fcmToken,
         body.platform,
         body.appVersion,
-        body.deviceModel
+        body.deviceModel,
       );
 
       return {
         success: true,
-        message: 'FCM token registered successfully'
+        message: 'FCM token registered successfully',
       };
     } catch (error) {
       this.logger.error('Failed to register FCM token', error);
@@ -45,7 +50,7 @@ export class NotificationController {
 
       return {
         success: true,
-        message: 'Test notification sent successfully'
+        message: 'Test notification sent successfully',
       };
     } catch (error) {
       this.logger.error('Failed to send test notification', error);
