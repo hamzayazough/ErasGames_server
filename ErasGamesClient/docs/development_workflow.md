@@ -60,3 +60,7 @@ Running the App
 3. Metro sends updated code to the emulator.
 4. App updates instantly (**Hot Reload**).
 5. Use **Chrome DevTools** to debug the JavaScript.
+
+## When port problem
+
+adb reverse tcp:8081 tcp:8081

@@ -64,9 +64,11 @@ import { DailyQuizController } from './controllers/daily-quiz.controller';
 import { AttemptsController } from './controllers/attempts.controller';
 import { TestController } from './admin/controllers/cdn-test.controller';
 import { AuthController } from './controllers/auth.controller';
+import { NotificationController } from './controllers/notification.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
+import { NotificationService } from './services/notification.service';
 import { FirebaseService } from './services/firebase.service';
 import { AuthService } from './services/auth.service';
 import { FirebaseAuthMiddleware } from './middleware/firebase-auth.middleware';
@@ -99,6 +101,8 @@ import { BillingEvent } from './database/entities/billing-event.entity';
 import { ProviderTransaction } from './database/entities/provider-transaction.entity';
 import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
 import { CompositionLogEntity } from './database/entities/composition-log.entity';
+import { UserDevice } from './database/entities/user-device.entity';
+import { QuizSimulationModule } from './test/quiz-simulation.module';
 
 @Module({
   imports: [
@@ -112,6 +116,9 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
 
     // Daily Quiz Composer module
     DailyQuizComposerModule,
+
+    // Quiz Simulation module (for testing)
+    QuizSimulationModule,
 
     // TypeORM configuration with environment-aware settings
     TypeOrmModule.forRoot({
@@ -133,6 +140,7 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
         ProviderTransaction,
         DailyDropTZ,
         CompositionLogEntity,
+        UserDevice,
       ],
     }),
 
@@ -144,6 +152,7 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
       DailyQuizQuestion,
       Question, // Add Question repository for question creation services
       User, // Add User repository for attempts
+      UserDevice, // Add UserDevice repository for notifications
     ]),
   ],
   controllers: [
@@ -156,6 +165,7 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     AttemptsController,
     TestController,
     AuthController,
+    NotificationController,
   ],
   providers: [
     AppService,
@@ -169,6 +179,8 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     VisualAestheticQuestionService,
     // Job Processing Services
     DailyQuizJobProcessor,
+    // Notification Services
+    NotificationService,
     // Authentication Services
     FirebaseService,
     AuthService,

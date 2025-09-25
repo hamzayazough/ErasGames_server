@@ -3,6 +3,7 @@ import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import firebaseService from '../services/firebaseService';
 import { authApiService } from '../api/auth';
 import { AuthenticatedUser } from '../api/config';
+import { FCMService } from '../services/FCMService';
 
 interface AuthContextType {
   user: FirebaseAuthTypes.User | null;
@@ -31,6 +32,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [serverUser, setServerUser] = useState<AuthenticatedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Setup push notifications for authenticated user
+  const setupNotifications = async (userId: string) => {
+    try {
+      console.log('🔔 Setting up push notifications...');
+      
+      // Request permission and get FCM token
+      const fcmToken = await FCMService.requestPermissionAndGetToken();
+      
+      if (fcmToken) {
+        // Register token with server
+        await FCMService.registerTokenWithServer(fcmToken, userId);
+        
+        // Setup message handlers
+        FCMService.setupForegroundMessageHandler();
+        FCMService.setupTokenRefreshHandler(userId);
+        
+        console.log('✅ Push notifications setup complete');
+      } else {
+        console.log('❌ Failed to get FCM token');
+      }
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
+  };
+
   useEffect(() => {
     // Initialize Firebase
     firebaseService.initialize().catch(console.error);
@@ -45,6 +71,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const serverUserData = await authApiService.authenticate();
           setServerUser(serverUserData);
           console.log('✅ Authenticated with server:', serverUserData.id);
+          
+          // Setup FCM notifications after successful authentication
+          await setupNotifications(authUser.uid);
         } catch (error) {
           console.error('❌ Failed to authenticate with server:', error);
           setServerUser(null);

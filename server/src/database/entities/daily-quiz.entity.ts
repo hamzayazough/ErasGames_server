@@ -53,6 +53,13 @@ export class DailyQuiz {
   @Column({ type: 'varchar', length: 512, name: 'template_cdn_url' })
   templateCdnUrl!: string;
 
+  /**
+   * Flag to track if push notification has been sent for this quiz
+   * Prevents duplicate notifications
+   */
+  @Column({ type: 'boolean', name: 'notification_sent', default: false })
+  notificationSent!: boolean;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt!: Date;
 }

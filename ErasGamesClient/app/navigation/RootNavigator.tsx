@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useColorScheme, ActivityIndicator, View} from 'react-native';
 import {useTheme} from '../core/theme/ThemeProvider';
 import {useAuth} from '../core/context/AuthContext';
+import {FCMService} from '../core/services/FCMService';
 import type {RootStackParamList} from './types';
 
 // Import our quiz screens
@@ -16,6 +17,7 @@ import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 // Import auth screens
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import RegisterScreen from '../features/auth/screens/RegisterScreen';
+// TODO: Create ForgotPasswordScreen if it doesn't exist
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -23,6 +25,14 @@ export function RootNavigator() {
   const theme = useTheme();
   const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading } = useAuth();
+  const navigationRef = useRef<any>();
+
+  useEffect(() => {
+    // Setup notification opened handlers when navigation is ready
+    if (isAuthenticated) {
+      FCMService.setupNotificationOpenedHandler(navigationRef);
+    }
+  }, [isAuthenticated]);
   
   // Create navigation theme based on our app theme
   const navigationTheme = {
@@ -47,7 +57,7 @@ export function RootNavigator() {
   }
   
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,

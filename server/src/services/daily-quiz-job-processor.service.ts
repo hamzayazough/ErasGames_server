@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, SchedulerRegistry } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CronJob } from 'cron';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../database/entities/daily-quiz-question.entity';
 import { Question } from '../database/entities/question.entity';
@@ -10,6 +11,7 @@ import {
   TemplateService,
   DailyQuizMode,
 } from '../database/services/daily-quiz-composer';
+import { NotificationService } from './notification.service';
 
 /**
  * Background job processor for daily quiz operations
@@ -31,7 +33,11 @@ export class DailyQuizJobProcessor {
     private readonly questionRepository: Repository<Question>,
     private readonly composerService: DailyQuizComposerService,
     private readonly templateService: TemplateService,
-  ) {}
+    private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly notificationService: NotificationService,
+  ) {
+    this.logger.log('DailyQuizJobProcessor service initialized');
+  }
 
   /**
    * Daily quiz composition job (T-60m)
@@ -73,7 +79,21 @@ export class DailyQuizJobProcessor {
       );
     } catch (error) {
       this.logger.error('Failed to compose daily quiz', error);
-      // In production, this would trigger alerts
+
+      // In production, this would trigger critical alerts:
+      // - PagerDuty notification (wakes up engineers at 3 AM)
+      // - Slack message to #engineering channel
+      // - DataDog error metric for monitoring dashboards
+      // - Sentry error tracking for debugging
+      //
+      // Example production code:
+      // await this.alertingService.sendCriticalAlert('DailyQuizComposition', error, {
+      //   dropTime: tomorrow.toISOString(),
+      //   quizMode: DailyQuizMode.MIX
+      // });
+      //
+      // This ensures engineers are immediately notified when daily quiz
+      // creation fails, preventing users from having no quiz to play
     }
   }
 
@@ -137,12 +157,118 @@ export class DailyQuizJobProcessor {
         templateCdnUrl: templateUrl,
       });
 
+      // Schedule notification for exact drop time (OPTIMAL APPROACH)
+      const updatedQuiz = await this.dailyQuizRepository.findOne({
+        where: { id: quiz.id },
+      });
+      if (updatedQuiz) {
+        this.scheduleNotificationForQuiz(updatedQuiz);
+      }
+
       this.logger.log(
         `Template uploaded successfully for quiz ${quiz.id}: ${templateUrl} (v${version})`,
       );
     } catch (error) {
       this.logger.error('Failed to build template', error);
-      // In production, this would trigger alerts
+
+      // In production, this would trigger critical alerts:
+      // - Engineers get immediately notified via PagerDuty
+      // - Slack alert: "Template upload failed - users won't be able to play quiz"
+      // - DataDog dashboard shows template failure spike
+      // - Automatic retry mechanism could be triggered
+      //
+      // Example production code:
+      // await this.alertingService.sendCriticalAlert('TemplateWarmup', error, {
+      //   quizId: quiz.id,
+      //   dropTime: quiz.dropAtUTC.toISOString(),
+      //   questionsCount: questions.length
+      // });
+    }
+  }
+
+  /**
+   * Schedule notification for a quiz when it's created or template is ready
+   * Creates a specific cron job for the exact drop time (OPTIMAL APPROACH)
+   */
+  scheduleNotificationForQuiz(quiz: DailyQuiz): void {
+    const jobName = `notification-${quiz.id}`;
+
+    // Don't schedule if already sent or if drop time has passed
+    if (quiz.notificationSent || quiz.dropAtUTC <= new Date()) {
+      this.logger.log(`Skipping notification scheduling for quiz ${quiz.id}`);
+      return;
+    }
+
+    // Create cron expression for exact drop time
+    const dropTime = quiz.dropAtUTC;
+    const cronExpression = `${dropTime.getUTCSeconds()} ${dropTime.getUTCMinutes()} ${dropTime.getUTCHours()} ${dropTime.getUTCDate()} ${dropTime.getUTCMonth() + 1} *`;
+
+    this.logger.log(
+      `📅 OPTIMAL: Scheduling notification for quiz ${quiz.id} at EXACT time ${dropTime.toISOString()}`,
+    );
+    this.logger.log(`   No more database polling! Cron: ${cronExpression}`);
+
+    try {
+      // Create the cron job for exact timing
+      const job = new CronJob(
+        cronExpression,
+        async () => {
+          await this.sendQuizNotification(quiz);
+          // Clean up the job after execution
+          this.schedulerRegistry.deleteCronJob(jobName);
+        },
+        null, // onComplete
+        true, // start immediately
+        'UTC',
+      );
+
+      // Register the job with NestJS scheduler
+      this.schedulerRegistry.addCronJob(jobName, job);
+
+      this.logger.log(`✅ Notification scheduled for EXACT drop time`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to schedule notification for quiz ${quiz.id}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Send notification for a specific quiz at its drop time
+   */
+  private async sendQuizNotification(quiz: DailyQuiz): Promise<void> {
+    this.logger.log(
+      `🔔 Sending notification for quiz ${quiz.id} - quiz is now live at ${quiz.dropAtUTC.toISOString()}!`,
+    );
+
+    try {
+      // Check if template is ready
+      if (!quiz.templateCdnUrl) {
+        this.logger.error(`Quiz found but template not ready for ${quiz.id}`);
+        return;
+      }
+
+      // Send push notifications to all users
+      await this.notificationService.sendDailyQuizNotification(
+        quiz.id,
+        quiz.dropAtUTC,
+      );
+
+      // Mark notification as sent to avoid duplicate sends
+      await this.dailyQuizRepository.update(quiz.id, {
+        notificationSent: true,
+      });
+
+      this.logger.log(
+        `🚀 Quiz notification sent successfully for quiz ${quiz.id} at ${quiz.dropAtUTC.toISOString()}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send notification for quiz ${quiz.id}`,
+        error,
+      );
     }
   }
 
