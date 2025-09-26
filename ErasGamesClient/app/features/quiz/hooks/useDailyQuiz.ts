@@ -29,7 +29,16 @@ export function useQuizCountdown() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await dailyQuizService.getNextQuizDropTime();
+      const status = await dailyQuizStatusService.getDailyQuizStatus();
+      // Convert the consolidated response to the expected format
+      const data: NextQuizDropResponse = {
+        nextDropTime: status.nextDrop.nextDropTime,
+        nextDropTimeLocal: status.nextDrop.nextDropTimeLocal,
+        localDate: status.nextDrop.localDate,
+        tz: status.nextDrop.tz,
+        isToday: status.nextDrop.isToday,
+        timeUntilDrop: status.nextDrop.timeUntilDrop,
+      };
       setDropData(data);
     } catch (err) {
       console.error('Failed to fetch drop time:', err);
@@ -296,12 +305,7 @@ export function useDailyQuizStatus() {
       setIsLoading(true);
       setError(null);
 
-      const canCheck = await dailyQuizStatusService.canCheckStatus();
-      if (!canCheck) {
-        setError('Authentication required');
-        return;
-      }
-
+      // The service now handles authentication internally
       const statusData = await dailyQuizStatusService.getDailyQuizStatus();
       setStatus(statusData);
     } catch (err: any) {

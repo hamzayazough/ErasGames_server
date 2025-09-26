@@ -411,10 +411,19 @@ export class AttemptsController {
 
   /**
    * POST /attempts/:id/finish
-   * Finish the attempt and compute score
+   * Submit all answers and finish the attempt with score calculation
    */
   @Post(':id/finish')
-  async finishAttempt(@Param('id') attemptId: string): Promise<{
+  async finishAttempt(
+    @Param('id') attemptId: string,
+    @Body()
+    request?: {
+      answers?: Array<{
+        questionId: string;
+        answer: Answer;
+      }>;
+    },
+  ): Promise<{
     score: number;
     breakdown: {
       base: number;
@@ -456,7 +465,59 @@ export class AttemptsController {
         );
       }
 
-      // Get all answers for this attempt
+      // If new answers are provided, save them first (bulk submission)
+      if (request?.answers && request.answers.length > 0) {
+        this.logger.log(
+          `💾 Saving ${request.answers.length} answers in bulk...`,
+        );
+
+        for (const answerData of request.answers) {
+          // Validate that the question belongs to this daily quiz
+          const quizQuestion = await this.dailyQuizQuestionRepository.findOne({
+            where: {
+              dailyQuiz: { id: attempt.dailyQuiz.id },
+              question: { id: answerData.questionId },
+            },
+            relations: ['question'],
+          });
+
+          if (!quizQuestion) {
+            this.logger.warn(
+              `Question ${answerData.questionId} not found in quiz ${attempt.dailyQuiz.id}`,
+            );
+            continue; // Skip invalid questions rather than failing
+          }
+
+          // Create or update answer
+          let attemptAnswer = await this.attemptAnswerRepository.findOne({
+            where: {
+              attempt: { id: attemptId },
+              questionId: answerData.questionId,
+            },
+          });
+
+          if (attemptAnswer) {
+            // Update existing answer
+            attemptAnswer.answerJSON = answerData.answer;
+            // Note: timeSpentMs will be calculated from overall attempt timing
+          } else {
+            // Create new answer
+            attemptAnswer = this.attemptAnswerRepository.create({
+              attempt: { id: attemptId } as Attempt,
+              questionId: answerData.questionId,
+              answerJSON: answerData.answer,
+              timeSpentMs: 0, // Will be calculated from overall timing
+              idempotencyKey: `bulk-${attemptId}-${answerData.questionId}`,
+            });
+          }
+
+          await this.attemptAnswerRepository.save(attemptAnswer);
+        }
+
+        this.logger.log(`✅ Bulk answer submission completed`);
+      }
+
+      // Get all answers for this attempt (including newly submitted ones)
       const answers = await this.attemptAnswerRepository.find({
         where: { attempt: { id: attemptId } },
       });
@@ -466,6 +527,22 @@ export class AttemptsController {
         where: { dailyQuiz: { id: attempt.dailyQuiz.id } },
         relations: ['question'],
       });
+
+      // Calculate overall timing first
+      const finishTime = now;
+      const finishTimeSec = Math.round(
+        (finishTime.getTime() - attempt.startAt.getTime()) / 1000,
+      );
+      const totalTimeMs = finishTime.getTime() - attempt.startAt.getTime();
+
+      // Distribute time evenly across questions for display purposes
+      const avgTimePerQuestionMs = Math.round(
+        totalTimeMs / quizQuestions.length,
+      );
+
+      this.logger.log(
+        `📊 Quiz timing: Total ${finishTimeSec}s (${totalTimeMs}ms), Avg per question: ${avgTimePerQuestionMs}ms`,
+      );
 
       // Calculate accuracy points
       let totalAccuracyPoints = 0;
@@ -482,14 +559,13 @@ export class AttemptsController {
         );
         let isCorrect = false;
         let accuracyPoints = 0;
-        let timeSpentMs = 0;
 
         if (answer) {
-          timeSpentMs = answer.timeSpentMs;
-          // Simple correctness check - this would be more sophisticated in practice
+          // Use improved answer correctness checking
           isCorrect = this.checkAnswerCorrectness(
             answer.answerJSON,
             quizQuestion.question.correctJSON,
+            quizQuestion.question.questionType,
           );
 
           if (isCorrect) {
@@ -498,25 +574,20 @@ export class AttemptsController {
             totalAccuracyPoints += accuracyPoints;
           }
 
-          // Update answer record
+          // Update answer record with calculated timing
           answer.isCorrect = isCorrect;
           answer.accuracyPoints = accuracyPoints;
+          answer.timeSpentMs = avgTimePerQuestionMs; // Use average time for display
           await this.attemptAnswerRepository.save(answer);
         }
 
         questionResults.push({
           questionId: quizQuestion.question.id,
           isCorrect,
-          timeSpentMs,
+          timeSpentMs: avgTimePerQuestionMs, // Use average time for display
           accuracyPoints,
         });
       }
-
-      // Calculate timing
-      const finishTime = now;
-      const finishTimeSec = Math.round(
-        (finishTime.getTime() - attempt.startAt.getTime()) / 1000,
-      );
 
       // Calculate score using the specified formula
       const base = 100;
@@ -602,19 +673,228 @@ export class AttemptsController {
   }
 
   /**
-   * Simple answer correctness check
-   * In practice, this would be more sophisticated and handle different question types
+   * Question-type specific answer correctness check
+   * Handles different question types with appropriate validation logic
    */
   private checkAnswerCorrectness(
     userAnswer: Answer,
     correctAnswer: any,
+    questionType: string,
   ): boolean {
-    // This is a simplified implementation
-    // Real implementation would check based on question type and answer format
+    try {
+      this.logger.debug(
+        `🔍 Checking answer for question type: ${questionType}`,
+      );
+
+      switch (questionType) {
+        case 'fill_blank':
+          return this.checkFillBlankAnswer(userAnswer, correctAnswer);
+
+        case 'tracklist_order':
+          return this.checkTracklistOrderAnswer(userAnswer, correctAnswer);
+
+        case 'timeline_order':
+          return this.checkTimelineOrderAnswer(userAnswer, correctAnswer);
+
+        case 'speed_tap':
+          return this.checkSpeedTapAnswer(userAnswer, correctAnswer);
+
+        case 'song_album_match':
+          return this.checkSongAlbumMatchAnswer(userAnswer, correctAnswer);
+
+        case 'popularity_match':
+          return this.checkPopularityMatchAnswer(userAnswer, correctAnswer);
+
+        case 'odd_one_out':
+          return this.checkOddOneOutAnswer(userAnswer, correctAnswer);
+
+        case 'guess_by_lyric':
+          return this.checkGuessByLyricAnswer(userAnswer, correctAnswer);
+
+        case 'album_year_guess':
+          return this.checkAlbumYearGuessAnswer(userAnswer, correctAnswer);
+
+        case 'life_trivia':
+          return this.checkLifeTriviaAnswer(userAnswer, correctAnswer);
+
+        // Add more question types as needed
+        default:
+          // Fallback to basic comparison for unknown types
+          this.logger.warn(
+            `⚠️ Unknown question type: ${questionType}, using basic comparison`,
+          );
+          return this.checkBasicAnswer(userAnswer, correctAnswer);
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Error checking answer for type ${questionType}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Basic answer check (fallback)
+   */
+  private checkBasicAnswer(userAnswer: any, correctAnswer: any): boolean {
     try {
       return JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Fill in the blank - check choice index
+   */
+  private checkFillBlankAnswer(userAnswer: any, correctAnswer: any): boolean {
+    return (
+      userAnswer?.answer?.choiceIndex === correctAnswer?.answer?.choiceIndex
+    );
+  }
+
+  /**
+   * Tracklist order - check array order
+   */
+  private checkTracklistOrderAnswer(
+    userAnswer: any,
+    correctAnswer: any,
+  ): boolean {
+    const userTracks = userAnswer?.answer?.orderedTracks;
+    const correctTracks = correctAnswer?.answer?.orderedTracks;
+
+    if (!Array.isArray(userTracks) || !Array.isArray(correctTracks)) {
+      return false;
+    }
+
+    if (userTracks.length !== correctTracks.length) {
+      return false;
+    }
+
+    return userTracks.every((track, index) => track === correctTracks[index]);
+  }
+
+  /**
+   * Timeline order - check array order (similar to tracklist)
+   */
+  private checkTimelineOrderAnswer(
+    userAnswer: any,
+    correctAnswer: any,
+  ): boolean {
+    const userOrder = userAnswer?.answer?.orderedItems;
+    const correctOrder = correctAnswer?.answer?.orderedItems;
+
+    if (!Array.isArray(userOrder) || !Array.isArray(correctOrder)) {
+      return false;
+    }
+
+    return (
+      userOrder.length === correctOrder.length &&
+      userOrder.every((item, index) => item === correctOrder[index])
+    );
+  }
+
+  /**
+   * Speed tap - check final tap counts or score
+   */
+  private checkSpeedTapAnswer(userAnswer: any, correctAnswer: any): boolean {
+    const userSummary = userAnswer?.answer?.clientSummary;
+    const correctSummary = correctAnswer?.answer?.clientSummary;
+
+    if (!userSummary || !correctSummary) {
+      return false;
+    }
+
+    // Check if user achieved the required correct taps
+    return userSummary.correct >= correctSummary.correct;
+  }
+
+  /**
+   * Song-Album match - check matching pairs
+   */
+  private checkSongAlbumMatchAnswer(
+    userAnswer: any,
+    correctAnswer: any,
+  ): boolean {
+    const userMatches = userAnswer?.answer?.matches;
+    const correctMatches = correctAnswer?.answer?.matches;
+
+    if (!userMatches || !correctMatches) {
+      return false;
+    }
+
+    // Check if all matches are correct
+    return Object.keys(correctMatches).every(
+      (songId) => userMatches[songId] === correctMatches[songId],
+    );
+  }
+
+  /**
+   * Popularity match - check ranking order
+   */
+  private checkPopularityMatchAnswer(
+    userAnswer: any,
+    correctAnswer: any,
+  ): boolean {
+    const userRanking = userAnswer?.answer?.ranking;
+    const correctRanking = correctAnswer?.answer?.ranking;
+
+    if (!Array.isArray(userRanking) || !Array.isArray(correctRanking)) {
+      return false;
+    }
+
+    return (
+      userRanking.length === correctRanking.length &&
+      userRanking.every((item, index) => item === correctRanking[index])
+    );
+  }
+
+  /**
+   * Odd one out - check selected item
+   */
+  private checkOddOneOutAnswer(userAnswer: any, correctAnswer: any): boolean {
+    return (
+      userAnswer?.answer?.selectedItem === correctAnswer?.answer?.selectedItem
+    );
+  }
+
+  /**
+   * Guess by lyric - check selected choice
+   */
+  private checkGuessByLyricAnswer(
+    userAnswer: any,
+    correctAnswer: any,
+  ): boolean {
+    return (
+      userAnswer?.answer?.choiceIndex === correctAnswer?.answer?.choiceIndex
+    );
+  }
+
+  /**
+   * Album year guess - check if within acceptable range
+   */
+  private checkAlbumYearGuessAnswer(
+    userAnswer: any,
+    correctAnswer: any,
+  ): boolean {
+    const userYear = userAnswer?.answer?.year;
+    const correctYear = correctAnswer?.answer?.year;
+    const tolerance = correctAnswer?.answer?.tolerance || 0;
+
+    if (typeof userYear !== 'number' || typeof correctYear !== 'number') {
+      return false;
+    }
+
+    return Math.abs(userYear - correctYear) <= tolerance;
+  }
+
+  /**
+   * Life trivia - check choice index
+   */
+  private checkLifeTriviaAnswer(userAnswer: any, correctAnswer: any): boolean {
+    return (
+      userAnswer?.answer?.choiceIndex === correctAnswer?.answer?.choiceIndex
+    );
   }
 }

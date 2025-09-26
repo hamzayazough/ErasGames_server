@@ -3,7 +3,7 @@
  * Handles API calls for starting, submitting, and tracking quiz attempts
  */
 import {httpService} from '../api/http';
-import {AuthApiService} from '../api/auth';
+import {authApiService} from '../api/auth';
 
 export interface QuizAttempt {
   attemptId: string;
@@ -57,8 +57,7 @@ export class QuizAttemptService {
 
     try {
       // Ensure user is authenticated
-      const authService = new AuthApiService();
-      await authService.authenticate();
+      await authApiService.authenticate();
 
       const data = await httpService.get<{
         hasAttempt: boolean;
@@ -87,8 +86,7 @@ export class QuizAttemptService {
 
     try {
       // Ensure user is authenticated with Firebase token
-      const authService = new AuthApiService();
-      await authService.authenticate();
+      await authApiService.authenticate();
       console.log('✅ User authenticated, proceeding with quiz attempt...');
 
       // Get today's date in local format for the request
@@ -151,17 +149,29 @@ export class QuizAttemptService {
   }
 
   /**
-   * Finish the quiz attempt and get final score
+   * Finish the quiz attempt with bulk answer submission and get final score
    */
-  static async finishAttempt(attemptId: string): Promise<QuizSubmission> {
+  static async finishAttempt(
+    attemptId: string,
+    answers?: Array<{
+      questionId: string;
+      answer: any;
+    }>,
+  ): Promise<QuizSubmission> {
     console.log('🏁 FINISHING QUIZ ATTEMPT for attempt:', attemptId);
+
+    if (answers && answers.length > 0) {
+      console.log('📝 Submitting answers in bulk:', answers.length, 'answers');
+    }
 
     try {
       const data = await httpService.post<QuizSubmission>(
         `/attempts/${attemptId}/finish`,
+        answers && answers.length > 0 ? {answers} : undefined,
       );
 
       console.log('✅ FINISH ATTEMPT Success - Final Score:', data.score);
+      console.log('📊 Score Breakdown:', data.breakdown);
       return data;
     } catch (error) {
       console.error('❌ FINISH ATTEMPT Error:', error);

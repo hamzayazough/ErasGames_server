@@ -189,6 +189,6 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(FirebaseAuthMiddleware)
-      .forRoutes('auth/authenticate', 'attempts');
+      .forRoutes('auth/authenticate', 'attempts', 'daily/status');
   }
 }

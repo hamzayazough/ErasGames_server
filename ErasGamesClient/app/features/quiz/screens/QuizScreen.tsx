@@ -211,21 +211,28 @@ export default function QuizScreen({navigation, route}: Props) {
   const handleQuizSubmit = async () => {
     if (!quizAttempt || isSubmittingQuiz) return;
     
-    console.log('📝 USER CLICKED SUBMIT QUIZ - Finishing attempt...');
+    console.log('📝 USER CLICKED SUBMIT QUIZ - Collecting all answers for bulk submission...');
     
     try {
       setIsSubmittingQuiz(true);
       
-      // Submit current answer if we have one
-      if (selectedAnswer) {
-        console.log('� Submitting final answer before finishing...');
-        await submitCurrentAnswer();
+      // Include current answer if we have one
+      const finalAnswers = {...answeredQuestions};
+      if (selectedAnswer && currentQuestion) {
+        finalAnswers[currentQuestion.id] = selectedAnswer;
       }
       
-      console.log('🔄 Calling QuizAttemptService.finishAttempt()...');
+      // Convert to server format for bulk submission
+      const bulkAnswers = Object.entries(finalAnswers).map(([questionId, answer]) => ({
+        questionId,
+        answer,
+      }));
       
-      // Finish the attempt and get final score
-      const result = await QuizAttemptService.finishAttempt(quizAttempt.attemptId);
+      console.log('📦 Submitting answers in bulk:', bulkAnswers.length, 'answers');
+      console.log('🔄 Calling QuizAttemptService.finishAttempt() with bulk answers...');
+      
+      // Finish the attempt with bulk answer submission and get final score
+      const result = await QuizAttemptService.finishAttempt(quizAttempt.attemptId, bulkAnswers);
       
       console.log('✅ QUIZ SUBMISSION SUCCESSFUL!');
       console.log('🎯 Final Score:', result.score);
@@ -269,10 +276,8 @@ export default function QuizScreen({navigation, route}: Props) {
   const handleSubmitAnswer = async () => {
     if (!selectedAnswer) return;
 
-    // Submit current answer to server
-    await submitCurrentAnswer();
-
-    // Save the current answer locally
+    // Save the current answer locally (no individual server submission)
+    console.log('💾 Saving answer locally for question:', currentQuestion.id);
     setAnsweredQuestions(prev => ({
       ...prev,
       [currentQuestion.id]: selectedAnswer

@@ -12,6 +12,16 @@ import type { Request } from 'express';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { Attempt } from '../database/entities/attempt.entity';
 import { User } from '../database/entities/user.entity';
+import { AuthProvider } from '../database/enums/user.enums';
+
+// Extended Request interface with Firebase user
+interface AuthenticatedRequest extends Request {
+  firebaseUser?: {
+    uid: string;
+    email?: string;
+    name?: string;
+  };
+}
 
 /**
  * Controller for daily quiz endpoints
@@ -38,7 +48,7 @@ export class DailyQuizController {
    * This replaces the need for separate /daily and /daily/next calls
    */
   @Get('status')
-  async getDailyQuizStatus(@Req() req: Request): Promise<{
+  async getDailyQuizStatus(@Req() req: AuthenticatedRequest): Promise<{
     isAvailable: boolean;
     quiz?: {
       localDate: string;
@@ -89,6 +99,8 @@ export class DailyQuizController {
           email: firebaseUser.email || null,
           name: firebaseUser.name || 'User',
           handle: `user_${uid.slice(0, 8)}`,
+          authProvider: AuthProvider.FIREBASE,
+          providerUserId: uid,
         });
         user = await this.userRepository.save(user);
         this.logger.log(`Created new user with UID: ${uid}`);

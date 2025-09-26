@@ -1,5 +1,5 @@
-import {httpService} from './http.service';
-import {FirebaseAuthService} from './firebase-auth.service';
+import {httpService} from '../api/http';
+import {authApiService} from '../api/auth';
 
 export interface QuizStatusResponse {
   isAvailable: boolean;
@@ -40,6 +40,9 @@ class DailyQuizStatusService {
     console.log('🔍 Fetching daily quiz status...');
 
     try {
+      // Ensure user is authenticated before making the API call
+      await authApiService.authenticate();
+
       const response = await httpService.get<QuizStatusResponse>(
         '/daily/status',
       );
@@ -62,18 +65,6 @@ class DailyQuizStatusService {
       }
 
       throw error;
-    }
-  }
-
-  /**
-   * Check if user is authenticated and can access quiz status
-   */
-  async canCheckStatus(): Promise<boolean> {
-    try {
-      const user = await FirebaseAuthService.getCurrentUser();
-      return !!user;
-    } catch {
-      return false;
     }
   }
 }
