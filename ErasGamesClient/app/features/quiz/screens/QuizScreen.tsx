@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
+import {StyleSheet, ScrollView, StatusBar, Alert, ActivityIndicator} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
 import type {RootStackScreenProps} from '../../../navigation/types';
@@ -7,6 +7,13 @@ import { QuestionRenderer } from '../components/questions/QuestionRenderer';
 import { AnswerHandler, QuestionAnswer } from '../utils/AnswerHandler';
 import { AnyQuestion } from '../../../shared/interfaces/questions/any-question.type';
 import { basicQuizMock, dailyQuizMock } from '../constants/quizMocks';
+import { 
+  QuizAttemptService, 
+  QuizAttempt, 
+  QuizStatus, 
+  QuizAnswer, 
+  QuizSubmission 
+} from '../../../core/services/quiz-attempt.service';
 
 type Props = RootStackScreenProps<'Quiz'>;
 
@@ -24,6 +31,10 @@ export default function QuizScreen({navigation, route}: Props) {
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
   const [timeRemaining, setTimeRemaining] = useState(5 * 60); // Fixed 5 minutes = 300 seconds
   const [quizStarted, setQuizStarted] = useState(false);
+  const [quizAttempt, setQuizAttempt] = useState<QuizAttempt | null>(null);
+  const [isStartingQuiz, setIsStartingQuiz] = useState(false);
+  const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
+  const [quizResult, setQuizResult] = useState<QuizSubmission | null>(null);
   const isMountedRef = useRef(true);
 
   const currentQuestion = mockQuestions[currentQuestionIndex];
@@ -36,33 +47,37 @@ export default function QuizScreen({navigation, route}: Props) {
     };
   }, []);
 
-  // Timer countdown - only runs when quiz is started
+  // Timer countdown - syncs with server when quiz is started
   useEffect(() => {
-    if (!quizStarted) return;
+    if (!quizStarted || !quizAttempt) return;
     
-    const interval = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
+    const interval = setInterval(async () => {
+      try {
+        // Get updated status from server
+        const status = await QuizAttemptService.getAttemptStatus(quizAttempt.attemptId);
+        setTimeRemaining(status.timeRemaining);
+        
+        if (status.isTimeUp && isMountedRef.current) {
           // Time's up! Auto-submit quiz safely
-          if (isMountedRef.current) {
-            setTimeout(() => {
-              if (isMountedRef.current) {
-                Alert.alert(
-                  'Time\'s Up! ⏰',
-                  'Your 5-minute quiz time has expired. Submitting your answers...',
-                  [{text: 'OK', onPress: handleQuizSubmit}]
-                );
-              }
-            }, 100);
-          }
-          return 0;
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              Alert.alert(
+                'Time\'s Up! ⏰',
+                'Your 5-minute quiz time has expired. Submitting your answers...',
+                [{text: 'OK', onPress: handleQuizSubmit}]
+              );
+            }
+          }, 100);
         }
-        return prev - 1;
-      });
+      } catch (error) {
+        console.error('Error updating quiz status:', error);
+        // Fallback to local countdown
+        setTimeRemaining(prev => Math.max(0, prev - 1));
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quizStarted, navigation]);
+  }, [quizStarted, quizAttempt]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -74,33 +89,76 @@ export default function QuizScreen({navigation, route}: Props) {
     setSelectedAnswer(answer);
   };
 
-  const handleStartQuiz = () => {
-    setQuizStarted(true);
+  const handleStartQuiz = async () => {
+    try {
+      setIsStartingQuiz(true);
+      
+      // Start quiz attempt on server
+      const attempt = await QuizAttemptService.startAttempt();
+      setQuizAttempt(attempt);
+      setTimeRemaining(attempt.timeLimit);
+      setQuizStarted(true);
+      
+      console.log('Quiz attempt started:', attempt.attemptId);
+    } catch (error) {
+      console.error('Error starting quiz:', error);
+      Alert.alert(
+        'Error Starting Quiz',
+        'Failed to start the quiz. Please check your connection and try again.',
+        [{text: 'OK'}]
+      );
+    } finally {
+      setIsStartingQuiz(false);
+    }
   };
 
-  const handleQuizSubmit = () => {
-    // Submit all collected answers to server
-    const finalAnswers = {
-      ...answeredQuestions,
-      ...(selectedAnswer ? { [currentQuestion.id]: selectedAnswer } : {})
-    };
+  const handleQuizSubmit = async () => {
+    if (!quizAttempt || isSubmittingQuiz) return;
     
-    console.log('Submitting quiz answers:', finalAnswers);
-    // TODO: Send answers to server API
-    
-    if (isMountedRef.current) {
+    try {
+      setIsSubmittingQuiz(true);
+      
+      // Collect all answers in the format expected by the server
+      const finalAnswers = {
+        ...answeredQuestions,
+        ...(selectedAnswer ? { [currentQuestion.id]: selectedAnswer } : {})
+      };
+      
+      // Convert to server format (simplified for mock data)
+      const serverAnswers: QuizAnswer[] = Object.entries(finalAnswers).map(([questionId, answer], index) => ({
+        questionIndex: index,
+        selectedAnswer: typeof answer === 'object' ? JSON.stringify(answer) : String(answer)
+      }));
+      
+      console.log('Submitting quiz answers:', serverAnswers);
+      
+      // Submit to server
+      const result = await QuizAttemptService.submitAttempt(quizAttempt.attemptId, serverAnswers);
+      setQuizResult(result);
+      
+      if (isMountedRef.current) {
+        Alert.alert(
+          'Quiz Submitted! 🎉',
+          `Your score: ${result.score}% (${result.correctAnswers}/${result.totalQuestions} correct)`,
+          [{text: 'OK', onPress: () => {
+            if (isMountedRef.current) {
+              navigation.goBack();
+            }
+          }}]
+        );
+      }
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
       Alert.alert(
-        'Quiz Submitted! 🎉',
-        'Your answers have been submitted successfully.',
-        [{text: 'OK', onPress: () => {
-          if (isMountedRef.current) {
-            navigation.goBack();
-          }
-        }}]
+        'Submission Error',
+        'Failed to submit your quiz. Please try again.',
+        [
+          {text: 'Retry', onPress: handleQuizSubmit},
+          {text: 'Cancel', onPress: () => navigation.goBack()}
+        ]
       );
-    } else {
-      // If component is unmounted, just navigate back
-      navigation.goBack();
+    } finally {
+      setIsSubmittingQuiz(false);
     }
   };
 
@@ -184,10 +242,19 @@ export default function QuizScreen({navigation, route}: Props) {
             </View>
             
             <Button
-              title="🚀 Start Quiz"
+              title={isStartingQuiz ? "Starting..." : "🚀 Start Quiz"}
               onPress={handleStartQuiz}
+              disabled={isStartingQuiz}
               style={[styles.startButton, {backgroundColor: theme.colors.primary}]}
             />
+            
+            {isStartingQuiz && (
+              <ActivityIndicator 
+                size="small" 
+                color={theme.colors.primary} 
+                style={{marginTop: 8}}
+              />
+            )}
           </Card>
         </View>
       ) : (
@@ -280,10 +347,25 @@ export default function QuizScreen({navigation, route}: Props) {
         {/* Action buttons */}
         <View style={styles.actionButtons}>
           <Button
-            title={isLastQuestion ? "🏆 Submit Quiz" : "➡️ Next Question"}
+            title={
+              isSubmittingQuiz 
+                ? "Submitting..." 
+                : isLastQuestion 
+                ? "🏆 Submit Quiz" 
+                : "➡️ Next Question"
+            }
             onPress={handleSubmitAnswer}
+            disabled={isSubmittingQuiz}
             style={[styles.submitButton, {backgroundColor: theme.colors.primary}]}
           />
+          
+          {isSubmittingQuiz && (
+            <ActivityIndicator 
+              size="small" 
+              color={theme.colors.primary} 
+              style={{marginTop: 8}}
+            />
+          )}
         </View>
       </ScrollView>
       </>

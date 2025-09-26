@@ -21,9 +21,12 @@ export class DebugQuizCleanupController {
     const deletedQuestions = await this.dailyQuizQuestionRepository
       .createQueryBuilder()
       .delete()
-      .where('daily_quiz_id IN (SELECT id FROM daily_quiz WHERE drop_at_utc < :now)', {
-        now: new Date(),
-      })
+      .where(
+        'daily_quiz_id IN (SELECT id FROM daily_quiz WHERE drop_at_utc < :now)',
+        {
+          now: new Date(),
+        },
+      )
       .execute();
 
     // Delete old quizzes (those that have already dropped)
@@ -33,7 +36,9 @@ export class DebugQuizCleanupController {
       .where('drop_at_utc < :now', { now: new Date() })
       .execute();
 
-    this.logger.log(`Cleaned up ${deletedQuizzes.affected} old quizzes and ${deletedQuestions.affected} old quiz questions`);
+    this.logger.log(
+      `Cleaned up ${deletedQuizzes.affected} old quizzes and ${deletedQuestions.affected} old quiz questions`,
+    );
 
     return {
       message: `Cleaned up ${deletedQuizzes.affected} old quizzes and ${deletedQuestions.affected} old quiz questions`,

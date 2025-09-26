@@ -57,7 +57,7 @@ export default function DailyDropScreen({navigation}: Props) {
 
   const handleStartQuiz = async () => {
     if (canStart) {
-      navigation.navigate('StartQuiz');
+      navigation.navigate('Quiz', { selectedQuiz: undefined }); // Use dailyQuizMock as default
     } else {
       Alert.alert(
         'Quiz Not Available', 

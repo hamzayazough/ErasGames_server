@@ -55,7 +55,7 @@ export class DebugQuestionsController {
       take: 10,
     });
 
-    return questions.map(q => ({
+    return questions.map((q) => ({
       id: q.id,
       difficulty: q.difficulty,
       approved: q.approved,

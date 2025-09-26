@@ -28,7 +28,12 @@ import { NotificationService } from '../services/notification.service';
     ]),
     DailyQuizComposerModule,
   ],
-  controllers: [QuizSimulationController, DebugQuestionsController, DebugQuestionsResetController, DebugQuizCleanupController],
+  controllers: [
+    QuizSimulationController,
+    DebugQuestionsController,
+    DebugQuestionsResetController,
+    DebugQuizCleanupController,
+  ],
   providers: [QuizSimulationService, NotificationService],
   exports: [QuizSimulationService],
 })
