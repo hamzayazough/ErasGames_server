@@ -83,6 +83,10 @@ import { VisualAestheticQuestionService } from './database/services/question-cre
 // Daily Quiz Composer Module
 import { DailyQuizComposerModule } from './database/services/daily-quiz-composer';
 
+// Attempt Scoring Services
+import { AttemptScoringService } from './services/attempt-scoring/attempt-scoring.service';
+import { QuestionCorrectnessService } from './services/attempt-scoring/question-correctness.service';
+
 // Import entities for TypeORM relationship resolution
 import { BaseEntityTimestamps } from './database/entities/base.entity';
 import { User } from './database/entities/user.entity';
@@ -183,6 +187,9 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     // Authentication Services
     FirebaseService,
     AuthService,
+    // Attempt Scoring Services
+    AttemptScoringService,
+    QuestionCorrectnessService,
   ],
 })
 export class AppModule implements NestModule {

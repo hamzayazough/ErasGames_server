@@ -110,10 +110,11 @@ export class DailyQuizJobProcessor {
   }
 
   /**
-   * Template warmup job (runs every 5 minutes)
-   * Checks for quizzes that need template generation and are dropping soon
+   * Template warmup job
+   * Runs every day at 2:05 AM UTC (5 minutes after daily composition)
+   * Generates templates for newly created quizzes
    */
-  @Cron('*/5 * * * *', {
+  @Cron('5 2 * * *', {
     name: 'warmup:template',
     timeZone: 'UTC',
   })
