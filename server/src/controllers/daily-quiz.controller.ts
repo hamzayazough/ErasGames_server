@@ -4,15 +4,14 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-  UseGuards,
-  Request,
+  Req,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { Request } from 'express';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { Attempt } from '../database/entities/attempt.entity';
 import { User } from '../database/entities/user.entity';
-import { FirebaseAuthGuard } from '../middleware/firebase-auth.guard';
 
 /**
  * Controller for daily quiz endpoints
@@ -39,8 +38,7 @@ export class DailyQuizController {
    * This replaces the need for separate /daily and /daily/next calls
    */
   @Get('status')
-  @UseGuards(FirebaseAuthGuard)
-  async getDailyQuizStatus(@Request() req): Promise<{
+  async getDailyQuizStatus(@Req() req: Request): Promise<{
     isAvailable: boolean;
     quiz?: {
       localDate: string;
@@ -70,17 +68,27 @@ export class DailyQuizController {
     };
   }> {
     try {
-      const uid = req.user?.uid as string;
+      // Get Firebase user from middleware
+      const firebaseUser = req.firebaseUser;
+      if (!firebaseUser) {
+        throw new HttpException(
+          'Authentication required',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const uid = firebaseUser.uid;
       const now = new Date();
 
       // Get user for attempt checking
-      let user = await this.userRepository.findOne({ where: { uid } });
+      let user = await this.userRepository.findOne({ where: { id: uid } });
       if (!user) {
         // Create user if doesn't exist
         user = this.userRepository.create({
-          uid,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          id: uid,
+          email: firebaseUser.email || null,
+          name: firebaseUser.name || 'User',
+          handle: `user_${uid.slice(0, 8)}`,
         });
         user = await this.userRepository.save(user);
         this.logger.log(`Created new user with UID: ${uid}`);
@@ -140,16 +148,18 @@ export class DailyQuizController {
         // Check for existing attempt
         const existingAttempt = await this.attemptRepository.findOne({
           where: {
-            userId: user.id,
-            dailyQuizId: todaysQuiz.id,
+            user: { id: user.id },
+            dailyQuiz: { id: todaysQuiz.id },
           },
         });
 
         if (existingAttempt) {
           attemptData = {
             id: existingAttempt.id,
-            status: existingAttempt.finishAt ? 'completed' : 'in_progress',
-            score: existingAttempt.score,
+            status: existingAttempt.finishAt
+              ? ('completed' as const)
+              : ('in_progress' as const),
+            score: existingAttempt.score || undefined,
             completedAt: existingAttempt.finishAt?.toISOString(),
           };
         }
@@ -160,9 +170,9 @@ export class DailyQuizController {
 
       return {
         isAvailable,
-        quiz: quizData,
+        quiz: quizData || undefined,
         nextDrop: nextDropInfo,
-        attempt: attemptData,
+        attempt: attemptData || undefined,
       };
     } catch (error) {
       this.logger.error('Failed to get daily quiz status', error);
