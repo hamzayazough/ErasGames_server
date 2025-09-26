@@ -62,21 +62,63 @@ export class AttemptsController {
       // In production, this would come from authentication
       const userId = request.userId || 'demo-user-id';
 
-      // Parse local date and find the daily quiz
+      // Parse local date and find the daily quiz for that date
       const localDate = new Date(request.localDate);
 
-      // Convert to UTC for database query (assuming 12:00 PM Toronto time)
-      const dropAtUTC = new Date(localDate);
-      dropAtUTC.setUTCHours(17, 0, 0, 0); // 12 PM Toronto = 5 PM UTC (approximate)
+      // Find any quiz for the given date (instead of hardcoding specific time)
+      const startOfDay = new Date(localDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(localDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
 
-      const quiz = await this.dailyQuizRepository.findOne({
-        where: { dropAtUTC },
-      });
+      this.logger.log(
+        `Looking for quiz between ${startOfDay.toISOString()} and ${endOfDay.toISOString()}`,
+      );
+
+      const quiz = await this.dailyQuizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
+        .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
+        .orderBy('quiz.dropAtUTC', 'ASC')
+        .getOne();
 
       if (!quiz) {
+        this.logger.warn(
+          `No daily quiz found for date ${request.localDate} (${startOfDay.toISOString()} - ${endOfDay.toISOString()})`,
+        );
         throw new HttpException(
           'No daily quiz available for this date',
           HttpStatus.NOT_FOUND,
+        );
+      }
+
+      this.logger.log(
+        `Found quiz for ${request.localDate}: ${quiz.id} (drops at ${quiz.dropAtUTC.toISOString()})`,
+      );
+
+      // Check if quiz is currently accessible (within the 1-hour window after drop)
+      const now = new Date();
+      const oneHourAfterDrop = new Date(
+        quiz.dropAtUTC.getTime() + 60 * 60 * 1000,
+      );
+
+      if (now < quiz.dropAtUTC) {
+        this.logger.warn(
+          `Quiz not yet available. Current: ${now.toISOString()}, Drop time: ${quiz.dropAtUTC.toISOString()}`,
+        );
+        throw new HttpException(
+          `Quiz will be available at ${quiz.dropAtUTC.toISOString()}`,
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      if (now > oneHourAfterDrop) {
+        this.logger.warn(
+          `Quiz window expired. Current: ${now.toISOString()}, Window ended: ${oneHourAfterDrop.toISOString()}`,
+        );
+        throw new HttpException(
+          `Quiz window expired at ${oneHourAfterDrop.toISOString()}`,
+          HttpStatus.GONE,
         );
       }
 
@@ -96,8 +138,7 @@ export class AttemptsController {
         );
       }
 
-      // Check if we're within the join window
-      const now = new Date();
+      // Check if we're within the join window (reuse the 'now' variable from above)
       const joinWindowEnd = new Date(quiz.dropAtUTC);
       joinWindowEnd.setHours(joinWindowEnd.getHours() + 24);
 

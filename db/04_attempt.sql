@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS attempt (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     daily_quiz_id UUID NOT NULL REFERENCES daily_quiz(id) ON DELETE CASCADE,
     start_at TIMESTAMPTZ NOT NULL,
     deadline TIMESTAMPTZ NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS attempt (
 
 CREATE TABLE IF NOT EXISTS practice_attempt (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     daily_quiz_id UUID NOT NULL REFERENCES daily_quiz(id) ON DELETE CASCADE,
     start_at TIMESTAMPTZ NOT NULL,
     finish_at TIMESTAMPTZ,

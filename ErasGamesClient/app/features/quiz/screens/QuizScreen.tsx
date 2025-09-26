@@ -10,8 +10,6 @@ import { basicQuizMock, dailyQuizMock } from '../constants/quizMocks';
 import { 
   QuizAttemptService, 
   QuizAttempt, 
-  QuizStatus, 
-  QuizAnswer, 
   QuizSubmission 
 } from '../../../core/services/quiz-attempt.service';
 
@@ -29,12 +27,13 @@ export default function QuizScreen({navigation, route}: Props) {
     AnswerHandler.getDefaultAnswer(mockQuestions[0])
   );
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
-  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // Fixed 5 minutes = 300 seconds
+  const [timeRemaining, setTimeRemaining] = useState(10 * 60); // 10 minutes = 600 seconds
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizAttempt, setQuizAttempt] = useState<QuizAttempt | null>(null);
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<QuizSubmission | null>(null);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const isMountedRef = useRef(true);
 
   const currentQuestion = mockQuestions[currentQuestionIndex];
@@ -47,30 +46,29 @@ export default function QuizScreen({navigation, route}: Props) {
     };
   }, []);
 
-  // Timer countdown - syncs with server when quiz is started
+  // Timer countdown - calculates remaining time from deadline
   useEffect(() => {
     if (!quizStarted || !quizAttempt) return;
     
-    const interval = setInterval(async () => {
+    const interval = setInterval(() => {
       try {
-        // Get updated status from server
-        const status = await QuizAttemptService.getAttemptStatus(quizAttempt.attemptId);
-        setTimeRemaining(status.timeRemaining);
+        const remaining = QuizAttemptService.getTimeRemaining(quizAttempt.deadline);
+        setTimeRemaining(remaining);
         
-        if (status.isTimeUp && isMountedRef.current) {
+        if (remaining === 0 && isMountedRef.current) {
           // Time's up! Auto-submit quiz safely
           setTimeout(() => {
             if (isMountedRef.current) {
               Alert.alert(
                 'Time\'s Up! ⏰',
-                'Your 5-minute quiz time has expired. Submitting your answers...',
+                'Your quiz time has expired. Submitting your answers...',
                 [{text: 'OK', onPress: handleQuizSubmit}]
               );
             }
           }, 100);
         }
       } catch (error) {
-        console.error('Error updating quiz status:', error);
+        console.error('Error updating quiz timer:', error);
         // Fallback to local countdown
         setTimeRemaining(prev => Math.max(0, prev - 1));
       }
@@ -89,19 +87,51 @@ export default function QuizScreen({navigation, route}: Props) {
     setSelectedAnswer(answer);
   };
 
+  // Submit answer for current question when moving to next
+  const submitCurrentAnswer = async () => {
+    if (!quizAttempt || !selectedAnswer) return;
+    
+    const timeSpent = Date.now() - questionStartTime;
+    
+    try {
+      await QuizAttemptService.submitAnswer(
+        quizAttempt.attemptId,
+        currentQuestion.id,
+        selectedAnswer,
+        timeSpent
+      );
+      console.log('✅ Answer submitted for question:', currentQuestion.id);
+    } catch (error) {
+      console.error('❌ Failed to submit answer for question:', currentQuestion.id, error);
+      // Continue anyway - we'll retry at the end
+    }
+  };
+
   const handleStartQuiz = async () => {
+    console.log('🎯 USER CLICKED START QUIZ - Beginning quiz attempt...');
+    
     try {
       setIsStartingQuiz(true);
       
+      console.log('🔄 Calling QuizAttemptService.startAttempt()...');
+      
       // Start quiz attempt on server
       const attempt = await QuizAttemptService.startAttempt();
-      setQuizAttempt(attempt);
-      setTimeRemaining(attempt.timeLimit);
-      setQuizStarted(true);
       
-      console.log('Quiz attempt started:', attempt.attemptId);
+      console.log('✅ Quiz attempt started successfully!');
+      console.log('📋 Attempt ID:', attempt.attemptId);
+      console.log('⏰ Server Start:', attempt.serverStartAt);
+      console.log('⏰ Deadline:', attempt.deadline);
+      console.log('🌐 Template URL:', attempt.templateUrl);
+      console.log('🎲 Seed:', attempt.seed);
+      
+      setQuizAttempt(attempt);
+      setTimeRemaining(QuizAttemptService.getTimeRemaining(attempt.deadline));
+      setQuizStarted(true);
+      setQuestionStartTime(Date.now());
+      
     } catch (error) {
-      console.error('Error starting quiz:', error);
+      console.error('❌ QUIZ START FAILED:', error);
       Alert.alert(
         'Error Starting Quiz',
         'Failed to start the quiz. Please check your connection and try again.',
@@ -115,31 +145,39 @@ export default function QuizScreen({navigation, route}: Props) {
   const handleQuizSubmit = async () => {
     if (!quizAttempt || isSubmittingQuiz) return;
     
+    console.log('📝 USER CLICKED SUBMIT QUIZ - Finishing attempt...');
+    
     try {
       setIsSubmittingQuiz(true);
       
-      // Collect all answers in the format expected by the server
-      const finalAnswers = {
-        ...answeredQuestions,
-        ...(selectedAnswer ? { [currentQuestion.id]: selectedAnswer } : {})
-      };
+      // Submit current answer if we have one
+      if (selectedAnswer) {
+        console.log('� Submitting final answer before finishing...');
+        await submitCurrentAnswer();
+      }
       
-      // Convert to server format (simplified for mock data)
-      const serverAnswers: QuizAnswer[] = Object.entries(finalAnswers).map(([questionId, answer], index) => ({
-        questionIndex: index,
-        selectedAnswer: typeof answer === 'object' ? JSON.stringify(answer) : String(answer)
-      }));
+      console.log('🔄 Calling QuizAttemptService.finishAttempt()...');
       
-      console.log('Submitting quiz answers:', serverAnswers);
+      // Finish the attempt and get final score
+      const result = await QuizAttemptService.finishAttempt(quizAttempt.attemptId);
       
-      // Submit to server
-      const result = await QuizAttemptService.submitAttempt(quizAttempt.attemptId, serverAnswers);
+      console.log('✅ QUIZ SUBMISSION SUCCESSFUL!');
+      console.log('🎯 Final Score:', result.score);
+      console.log('📊 Score Breakdown:', result.breakdown);
+      console.log('⏱️ Finish Time:', result.finishTimeSec, 'seconds');
+      console.log('🎯 Accuracy Points:', result.accPoints);
+      
       setQuizResult(result);
       
       if (isMountedRef.current) {
+        const totalQuestions = result.questions.length;
+        const correctAnswers = result.questions.filter(q => q.isCorrect).length;
+        
         Alert.alert(
           'Quiz Submitted! 🎉',
-          `Your score: ${result.score}% (${result.correctAnswers}/${result.totalQuestions} correct)`,
+          `Your score: ${result.score} points\n` +
+          `Correct answers: ${correctAnswers}/${totalQuestions}\n` +
+          `Finish time: ${Math.floor(result.finishTimeSec / 60)}:${(result.finishTimeSec % 60).toString().padStart(2, '0')}`,
           [{text: 'OK', onPress: () => {
             if (isMountedRef.current) {
               navigation.goBack();
@@ -162,10 +200,13 @@ export default function QuizScreen({navigation, route}: Props) {
     }
   };
 
-  const handleSubmitAnswer = () => {
+  const handleSubmitAnswer = async () => {
     if (!selectedAnswer) return;
 
-    // Save the current answer
+    // Submit current answer to server
+    await submitCurrentAnswer();
+
+    // Save the current answer locally
     setAnsweredQuestions(prev => ({
       ...prev,
       [currentQuestion.id]: selectedAnswer
@@ -178,6 +219,7 @@ export default function QuizScreen({navigation, route}: Props) {
       // Move to next question immediately
       setCurrentQuestionIndex(prev => prev + 1);
       setSelectedAnswer(AnswerHandler.getDefaultAnswer(mockQuestions[currentQuestionIndex + 1]));
+      setQuestionStartTime(Date.now()); // Reset timer for new question
     }
   };
 

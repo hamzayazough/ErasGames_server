@@ -2,21 +2,21 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { QuizSimulationService } from './quiz-simulation.service';
 import { QuizSimulationController } from './quiz-simulation.controller';
-import { DebugQuestionsController } from './debug-questions.controller';
-import { DebugQuestionsResetController } from './debug-questions-reset.controller';
-import { DebugQuizCleanupController } from './debug-quiz-cleanup.controller';
+import { DailyQuizTestController } from './daily-quiz-test.controller';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../database/entities/daily-quiz-question.entity';
 import { Question } from '../database/entities/question.entity';
 import { UserDevice } from '../database/entities/user-device.entity';
 import { DailyQuizComposerModule } from '../database/services/daily-quiz-composer';
 import { NotificationService } from '../services/notification.service';
+import { DailyQuizJobProcessor } from '../services/daily-quiz-job-processor.service';
 
 /**
- * 🧪 Quiz Simulation Module
+ * 🧪 Quiz Testing Module
  *
- * Self-contained module for testing the complete daily quiz workflow
- * in a 10-minute simulation environment.
+ * Self-contained module for testing the complete daily quiz workflow:
+ * - DailyQuizTestController: Centralized endpoint for real-life testing
+ * - QuizSimulationController: 10-minute simulation environment
  */
 @Module({
   imports: [
@@ -28,13 +28,12 @@ import { NotificationService } from '../services/notification.service';
     ]),
     DailyQuizComposerModule,
   ],
-  controllers: [
-    QuizSimulationController,
-    DebugQuestionsController,
-    DebugQuestionsResetController,
-    DebugQuizCleanupController,
+  controllers: [QuizSimulationController, DailyQuizTestController],
+  providers: [
+    QuizSimulationService,
+    NotificationService,
+    DailyQuizJobProcessor,
   ],
-  providers: [QuizSimulationService, NotificationService],
   exports: [QuizSimulationService],
 })
 export class QuizSimulationModule {}

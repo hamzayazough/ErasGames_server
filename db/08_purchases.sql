@@ -14,7 +14,7 @@ CREATE TYPE purchase_provider AS ENUM ('stripe', 'apple', 'google');
 -- Create purchases table
 CREATE TABLE IF NOT EXISTS purchases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+    user_id VARCHAR(128) NOT NULL,
     type purchase_type NOT NULL,
     quantity INTEGER DEFAULT 1,
     status purchase_status NOT NULL,

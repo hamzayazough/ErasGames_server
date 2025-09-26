@@ -3,7 +3,7 @@
 -- Eras Quiz: per-user daily entitlements for subscriptions, one-offs, and jitter fairness
 
 CREATE TABLE IF NOT EXISTS daily_entitlements (
-    user_id UUID NOT NULL,
+    user_id VARCHAR(128) NOT NULL,
     local_date DATE NOT NULL,
     tz VARCHAR(64) NOT NULL,                -- IANA timezone (e.g., 'America/Toronto')
     assigned_jitter_sec INTEGER DEFAULT 0,  -- Deterministic per-user jitter (0-90s) for fairness

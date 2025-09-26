@@ -61,12 +61,10 @@ import { AdminDailyQuizController } from './admin/controllers/admin-daily-quiz.c
 import { QuestionController } from './admin/controllers/question.controller';
 import { AdminJobController } from './admin/controllers/admin-job.controller';
 import { DailyQuizController } from './controllers/daily-quiz.controller';
-import { DailyQuizAttemptController } from './controllers/daily-quiz-attempt.controller';
 import { AttemptsController } from './controllers/attempts.controller';
 import { TestController } from './admin/controllers/cdn-test.controller';
 import { AuthController } from './controllers/auth.controller';
 import { NotificationController } from './controllers/notification.controller';
-import { TestDailyQuizController } from './test/test-daily-quiz.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
@@ -164,12 +162,10 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     QuestionController,
     AdminJobController,
     DailyQuizController,
-    DailyQuizAttemptController,
     AttemptsController,
     TestController,
     AuthController,
     NotificationController,
-    TestDailyQuizController,
   ],
   providers: [
     AppService,
