@@ -36,8 +36,8 @@ const mockResults: ScoreBreakdown = {
     points: 83
   },
   speed: {
-    timeUsed: 456, // 7:36
-    timeLimit: 600, // 10:00
+    timeUsed: 45, // 0:45
+    timeLimit: 60, // 1:00
     points: 24
   },
   earlyBonus: {

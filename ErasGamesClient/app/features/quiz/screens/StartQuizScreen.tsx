@@ -131,10 +131,10 @@ export default function StartQuizScreen({navigation}: Props) {
                 <Text style={[styles.detailEmoji, {color: theme.colors.accent3}]}>⏱️</Text>
                 <View style={styles.detailTextContainer}>
                   <Text variant="body" style={[styles.detailText, {color: theme.colors.text}]}>
-                    <Text style={[styles.detailLabel, {color: theme.colors.primary}]}>Time Limit:</Text> 10 minutes
+                    <Text style={[styles.detailLabel, {color: theme.colors.primary}]}>Time Limit:</Text> 1 minute
                   </Text>
                   <Text variant="caption" style={[styles.detailSubtext, {color: theme.colors.textSecondary}]}>
-                    +2 min Basic • +4 min Premium
+                    Quick & intense challenge!
                   </Text>
                 </View>
               </View>

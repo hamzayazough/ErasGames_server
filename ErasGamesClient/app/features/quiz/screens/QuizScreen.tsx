@@ -332,7 +332,7 @@ export default function QuizScreen({navigation, route}: Props) {
                 
                 <View style={styles.statItem}>
                   <Text variant="heading3" style={[styles.statNumber, {color: theme.colors.primary}]}>
-                    5:00
+                    1:00
                   </Text>
                   <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
                     Time Limit
