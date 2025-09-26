@@ -11,7 +11,6 @@ config();
 
 // Environment-aware database configuration
 const isProduction = process.env.NODE_ENV === 'production';
-const isDevelopment = process.env.NODE_ENV === 'development';
 
 const createDatabaseConfig = () => {
   const baseConfig = {
@@ -44,7 +43,7 @@ const createDatabaseConfig = () => {
     extra: { max: 5, connectionTimeoutMillis: 10000 },
     retryAttempts: 3,
     retryDelay: 2000,
-    logging: isDevelopment,
+    logging: false,
   };
 };
 
@@ -188,6 +187,8 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(FirebaseAuthMiddleware).forRoutes('auth/authenticate');
+    consumer
+      .apply(FirebaseAuthMiddleware)
+      .forRoutes('auth/authenticate', 'attempts');
   }
 }

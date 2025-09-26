@@ -2,8 +2,8 @@
  * Quiz Attempt Service
  * Handles API calls for starting, submitting, and tracking quiz attempts
  */
-
-const API_BASE_URL = 'http://10.0.2.2:3000'; // Android emulator IP for localhost
+import {httpService} from '../api/http';
+import {AuthApiService} from '../api/auth';
 
 export interface QuizAttempt {
   attemptId: string;
@@ -41,44 +41,67 @@ export interface QuizAnswer {
 
 export class QuizAttemptService {
   /**
+   * Check if user has already attempted today's quiz
+   */
+  static async getTodayAttemptStatus(): Promise<{
+    hasAttempt: boolean;
+    attempt?: {
+      id: string;
+      status: 'active' | 'finished';
+      startedAt: string;
+      finishedAt?: string;
+      score?: number;
+    };
+  }> {
+    console.log("🔍 Checking if user has already attempted today's quiz...");
+
+    try {
+      // Ensure user is authenticated
+      const authService = new AuthApiService();
+      await authService.authenticate();
+
+      const data = await httpService.get<{
+        hasAttempt: boolean;
+        attempt?: {
+          id: string;
+          status: 'active' | 'finished';
+          startedAt: string;
+          finishedAt?: string;
+          score?: number;
+        };
+      }>('/attempts/today');
+
+      console.log('✅ Today attempt status:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to get today attempt status:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Start a new quiz attempt
    */
   static async startAttempt(): Promise<QuizAttempt> {
-    console.log(
-      '🚀 STARTING QUIZ ATTEMPT - Making API call to:',
-      `${API_BASE_URL}/attempts/start`,
-    );
+    console.log('🚀 STARTING QUIZ ATTEMPT - Authenticating user first...');
 
     try {
+      // Ensure user is authenticated with Firebase token
+      const authService = new AuthApiService();
+      await authService.authenticate();
+      console.log('✅ User authenticated, proceeding with quiz attempt...');
+
       // Get today's date in local format for the request
       const today = new Date();
       const localDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
 
       console.log('📅 Using local date:', localDate);
 
-      const response = await fetch(`${API_BASE_URL}/attempts/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          localDate,
-          userId: 'demo-user-id', // Using demo user for testing
-        }),
+      // Use httpService which automatically includes Firebase bearer token
+      const data = await httpService.post<QuizAttempt>('/attempts/start', {
+        localDate,
       });
 
-      console.log('📡 START ATTEMPT Response Status:', response.status);
-      console.log('📡 START ATTEMPT Response OK:', response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ START ATTEMPT Failed - Response:', errorText);
-        throw new Error(
-          `Failed to start quiz attempt: ${response.status} - ${errorText}`,
-        );
-      }
-
-      const data = await response.json();
       console.log('✅ START ATTEMPT Success - Response Data:', data);
       return data;
     } catch (error) {
@@ -96,10 +119,7 @@ export class QuizAttemptService {
     answer: any,
     timeSpentMs: number,
   ): Promise<{status: string}> {
-    console.log(
-      '📝 SUBMITTING ANSWER - Making API call to:',
-      `${API_BASE_URL}/attempts/${attemptId}/answer`,
-    );
+    console.log('📝 SUBMITTING ANSWER for attempt:', attemptId);
     console.log(
       '📝 Question ID:',
       questionId,
@@ -112,33 +132,16 @@ export class QuizAttemptService {
     try {
       const idempotencyKey = `${attemptId}-${questionId}-${Date.now()}`;
 
-      const response = await fetch(
-        `${API_BASE_URL}/attempts/${attemptId}/answer`,
+      const data = await httpService.post<{status: string}>(
+        `/attempts/${attemptId}/answer`,
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            questionId,
-            answer,
-            idempotencyKey,
-            timeSpentMs,
-          }),
+          questionId,
+          answer,
+          idempotencyKey,
+          timeSpentMs,
         },
       );
 
-      console.log('📡 SUBMIT ANSWER Response Status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ SUBMIT ANSWER Failed - Response:', errorText);
-        throw new Error(
-          `Failed to submit answer: ${response.status} - ${errorText}`,
-        );
-      }
-
-      const data = await response.json();
       console.log('✅ SUBMIT ANSWER Success');
       return data;
     } catch (error) {
@@ -151,34 +154,13 @@ export class QuizAttemptService {
    * Finish the quiz attempt and get final score
    */
   static async finishAttempt(attemptId: string): Promise<QuizSubmission> {
-    console.log(
-      '🏁 FINISHING QUIZ ATTEMPT - Making API call to:',
-      `${API_BASE_URL}/attempts/${attemptId}/finish`,
-    );
+    console.log('🏁 FINISHING QUIZ ATTEMPT for attempt:', attemptId);
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/attempts/${attemptId}/finish`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
+      const data = await httpService.post<QuizSubmission>(
+        `/attempts/${attemptId}/finish`,
       );
 
-      console.log('📡 FINISH ATTEMPT Response Status:', response.status);
-      console.log('📡 FINISH ATTEMPT Response OK:', response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ FINISH ATTEMPT Failed - Response:', errorText);
-        throw new Error(
-          `Failed to finish quiz attempt: ${response.status} - ${errorText}`,
-        );
-      }
-
-      const data = await response.json();
       console.log('✅ FINISH ATTEMPT Success - Final Score:', data.score);
       return data;
     } catch (error) {

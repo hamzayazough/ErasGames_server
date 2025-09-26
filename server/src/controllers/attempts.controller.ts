@@ -1,21 +1,34 @@
 import {
   Controller,
+  Get,
   Post,
   Param,
   Body,
   HttpException,
   HttpStatus,
   Logger,
+  Req,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Request } from 'express';
 import { Attempt } from '../database/entities/attempt.entity';
+
+// Extended Request interface with Firebase user
+interface AuthenticatedRequest extends Request {
+  firebaseUser?: {
+    uid: string;
+    email?: string;
+    name?: string;
+  };
+}
 import { AttemptAnswer } from '../database/entities/attempt-answer.entity';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../database/entities/daily-quiz-question.entity';
 import { Question } from '../database/entities/question.entity';
 import { User } from '../database/entities/user.entity';
 import { Answer } from '../database/entities/answers/answer.interface';
+import { AuthProvider } from '../database/enums/user.enums';
 
 /**
  * Controller for attempt-related endpoints
@@ -40,6 +53,86 @@ export class AttemptsController {
   ) {}
 
   /**
+   * GET /attempts/today
+   * Get user's attempt status for today's quiz
+   */
+  @Get('today')
+  async getTodayAttempt(@Req() req: AuthenticatedRequest): Promise<{
+    hasAttempt: boolean;
+    attempt?: {
+      id: string;
+      status: 'active' | 'finished';
+      startedAt: string;
+      finishedAt?: string;
+      score?: number;
+    };
+  }> {
+    try {
+      // Get Firebase user from middleware
+      const firebaseUser = req.firebaseUser;
+      if (!firebaseUser) {
+        throw new HttpException(
+          'Authentication required',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const userId = firebaseUser.uid;
+      this.logger.log(`Getting today's attempt for user: ${userId}`);
+
+      // Parse local date and find the daily quiz for that date
+      const today = new Date();
+      const localDate = new Date(today.toISOString().split('T')[0]); // Use today's date
+      const startOfDay = new Date(localDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(localDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      // Find quiz for today
+      const quiz = await this.dailyQuizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
+        .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
+        .orderBy('quiz.dropAtUTC', 'ASC')
+        .getOne();
+
+      if (!quiz) {
+        return { hasAttempt: false };
+      }
+
+      // Check if user has an attempt for this quiz
+      const attempt = await this.attemptRepository.findOne({
+        where: {
+          user: { id: userId } as User,
+          dailyQuiz: { id: quiz.id } as DailyQuiz,
+        },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (!attempt) {
+        return { hasAttempt: false };
+      }
+
+      return {
+        hasAttempt: true,
+        attempt: {
+          id: attempt.id,
+          status: attempt.status as 'active' | 'finished',
+          startedAt: attempt.startAt.toISOString(),
+          finishedAt: attempt.finishAt?.toISOString(),
+          score: attempt.score,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to get today attempt', error);
+      throw new HttpException(
+        'Failed to get attempt status',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * POST /attempts/start
    * Create a new attempt for the user
    */
@@ -48,8 +141,8 @@ export class AttemptsController {
     @Body()
     request: {
       localDate: string;
-      userId?: string; // For now, we'll stub this or get from auth
     },
+    @Req() req: AuthenticatedRequest,
   ): Promise<{
     attemptId: string;
     serverStartAt: string;
@@ -58,9 +151,33 @@ export class AttemptsController {
     templateUrl: string;
   }> {
     try {
-      // For demo purposes, use a stub user ID
-      // In production, this would come from authentication
-      const userId = request.userId || 'demo-user-id';
+      // Get Firebase user from middleware
+      const firebaseUser = req.firebaseUser;
+      if (!firebaseUser) {
+        throw new HttpException(
+          'Authentication required',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const userId = firebaseUser.uid;
+      this.logger.log(`Starting attempt for Firebase user: ${userId}`);
+
+      // Find or create user in our database
+      let user = await this.userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        this.logger.log(`Creating new user with Firebase UID: ${userId}`);
+        user = this.userRepository.create({
+          id: userId,
+          email: firebaseUser.email || null,
+          name: firebaseUser.name || 'User',
+          handle: `user_${userId.slice(0, 8)}`,
+          authProvider: AuthProvider.FIREBASE,
+          providerUserId: userId,
+        });
+        await this.userRepository.save(user);
+        this.logger.log(`New user created successfully: ${userId}`);
+      }
 
       // Parse local date and find the daily quiz for that date
       const localDate = new Date(request.localDate);

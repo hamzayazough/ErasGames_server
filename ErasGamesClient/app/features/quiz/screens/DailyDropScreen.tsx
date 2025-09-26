@@ -1,8 +1,9 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
 import {useQuizCountdown, useQuizAvailability, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
+import {QuizAttemptService} from '../../../core/services/quiz-attempt.service';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 type Props = RootStackScreenProps<'DailyDrop'>;
@@ -31,6 +32,18 @@ export default function DailyDropScreen({navigation}: Props) {
   // Use refs to track state and prevent excessive API calls
   const hasDroppedRef = useRef(false);
   const windowExpiredHandledRef = useRef(false);
+  
+  // Track user's attempt status
+  const [attemptStatus, setAttemptStatus] = useState<{
+    hasAttempt: boolean;
+    isLoading: boolean;
+    attempt?: {
+      id: string;
+      status: 'active' | 'finished';
+      startedAt?: string;
+      score?: number;
+    };
+  }>({ hasAttempt: false, isLoading: false });
 
   // Check availability when quiz drops (only once)
   useEffect(() => {
@@ -54,6 +67,31 @@ export default function DailyDropScreen({navigation}: Props) {
       }, 2000); // Small delay to let user see the status
     }
   }, [reason, countdownLoading, refetchCountdown]);
+
+  // Check for existing attempt when quiz becomes available
+  const checkAttemptStatus = async () => {
+    if (!hasDropped || !canStart) return;
+    
+    try {
+      setAttemptStatus(prev => ({ ...prev, isLoading: true }));
+      const status = await QuizAttemptService.getTodayAttemptStatus();
+      setAttemptStatus({
+        hasAttempt: status.hasAttempt,
+        isLoading: false,
+        attempt: status.attempt,
+      });
+    } catch (error) {
+      console.error('Failed to check attempt status:', error);
+      setAttemptStatus(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  // Check attempt status when quiz becomes available
+  useEffect(() => {
+    if (hasDropped && canStart && !attemptStatus.isLoading) {
+      checkAttemptStatus();
+    }
+  }, [hasDropped, canStart]);
 
   const handleStartQuiz = async () => {
     if (canStart) {
@@ -118,12 +156,44 @@ export default function DailyDropScreen({navigation}: Props) {
                 </View>
               ) : hasDropped && canStart ? (
                 <View style={styles.availableContainer}>
-                  <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
-                    🎉 Quiz is Live!
-                  </Text>
-                  <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                    You have 1 hour to complete today's quiz
-                  </Text>
+                  {attemptStatus.isLoading ? (
+                    <>
+                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.textSecondary}]}>
+                        🔍 Checking Status...
+                      </Text>
+                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
+                        Loading your quiz attempt...
+                      </Text>
+                    </>
+                  ) : attemptStatus.hasAttempt && attemptStatus.attempt ? (
+                    <>
+                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
+                        📊 Today's Quiz
+                      </Text>
+                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.text}]}>
+                        Score: {attemptStatus.attempt.score || 0}%
+                      </Text>
+                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
+                        Started: {new Date(attemptStatus.attempt.startedAt || '').toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </Text>
+                      <Text variant="caption" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
+                        Status: {attemptStatus.attempt.status === 'finished' ? 'Completed' : 'In Progress'}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
+                        🎉 Quiz is Live!
+                      </Text>
+                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
+                        You have 1 hour to complete today's quiz
+                      </Text>
+                    </>
+                  )}
                 </View>
               ) : (
                 <>
@@ -167,8 +237,8 @@ export default function DailyDropScreen({navigation}: Props) {
               )}
             </View>
 
-            {/* Quiz action */}
-            {hasDropped && canStart && (
+            {/* Quiz action - only show start button if no attempt exists */}
+            {hasDropped && canStart && !attemptStatus.hasAttempt && !attemptStatus.isLoading && (
               <Button
                 title="🚀 Start Today's Quiz"
                 onPress={handleStartQuiz}
@@ -292,6 +362,19 @@ const styles = StyleSheet.create({
   startQuizButton: {
     paddingVertical: 16,
     borderRadius: 12,
+  },
+  completedContainer: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  completedTitle: {
+    marginBottom: 4,
+  },
+  completedText: {
+    marginBottom: 2,
+    textAlign: 'center',
   },
   statusCard: {
     marginHorizontal: 24,

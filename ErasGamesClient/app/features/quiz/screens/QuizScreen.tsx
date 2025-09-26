@@ -12,20 +12,16 @@ import {
   QuizAttempt, 
   QuizSubmission 
 } from '../../../core/services/quiz-attempt.service';
+import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 
 type Props = RootStackScreenProps<'Quiz'>;
 
 export default function QuizScreen({navigation, route}: Props) {
   const theme = useTheme();
   
-  // Get the selected quiz from navigation params, fallback to daily quiz
-  const selectedQuiz = route.params?.selectedQuiz || dailyQuizMock;
-  const mockQuestions = selectedQuiz.questions;
-  
+  // State management
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(() => 
-    AnswerHandler.getDefaultAnswer(mockQuestions[0])
-  );
+  const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
   const [timeRemaining, setTimeRemaining] = useState(10 * 60); // 10 minutes = 600 seconds
   const [quizStarted, setQuizStarted] = useState(false);
@@ -34,10 +30,23 @@ export default function QuizScreen({navigation, route}: Props) {
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<QuizSubmission | null>(null);
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+  const [quizTemplate, setQuizTemplate] = useState<QuizTemplate | null>(null);
   const isMountedRef = useRef(true);
 
-  const currentQuestion = mockQuestions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === mockQuestions.length - 1;
+  // Get selected quiz for metadata (title, description, etc.)
+  const selectedQuiz = route.params?.selectedQuiz || dailyQuizMock;
+  
+  // Use real quiz template if available, fallback to mock for development
+  const questions = quizTemplate?.questions || selectedQuiz.questions;
+  const currentQuestion = questions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+
+  // Set default answer when questions change
+  useEffect(() => {
+    if (currentQuestion && !selectedAnswer) {
+      setSelectedAnswer(AnswerHandler.getDefaultAnswer(currentQuestion));
+    }
+  }, [currentQuestion, selectedAnswer]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -113,6 +122,31 @@ export default function QuizScreen({navigation, route}: Props) {
     try {
       setIsStartingQuiz(true);
       
+      // First check if user already has an attempt for today
+      console.log('🔍 Checking for existing attempt...');
+      const attemptStatus = await QuizAttemptService.getTodayAttemptStatus();
+      
+      if (attemptStatus.hasAttempt) {
+        console.log('⚠️ User already has an attempt for today:', attemptStatus.attempt);
+        
+        if (attemptStatus.attempt?.status === 'finished') {
+          // Show completed quiz message
+          Alert.alert(
+            'Quiz Already Completed',
+            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0}%! Come back tomorrow for a new quiz.`,
+            [{text: 'OK'}]
+          );
+        } else {
+          // Show active attempt message
+          Alert.alert(
+            'Quiz In Progress',
+            'You have an active quiz attempt. Please finish it first or wait for it to expire.',
+            [{text: 'OK'}]
+          );
+        }
+        return;
+      }
+      
       console.log('🔄 Calling QuizAttemptService.startAttempt()...');
       
       // Start quiz attempt on server
@@ -125,6 +159,38 @@ export default function QuizScreen({navigation, route}: Props) {
       console.log('🌐 Template URL:', attempt.templateUrl);
       console.log('🎲 Seed:', attempt.seed);
       
+      // Fetch the quiz template from CDN
+      console.log('📥 Fetching quiz template from CDN...');
+      const templateResponse = await fetch(attempt.templateUrl);
+      if (!templateResponse.ok) {
+        throw new Error(`Failed to fetch quiz template: ${templateResponse.status}`);
+      }
+      const rawTemplate = await templateResponse.json();
+      console.log('✅ Quiz template loaded:', rawTemplate.questions.length, 'questions');
+      
+      // Transform CDN template format to match expected question structure
+      const transformedTemplate = {
+        ...rawTemplate,
+        questions: rawTemplate.questions.map((q: any) => ({
+          id: q.qid, // Map qid to id
+          questionType: q.type, // Map type to questionType
+          difficulty: q.payload.difficulty || 'medium',
+          themes: q.payload.themes || [],
+          subjects: q.payload.subjects || [], // Add subjects field
+          prompt: q.payload.prompt,
+          choices: q.payload.choices,
+          correct: q.payload.correct, // Include correct answers if available
+          mediaRefs: q.payload.mediaRefs, // Include media references if available
+          scoringHints: q.payload.scoringHints, // Include scoring hints if available
+          // Copy any other payload properties to the root level
+          ...q.payload
+        }))
+      };
+      
+      console.log('✅ Template transformed for client:', transformedTemplate.questions[0]);
+      
+      // Store quiz template and attempt data
+      setQuizTemplate(transformedTemplate);
       setQuizAttempt(attempt);
       setTimeRemaining(QuizAttemptService.getTimeRemaining(attempt.deadline));
       setQuizStarted(true);
@@ -218,7 +284,7 @@ export default function QuizScreen({navigation, route}: Props) {
     } else {
       // Move to next question immediately
       setCurrentQuestionIndex(prev => prev + 1);
-      setSelectedAnswer(AnswerHandler.getDefaultAnswer(mockQuestions[currentQuestionIndex + 1]));
+      setSelectedAnswer(AnswerHandler.getDefaultAnswer(questions[currentQuestionIndex + 1]));
       setQuestionStartTime(Date.now()); // Reset timer for new question
     }
   };
@@ -309,7 +375,7 @@ export default function QuizScreen({navigation, route}: Props) {
                 {selectedQuiz.title}
               </Text>
               <Text variant="caption" style={[styles.progressText, {color: theme.colors.textSecondary}]}>
-                Question {currentQuestionIndex + 1} of {mockQuestions.length}
+                Question {currentQuestionIndex + 1} of {questions.length}
               </Text>
           </View>
           
@@ -327,7 +393,7 @@ export default function QuizScreen({navigation, route}: Props) {
                 styles.progressFill, 
                 {
                   backgroundColor: theme.colors.primary,
-                  width: `${((currentQuestionIndex + 1) / mockQuestions.length) * 100}%`
+                  width: `${((currentQuestionIndex + 1) / questions.length) * 100}%`
                 }
               ]} 
             />
