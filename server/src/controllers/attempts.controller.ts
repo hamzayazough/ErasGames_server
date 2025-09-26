@@ -270,7 +270,7 @@ export class AttemptsController {
 
       // Create new attempt
       const serverStartAt = new Date();
-      const deadline = new Date(serverStartAt.getTime() + 10 * 60 * 1000); // 10 minutes
+      const deadline = new Date(serverStartAt.getTime() + 65 * 1000); // 65 seconds (1 min + 5s buffer)
       const seed = Math.floor(Math.random() * 1000000);
 
       const attempt = this.attemptRepository.create({

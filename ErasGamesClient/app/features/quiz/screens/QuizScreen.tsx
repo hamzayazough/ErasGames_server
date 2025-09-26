@@ -23,7 +23,7 @@ export default function QuizScreen({navigation, route}: Props) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
-  const [timeRemaining, setTimeRemaining] = useState(10 * 60); // 10 minutes = 600 seconds
+  const [timeRemaining, setTimeRemaining] = useState(1 * 60); // 1 minute = 60 seconds
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizAttempt, setQuizAttempt] = useState<QuizAttempt | null>(null);
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
@@ -350,7 +350,7 @@ export default function QuizScreen({navigation, route}: Props) {
               </View>
               
               <Text variant="body" style={[styles.startInstructions, {color: theme.colors.text}]}>
-                ⚠️ Once you start, the 5-minute timer will begin. You cannot pause or restart the quiz.
+                ⚠️ Once you start, the 1-minute timer will begin. You cannot pause or restart the quiz.
               </Text>
             </View>
             

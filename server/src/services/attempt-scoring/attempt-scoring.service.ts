@@ -106,10 +106,7 @@ export class AttemptScoringService {
     // Calculate score using the specified formula
     const base = 100;
     const accuracyBonus = 25 * (totalAccuracyPoints / 100); // Now out of 100 total accuracy points
-    const speedBonus = Math.max(
-      0,
-      Math.min(25, 25 * (1 - finishTimeSec / 600)),
-    ); // clamp 0..25
+    const speedBonus = Math.max(0, Math.min(25, 25 * (1 - finishTimeSec / 60))); // clamp 0..25
     const earlyBonus = 0; // Out of scope for MVP
 
     const score = Math.round(base + accuracyBonus + speedBonus + earlyBonus);
@@ -144,10 +141,10 @@ export class AttemptScoringService {
 
     // Recalculate breakdown from stored values
     const base = 100;
-    const accuracyBonus = 25 * (attempt.accPoints / 10);
+    const accuracyBonus = 25 * (attempt.accPoints / 100);
     const speedBonus = Math.max(
       0,
-      Math.min(25, 25 * (1 - attempt.speedSec / 600)),
+      Math.min(25, 25 * (1 - attempt.speedSec / 60)),
     );
     const earlyBonus = 0;
 
