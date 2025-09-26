@@ -4,10 +4,15 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
+import { Attempt } from '../database/entities/attempt.entity';
+import { User } from '../database/entities/user.entity';
+import { FirebaseAuthGuard } from '../middleware/firebase-auth.guard';
 
 /**
  * Controller for daily quiz endpoints
@@ -22,7 +27,274 @@ export class DailyQuizController {
   constructor(
     @InjectRepository(DailyQuiz)
     private readonly dailyQuizRepository: Repository<DailyQuiz>,
+    @InjectRepository(Attempt)
+    private readonly attemptRepository: Repository<Attempt>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
+
+  /**
+   * GET /daily/status
+   * Consolidated endpoint that returns quiz availability, timing, and user attempt status
+   * This replaces the need for separate /daily and /daily/next calls
+   */
+  @Get('status')
+  @UseGuards(FirebaseAuthGuard)
+  async getDailyQuizStatus(@Request() req): Promise<{
+    isAvailable: boolean;
+    quiz?: {
+      localDate: string;
+      tz: string;
+      window: {
+        start: string;
+        end: string;
+      };
+      dropAtLocal: string;
+      joinWindowEndsAtLocal: string;
+      templateUrl: string;
+      templateVersion: number;
+    };
+    nextDrop: {
+      nextDropTime: string;
+      nextDropTimeLocal: string;
+      localDate: string;
+      tz: string;
+      isToday: boolean;
+      timeUntilDrop: number;
+    };
+    attempt?: {
+      id: string;
+      status: 'in_progress' | 'completed';
+      score?: number;
+      completedAt?: string;
+    };
+  }> {
+    try {
+      const uid = req.user?.uid as string;
+      const now = new Date();
+
+      // Get user for attempt checking
+      let user = await this.userRepository.findOne({ where: { uid } });
+      if (!user) {
+        // Create user if doesn't exist
+        user = this.userRepository.create({
+          uid,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        user = await this.userRepository.save(user);
+        this.logger.log(`Created new user with UID: ${uid}`);
+      }
+
+      // Check for today's quiz and availability
+      const startOfToday = new Date(now);
+      startOfToday.setUTCHours(0, 0, 0, 0);
+      const endOfToday = new Date(now);
+      endOfToday.setUTCHours(23, 59, 59, 999);
+
+      const todaysQuiz = await this.dailyQuizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.dropAtUTC >= :startOfToday', { startOfToday })
+        .andWhere('quiz.dropAtUTC <= :endOfToday', { endOfToday })
+        .orderBy('quiz.dropAtUTC', 'ASC')
+        .getOne();
+
+      let isAvailable = false;
+      let quizData = null;
+      let attemptData = null;
+
+      if (todaysQuiz) {
+        const oneHourAfterDrop = new Date(
+          todaysQuiz.dropAtUTC.getTime() + 60 * 60 * 1000,
+        );
+
+        // Check if quiz is currently available (within 1-hour window)
+        isAvailable =
+          now >= todaysQuiz.dropAtUTC &&
+          now <= oneHourAfterDrop &&
+          !!todaysQuiz.templateCdnUrl;
+
+        if (isAvailable) {
+          const dropAtLocal = new Date(
+            todaysQuiz.dropAtUTC.toLocaleString('en-US', {
+              timeZone: 'America/Toronto',
+            }),
+          );
+          const localDate = dropAtLocal.toISOString().split('T')[0];
+          const joinWindowEnd = oneHourAfterDrop;
+
+          quizData = {
+            localDate,
+            tz: 'America/Toronto',
+            window: {
+              start: todaysQuiz.dropAtUTC.toISOString(),
+              end: oneHourAfterDrop.toISOString(),
+            },
+            dropAtLocal: dropAtLocal.toISOString(),
+            joinWindowEndsAtLocal: joinWindowEnd.toISOString(),
+            templateUrl: todaysQuiz.templateCdnUrl,
+            templateVersion: todaysQuiz.templateVersion,
+          };
+        }
+
+        // Check for existing attempt
+        const existingAttempt = await this.attemptRepository.findOne({
+          where: {
+            userId: user.id,
+            dailyQuizId: todaysQuiz.id,
+          },
+        });
+
+        if (existingAttempt) {
+          attemptData = {
+            id: existingAttempt.id,
+            status: existingAttempt.finishAt ? 'completed' : 'in_progress',
+            score: existingAttempt.score,
+            completedAt: existingAttempt.finishAt?.toISOString(),
+          };
+        }
+      }
+
+      // Get next drop time (reuse existing logic)
+      const nextDropInfo = await this.getNextQuizDropTimeInternal();
+
+      return {
+        isAvailable,
+        quiz: quizData,
+        nextDrop: nextDropInfo,
+        attempt: attemptData,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get daily quiz status', error);
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Internal method to get next quiz drop time
+   * Used by both /daily/next and /daily/status endpoints
+   */
+  private async getNextQuizDropTimeInternal(): Promise<{
+    nextDropTime: string;
+    nextDropTimeLocal: string;
+    localDate: string;
+    tz: string;
+    isToday: boolean;
+    timeUntilDrop: number;
+  }> {
+    const now = new Date();
+
+    // First, check if there's a quiz today that's currently available (within 1-hour window)
+    const startOfToday = new Date(now);
+    startOfToday.setUTCHours(0, 0, 0, 0);
+    const endOfToday = new Date(now);
+    endOfToday.setUTCHours(23, 59, 59, 999);
+
+    const currentQuiz = await this.dailyQuizRepository
+      .createQueryBuilder('quiz')
+      .where('quiz.dropAtUTC >= :startOfToday', { startOfToday })
+      .andWhere('quiz.dropAtUTC <= :endOfToday', { endOfToday })
+      .andWhere('quiz.dropAtUTC <= :now', { now }) // Quiz has already dropped
+      .andWhere('quiz.dropAtUTC > :oneHourAgo', {
+        oneHourAgo: new Date(now.getTime() - 60 * 60 * 1000),
+      }) // Still within 1-hour window
+      .orderBy('quiz.dropAtUTC', 'DESC')
+      .getOne();
+
+    if (currentQuiz) {
+      // There's a quiz available right now
+      const dropAtLocal = new Date(
+        currentQuiz.dropAtUTC.toLocaleString('en-US', {
+          timeZone: 'America/Toronto',
+        }),
+      );
+      const localDate = dropAtLocal.toISOString().split('T')[0];
+
+      return {
+        nextDropTime: currentQuiz.dropAtUTC.toISOString(),
+        nextDropTimeLocal: dropAtLocal.toISOString(),
+        localDate,
+        tz: 'America/Toronto',
+        isToday: true,
+        timeUntilDrop: 0, // Quiz is available now
+      };
+    }
+
+    // Check if there's a quiz today that hasn't started yet
+    const todaysQuiz = await this.dailyQuizRepository
+      .createQueryBuilder('quiz')
+      .where('quiz.dropAtUTC >= :startOfToday', { startOfToday })
+      .andWhere('quiz.dropAtUTC <= :endOfToday', { endOfToday })
+      .andWhere('quiz.dropAtUTC > :now', { now }) // Only future quizzes
+      .orderBy('quiz.dropAtUTC', 'ASC')
+      .getOne();
+
+    if (todaysQuiz) {
+      // There's a quiz today that hasn't dropped yet
+      const dropAtLocal = new Date(
+        todaysQuiz.dropAtUTC.toLocaleString('en-US', {
+          timeZone: 'America/Toronto',
+        }),
+      );
+      const localDate = dropAtLocal.toISOString().split('T')[0];
+      const timeUntilDrop = Math.max(
+        0,
+        Math.floor((todaysQuiz.dropAtUTC.getTime() - now.getTime()) / 1000),
+      );
+
+      return {
+        nextDropTime: todaysQuiz.dropAtUTC.toISOString(),
+        nextDropTimeLocal: dropAtLocal.toISOString(),
+        localDate,
+        tz: 'America/Toronto',
+        isToday: true,
+        timeUntilDrop,
+      };
+    }
+
+    // No quiz today, look for tomorrow's quiz
+    const startOfTomorrow = new Date(now);
+    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+    startOfTomorrow.setUTCHours(0, 0, 0, 0);
+    const endOfTomorrow = new Date(now);
+    endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
+    endOfTomorrow.setUTCHours(23, 59, 59, 999);
+
+    const tomorrowsQuiz = await this.dailyQuizRepository
+      .createQueryBuilder('quiz')
+      .where('quiz.dropAtUTC >= :startOfTomorrow', { startOfTomorrow })
+      .andWhere('quiz.dropAtUTC <= :endOfTomorrow', { endOfTomorrow })
+      .orderBy('quiz.dropAtUTC', 'ASC')
+      .getOne();
+
+    if (tomorrowsQuiz) {
+      const dropAtLocal = new Date(
+        tomorrowsQuiz.dropAtUTC.toLocaleString('en-US', {
+          timeZone: 'America/Toronto',
+        }),
+      );
+      const localDate = dropAtLocal.toISOString().split('T')[0];
+      const timeUntilDrop = Math.max(
+        0,
+        Math.floor((tomorrowsQuiz.dropAtUTC.getTime() - now.getTime()) / 1000),
+      );
+
+      return {
+        nextDropTime: tomorrowsQuiz.dropAtUTC.toISOString(),
+        nextDropTimeLocal: dropAtLocal.toISOString(),
+        localDate,
+        tz: 'America/Toronto',
+        isToday: false,
+        timeUntilDrop,
+      };
+    }
+
+    // No quiz found for today or tomorrow
+    throw new HttpException('No upcoming quiz found', HttpStatus.NOT_FOUND);
+  }
 
   /**
    * GET /daily/next
@@ -38,117 +310,7 @@ export class DailyQuizController {
     timeUntilDrop: number; // seconds until drop
   }> {
     try {
-      const now = new Date();
-
-      // First, check if there's a quiz today that's currently available (within 1-hour window)
-      const startOfToday = new Date(now);
-      startOfToday.setUTCHours(0, 0, 0, 0);
-      const endOfToday = new Date(now);
-      endOfToday.setUTCHours(23, 59, 59, 999);
-
-      const currentQuiz = await this.dailyQuizRepository
-        .createQueryBuilder('quiz')
-        .where('quiz.dropAtUTC >= :startOfToday', { startOfToday })
-        .andWhere('quiz.dropAtUTC <= :endOfToday', { endOfToday })
-        .andWhere('quiz.dropAtUTC <= :now', { now }) // Quiz has already dropped
-        .andWhere('quiz.dropAtUTC > :oneHourAgo', {
-          oneHourAgo: new Date(now.getTime() - 60 * 60 * 1000),
-        }) // Still within 1-hour window
-        .orderBy('quiz.dropAtUTC', 'DESC')
-        .getOne();
-
-      if (currentQuiz) {
-        // There's a quiz available right now
-        const dropAtLocal = new Date(
-          currentQuiz.dropAtUTC.toLocaleString('en-US', {
-            timeZone: 'America/Toronto',
-          }),
-        );
-        const localDate = dropAtLocal.toISOString().split('T')[0];
-
-        return {
-          nextDropTime: currentQuiz.dropAtUTC.toISOString(),
-          nextDropTimeLocal: dropAtLocal.toISOString(),
-          localDate,
-          tz: 'America/Toronto',
-          isToday: true,
-          timeUntilDrop: 0, // Quiz is available now
-        };
-      }
-
-      // Check if there's a quiz today that hasn't started yet
-      const todaysQuiz = await this.dailyQuizRepository
-        .createQueryBuilder('quiz')
-        .where('quiz.dropAtUTC >= :startOfToday', { startOfToday })
-        .andWhere('quiz.dropAtUTC <= :endOfToday', { endOfToday })
-        .andWhere('quiz.dropAtUTC > :now', { now }) // Only future quizzes
-        .orderBy('quiz.dropAtUTC', 'ASC')
-        .getOne();
-
-      if (todaysQuiz) {
-        // There's a quiz today that hasn't dropped yet
-        const dropAtLocal = new Date(
-          todaysQuiz.dropAtUTC.toLocaleString('en-US', {
-            timeZone: 'America/Toronto',
-          }),
-        );
-        const localDate = dropAtLocal.toISOString().split('T')[0];
-        const timeUntilDrop = Math.max(
-          0,
-          Math.floor((todaysQuiz.dropAtUTC.getTime() - now.getTime()) / 1000),
-        );
-
-        return {
-          nextDropTime: todaysQuiz.dropAtUTC.toISOString(),
-          nextDropTimeLocal: dropAtLocal.toISOString(),
-          localDate,
-          tz: 'America/Toronto',
-          isToday: true,
-          timeUntilDrop,
-        };
-      }
-
-      // No quiz today, look for tomorrow's quiz
-      const startOfTomorrow = new Date(now);
-      startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
-      startOfTomorrow.setUTCHours(0, 0, 0, 0);
-      const endOfTomorrow = new Date(now);
-      endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
-      endOfTomorrow.setUTCHours(23, 59, 59, 999);
-
-      const tomorrowsQuiz = await this.dailyQuizRepository
-        .createQueryBuilder('quiz')
-        .where('quiz.dropAtUTC >= :startOfTomorrow', { startOfTomorrow })
-        .andWhere('quiz.dropAtUTC <= :endOfTomorrow', { endOfTomorrow })
-        .orderBy('quiz.dropAtUTC', 'ASC')
-        .getOne();
-
-      if (tomorrowsQuiz) {
-        const dropAtLocal = new Date(
-          tomorrowsQuiz.dropAtUTC.toLocaleString('en-US', {
-            timeZone: 'America/Toronto',
-          }),
-        );
-        const localDate = dropAtLocal.toISOString().split('T')[0];
-        const timeUntilDrop = Math.max(
-          0,
-          Math.floor(
-            (tomorrowsQuiz.dropAtUTC.getTime() - now.getTime()) / 1000,
-          ),
-        );
-
-        return {
-          nextDropTime: tomorrowsQuiz.dropAtUTC.toISOString(),
-          nextDropTimeLocal: dropAtLocal.toISOString(),
-          localDate,
-          tz: 'America/Toronto',
-          isToday: false,
-          timeUntilDrop,
-        };
-      }
-
-      // No quiz found for today or tomorrow
-      throw new HttpException('No upcoming quiz found', HttpStatus.NOT_FOUND);
+      return await this.getNextQuizDropTimeInternal();
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

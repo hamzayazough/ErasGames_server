@@ -2,116 +2,129 @@ import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
-import {useQuizCountdown, useQuizAvailability, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
-import {QuizAttemptService} from '../../../core/services/quiz-attempt.service';
+import {useDailyQuizStatus, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 type Props = RootStackScreenProps<'DailyDrop'>;
 
 export default function DailyDropScreen({navigation}: Props) {
   const theme = useTheme();
-  const { 
-    timeLeft, 
-    isLoading: countdownLoading, 
-    error: countdownError, 
-    dropData,
-    isToday,
-    hasDropped,
-    refetch: refetchCountdown 
-  } = useQuizCountdown();
   
+  // Use the new consolidated hook that handles everything
   const { 
-    canStart, 
-    reason, 
-    isChecking, 
-    recheck 
-  } = useQuizAvailability();
+    status, 
+    isLoading, 
+    error, 
+    refresh,
+    isAvailable,
+    hasAttempt,
+    attemptCompleted,
+    timeUntilDrop
+  } = useDailyQuizStatus();
   
   const { getErrorMessage, shouldShowRetry } = useDailyQuizErrorHandler();
   
-  // Use refs to track state and prevent excessive API calls
-  const hasDroppedRef = useRef(false);
-  const windowExpiredHandledRef = useRef(false);
+  // Use refs to prevent excessive API calls
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Track user's attempt status
-  const [attemptStatus, setAttemptStatus] = useState<{
-    hasAttempt: boolean;
-    isLoading: boolean;
-    attempt?: {
-      id: string;
-      status: 'active' | 'finished';
-      startedAt?: string;
-      score?: number;
+  // Local countdown state for smooth UI updates
+  const [localTimeLeft, setLocalTimeLeft] = useState(0);
+
+  // Initialize local countdown from server data  
+  useEffect(() => {
+    setLocalTimeLeft(timeUntilDrop);
+  }, [timeUntilDrop]);
+
+  // Countdown timer for smooth UI updates
+  useEffect(() => {
+    if (localTimeLeft > 0) {
+      countdownIntervalRef.current = setInterval(() => {
+        setLocalTimeLeft(prev => Math.max(0, prev - 1));
+      }, 1000);
+    } else {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
     };
-  }>({ hasAttempt: false, isLoading: false });
+  }, [localTimeLeft]);
 
-  // Check availability when quiz drops (only once)
+  // Auto-refresh when quiz should be available (every 30 seconds when countdown is low)
   useEffect(() => {
-    if (hasDropped && !hasDroppedRef.current) {
-      console.log('🎯 Quiz has dropped! Checking availability...');
-      hasDroppedRef.current = true;
-      windowExpiredHandledRef.current = false; // Reset for next cycle
-      recheck();
-    } else if (!hasDropped) {
-      hasDroppedRef.current = false; // Reset when countdown starts again
+    if (timeUntilDrop > 0 && timeUntilDrop < 300) { // 5 minutes or less
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      
+      refreshTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 Auto-refreshing quiz status...');
+        refresh();
+      }, 30000); // Refresh every 30 seconds when close to drop
     }
-  }, [hasDropped, recheck]);
 
-  // If quiz was available but now shows "window expired", fetch next drop time (only once)
-  useEffect(() => {
-    if (reason === 'Quiz window expired' && !countdownLoading && !windowExpiredHandledRef.current) {
-      console.log('⏰ Quiz window expired, fetching next drop time...');
-      windowExpiredHandledRef.current = true;
-      setTimeout(() => {
-        refetchCountdown();
-      }, 2000); // Small delay to let user see the status
-    }
-  }, [reason, countdownLoading, refetchCountdown]);
-
-  // Check for existing attempt when quiz becomes available
-  const checkAttemptStatus = async () => {
-    if (!hasDropped || !canStart) return;
-    
-    try {
-      setAttemptStatus(prev => ({ ...prev, isLoading: true }));
-      const status = await QuizAttemptService.getTodayAttemptStatus();
-      setAttemptStatus({
-        hasAttempt: status.hasAttempt,
-        isLoading: false,
-        attempt: status.attempt,
-      });
-    } catch (error) {
-      console.error('Failed to check attempt status:', error);
-      setAttemptStatus(prev => ({ ...prev, isLoading: false }));
-    }
-  };
-
-  // Check attempt status when quiz becomes available
-  useEffect(() => {
-    if (hasDropped && canStart && !attemptStatus.isLoading) {
-      checkAttemptStatus();
-    }
-  }, [hasDropped, canStart]);
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, [timeUntilDrop, refresh]);
 
   const handleStartQuiz = async () => {
-    if (canStart) {
-      navigation.navigate('Quiz', { selectedQuiz: undefined }); // Use dailyQuizMock as default
-    } else {
+    if (error) {
+      Alert.alert('Error', error, [
+        { text: 'OK' },
+        { text: 'Retry', onPress: refresh }
+      ]);
+      return;
+    }
+
+    if (hasAttempt && attemptCompleted) {
       Alert.alert(
-        'Quiz Not Available', 
-        reason || 'Cannot start quiz right now',
+        'Quiz Already Completed',
+        `You've already completed today's quiz! Your score was ${status?.attempt?.score || 0}. Come back tomorrow for a new quiz.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (hasAttempt && !attemptCompleted) {
+      Alert.alert(
+        'Continue Quiz',
+        'You have an in-progress quiz. Would you like to continue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Continue', onPress: () => navigation.navigate('Quiz', { selectedQuiz: undefined }) }
+        ]
+      );
+      return;
+    }
+
+    if (isAvailable) {
+      navigation.navigate('Quiz', { selectedQuiz: undefined });
+    } else {
+      const timeLeft = Math.max(0, timeUntilDrop);
+      const hours = Math.floor(timeLeft / 3600);
+      const minutes = Math.floor((timeLeft % 3600) / 60);
+      
+      Alert.alert(
+        'Quiz Not Available Yet', 
+        `The next quiz will be available in ${hours}h ${minutes}m. Check back soon!`,
         [
           { text: 'OK' },
-          ...(shouldShowRetry ? [{ text: 'Retry', onPress: recheck }] : [])
+          { text: 'Refresh', onPress: refresh }
         ]
       );
     }
   };
 
-
-
-  const handleRetryCountdown = () => {
-    refetchCountdown();
+  const handleRetry = () => {
+    refresh();
   };
 
   return (
@@ -136,52 +149,45 @@ export default function DailyDropScreen({navigation}: Props) {
               🌙 Tonight's Drop
             </Text>
             
-            {/* Countdown */}
+            {/* Status Display */}
             <View style={styles.countdownContainer}>
-              {countdownLoading ? (
+              {isLoading ? (
                 <Text variant="body" align="center" style={[styles.loadingText, {color: theme.colors.textSecondary}]}>
-                  Loading countdown...
+                  Loading quiz status...
                 </Text>
-              ) : countdownError ? (
+              ) : error ? (
                 <View style={styles.errorContainer}>
                   <Text variant="body" align="center" style={[styles.errorText, {color: theme.colors.error}]}>
-                    {countdownError}
+                    {error}
                   </Text>
                   <Button
                     title="Retry"
                     variant="outline"
-                    onPress={handleRetryCountdown}
+                    onPress={handleRetry}
                     style={styles.retryButton}
                   />
                 </View>
-              ) : hasDropped && canStart ? (
+              ) : isAvailable ? (
                 <View style={styles.availableContainer}>
-                  {attemptStatus.isLoading ? (
-                    <>
-                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.textSecondary}]}>
-                        🔍 Checking Status...
-                      </Text>
-                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                        Loading your quiz attempt...
-                      </Text>
-                    </>
-                  ) : attemptStatus.hasAttempt && attemptStatus.attempt ? (
+                  {hasAttempt && attemptCompleted ? (
                     <>
                       <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
-                        📊 Today's Quiz
+                        ✅ Quiz Completed!
                       </Text>
                       <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.text}]}>
-                        Score: {attemptStatus.attempt.score || 0}%
-                      </Text>
-                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                        Started: {new Date(attemptStatus.attempt.startedAt || '').toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
+                        Score: {status?.attempt?.score || 0}%
                       </Text>
                       <Text variant="caption" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                        Status: {attemptStatus.attempt.status === 'finished' ? 'Completed' : 'In Progress'}
+                        Come back tomorrow for a new quiz!
+                      </Text>
+                    </>
+                  ) : hasAttempt && !attemptCompleted ? (
+                    <>
+                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.primary}]}>
+                        📝 Quiz In Progress
+                      </Text>
+                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
+                        You can continue your quiz
                       </Text>
                     </>
                   ) : (
@@ -198,13 +204,13 @@ export default function DailyDropScreen({navigation}: Props) {
               ) : (
                 <>
                   <Text variant="caption" align="center" style={[styles.countdownLabel, {color: theme.colors.textSecondary}]}>
-                    {isToday ? 'Next drop today' : 'Next drop tomorrow'} • Random time between 5-8 PM Toronto
+                    {status?.nextDrop?.isToday ? 'Next drop today' : 'Next drop tomorrow'} • Random time between 5-8 PM Toronto
                   </Text>
                   
                   <View style={styles.timeContainer}>
                     <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent1}]}>
                       <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                        {timeLeft.hours.toString().padStart(2, '0')}
+                        {Math.floor(localTimeLeft / 3600).toString().padStart(2, '0')}
                       </Text>
                       <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
                         HOURS
@@ -215,7 +221,7 @@ export default function DailyDropScreen({navigation}: Props) {
                     
                     <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent2}]}>
                       <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                        {timeLeft.minutes.toString().padStart(2, '0')}
+                        {Math.floor((localTimeLeft % 3600) / 60).toString().padStart(2, '0')}
                       </Text>
                       <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
                         MINUTES
@@ -226,7 +232,7 @@ export default function DailyDropScreen({navigation}: Props) {
                     
                     <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent3}]}>
                       <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                        {timeLeft.seconds.toString().padStart(2, '0')}
+                        {(localTimeLeft % 60).toString().padStart(2, '0')}
                       </Text>
                       <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
                         SECONDS
@@ -237,12 +243,22 @@ export default function DailyDropScreen({navigation}: Props) {
               )}
             </View>
 
-            {/* Quiz action - only show start button if no attempt exists */}
-            {hasDropped && canStart && !attemptStatus.hasAttempt && !attemptStatus.isLoading && (
+            {/* Quiz action button */}
+            {isAvailable && (
               <Button
-                title="🚀 Start Today's Quiz"
+                title={
+                  hasAttempt && attemptCompleted 
+                    ? "✅ Quiz Completed" 
+                    : hasAttempt && !attemptCompleted 
+                      ? "📝 Continue Quiz" 
+                      : "🚀 Start Today's Quiz"
+                }
                 onPress={handleStartQuiz}
-                style={[styles.startQuizButton, {backgroundColor: theme.colors.success}]}
+                style={[
+                  styles.startQuizButton, 
+                  {backgroundColor: hasAttempt && attemptCompleted ? theme.colors.textSecondary : theme.colors.success}
+                ]}
+                disabled={hasAttempt && attemptCompleted}
               />
             )}
           </View>

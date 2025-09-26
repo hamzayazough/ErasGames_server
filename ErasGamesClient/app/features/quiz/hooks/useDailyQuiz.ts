@@ -8,6 +8,10 @@ import {
   DailyQuizErrorType,
   QuizResult,
 } from '../../../core/api/daily-quiz';
+import {
+  dailyQuizStatusService,
+  QuizStatusResponse,
+} from '../../../core/services/daily-quiz-status.service';
 
 // Hook for countdown timer
 export function useQuizCountdown() {
@@ -278,5 +282,60 @@ export function useDailyQuizErrorHandler() {
     getErrorMessage,
     getRetryMessage,
     shouldShowRetry,
+  };
+}
+
+// New consolidated hook that replaces multiple API calls
+export function useDailyQuizStatus() {
+  const [status, setStatus] = useState<QuizStatusResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const canCheck = await dailyQuizStatusService.canCheckStatus();
+      if (!canCheck) {
+        setError('Authentication required');
+        return;
+      }
+
+      const statusData = await dailyQuizStatusService.getDailyQuizStatus();
+      setStatus(statusData);
+    } catch (err: any) {
+      console.error('Failed to fetch quiz status:', err);
+
+      if (err.response?.status === 401) {
+        setError('Authentication required');
+      } else if (err.response?.status === 404) {
+        setError('No quiz available');
+      } else {
+        setError('Failed to load quiz status');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  const refresh = useCallback(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  return {
+    status,
+    isLoading,
+    error,
+    refresh,
+    // Derived convenience properties
+    isAvailable: status?.isAvailable ?? false,
+    hasAttempt: !!status?.attempt,
+    attemptCompleted: status?.attempt?.status === 'completed',
+    timeUntilDrop: status?.nextDrop?.timeUntilDrop ?? 0,
   };
 }
