@@ -40,7 +40,18 @@ export default function DailyDropScreen({navigation}: Props) {
   useEffect(() => {
     if (localTimeLeft > 0) {
       countdownIntervalRef.current = setInterval(() => {
-        setLocalTimeLeft(prev => Math.max(0, prev - 1));
+        setLocalTimeLeft(prev => {
+          const newValue = Math.max(0, prev - 1);
+          
+          // When countdown reaches 0, trigger a single refresh to check if quiz is now available
+          if (newValue === 0 && prev > 0) {
+            console.log('⏰ Countdown reached zero - checking if quiz is now available...');
+            // Use setTimeout to avoid state update during render
+            setTimeout(() => refresh(), 100);
+          }
+          
+          return newValue;
+        });
       }, 1000);
     } else {
       if (countdownIntervalRef.current) {
@@ -53,27 +64,7 @@ export default function DailyDropScreen({navigation}: Props) {
         clearInterval(countdownIntervalRef.current);
       }
     };
-  }, [localTimeLeft]);
-
-  // Auto-refresh when quiz should be available (every 30 seconds when countdown is low)
-  useEffect(() => {
-    if (timeUntilDrop > 0 && timeUntilDrop < 300) { // 5 minutes or less
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-      
-      refreshTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 Auto-refreshing quiz status...');
-        refresh();
-      }, 30000); // Refresh every 30 seconds when close to drop
-    }
-
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-    };
-  }, [timeUntilDrop, refresh]);
+  }, [localTimeLeft, refresh]);
 
   const handleStartQuiz = async () => {
     if (error) {
