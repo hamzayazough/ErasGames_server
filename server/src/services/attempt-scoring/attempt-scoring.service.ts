@@ -51,6 +51,21 @@ export class AttemptScoringService {
     quizQuestions: DailyQuizQuestion[],
     finishTime: Date,
   ): Promise<ScoreCalculationResult> {
+    // Check if submission was after deadline
+    const isExpired = finishTime > attempt.deadline;
+
+    if (isExpired) {
+      this.logger.warn(
+        `⏰ Expired submission detected! Deadline: ${attempt.deadline.toISOString()}, Finish: ${finishTime.toISOString()}`,
+      );
+      return this.getExpiredAttemptResult(
+        attempt,
+        answers,
+        quizQuestions,
+        finishTime,
+      );
+    }
+
     // Calculate overall timing first
     const finishTimeSec = Math.round(
       (finishTime.getTime() - attempt.startAt.getTime()) / 1000,
@@ -204,6 +219,84 @@ export class AttemptScoringService {
       },
       accPoints: attempt.accPoints,
       finishTimeSec: attempt.speedSec,
+      questions: questionResults,
+    };
+  }
+
+  /**
+   * Handle expired attempt submission - return score of 0 but still show question results
+   */
+  private async getExpiredAttemptResult(
+    attempt: Attempt,
+    answers: AttemptAnswer[],
+    quizQuestions: DailyQuizQuestion[],
+    finishTime: Date,
+  ): Promise<ScoreCalculationResult> {
+    // Calculate timing for display
+    const finishTimeSec = Math.round(
+      (finishTime.getTime() - attempt.startAt.getTime()) / 1000,
+    );
+    const totalTimeMs = finishTime.getTime() - attempt.startAt.getTime();
+    const avgTimePerQuestionMs = Math.round(totalTimeMs / quizQuestions.length);
+
+    this.logger.log(
+      `⏰ Expired quiz: Total ${finishTimeSec}s (exceeded 60s limit)`,
+    );
+
+    // Still process answers for display but give 0 score
+    const questionResults: Array<{
+      questionId: string;
+      isCorrect: boolean;
+      timeSpentMs: number;
+      accuracyPoints: number;
+      difficulty: string;
+    }> = [];
+
+    for (const quizQuestion of quizQuestions) {
+      const answer = answers.find(
+        (a) => a.questionId === quizQuestion.question.id,
+      );
+      let isCorrect = false;
+
+      if (answer) {
+        // Still check correctness for display
+        isCorrect = this.questionCorrectnessService.checkAnswerCorrectness(
+          answer.answerJSON,
+          quizQuestion.question.correctJSON,
+          quizQuestion.question.questionType,
+        );
+
+        // Update answer record but with 0 points due to expiration
+        answer.isCorrect = isCorrect;
+        answer.accuracyPoints = 0; // No points for expired submission
+        answer.timeSpentMs = avgTimePerQuestionMs;
+        await this.attemptAnswerRepository.save(answer);
+      }
+
+      questionResults.push({
+        questionId: quizQuestion.question.id,
+        isCorrect,
+        timeSpentMs: avgTimePerQuestionMs,
+        accuracyPoints: 0, // No points for expired submission
+        difficulty: quizQuestion.question.difficulty,
+      });
+    }
+
+    // Return score of 0 for expired attempts
+    return {
+      score: 0,
+      breakdown: {
+        base: 0, // No base points for expired
+        questionPoints: 0, // No question points for expired
+        speedMultiplier: 0, // No multiplier for expired
+        earlyMultiplier: 0, // No multiplier for expired
+        totalQuestionPoints: 0, // No points for expired
+        unusedSeconds: 0, // Exceeded time limit
+        startDelayMinutes: 0,
+        minutesEarly: 0,
+      },
+      accPoints: 0, // No accuracy points for expired
+      finishTimeSec,
       questions: questionResults,
     };
   }

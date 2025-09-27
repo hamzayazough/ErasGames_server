@@ -89,15 +89,12 @@ export default function QuizScreen({navigation, route}: Props) {
         const remaining = QuizAttemptService.getTimeRemaining(quizAttempt.deadline);
         setTimeRemaining(remaining);
         
-        if (remaining === 0 && isMountedRef.current) {
-          // Time's up! Auto-submit quiz safely
+        if (remaining === 0 && isMountedRef.current && !quizSubmitted) {
+          // Time's up! Auto-submit quiz immediately
+          console.log('⏰ TIME EXPIRED - Auto-submitting quiz...');
           setTimeout(() => {
-            if (isMountedRef.current) {
-              Alert.alert(
-                'Time\'s Up! ⏰',
-                'Your quiz time has expired. Submitting your answers...',
-                [{text: 'OK', onPress: handleQuizSubmit}]
-              );
+            if (isMountedRef.current && !quizSubmitted) {
+              handleQuizSubmit();
             }
           }, 100);
         }

@@ -109,10 +109,56 @@ export class AttemptsController {
           dailyQuiz: { id: quiz.id } as DailyQuiz,
         },
         order: { createdAt: 'DESC' },
+        relations: ['dailyQuiz'],
       });
 
       if (!attempt) {
         return { hasAttempt: false };
+      }
+
+      // Check if active attempt has expired and auto-finish it
+      const now = new Date();
+      if (attempt.status === 'active' && now > attempt.deadline) {
+        this.logger.warn(
+          `⏰ Auto-finishing expired attempt ${attempt.id}. Deadline: ${attempt.deadline.toISOString()}, Current: ${now.toISOString()}`,
+        );
+
+        try {
+          // Get existing answers for this attempt
+          const answers = await this.attemptAnswerRepository.find({
+            where: { attempt: { id: attempt.id } },
+          });
+
+          // Get quiz questions
+          const quizQuestions = await this.dailyQuizQuestionRepository.find({
+            where: { dailyQuiz: { id: attempt.dailyQuiz.id } },
+            relations: ['question'],
+          });
+
+          // Use scoring service to finalize the expired attempt
+          const result = await this.attemptScoringService.calculateScore(
+            attempt,
+            answers,
+            quizQuestions,
+            now,
+          );
+
+          // Update attempt as finished with score of 0 (due to expiration)
+          attempt.finishAt = now;
+          attempt.accPoints = result.accPoints;
+          attempt.speedSec = result.finishTimeSec;
+          attempt.score = result.score; // Will be 0 for expired attempts
+          attempt.status = 'finished';
+
+          await this.attemptRepository.save(attempt);
+
+          this.logger.log(
+            `✅ Expired attempt auto-finished with score: ${result.score}`,
+          );
+        } catch (error) {
+          this.logger.error('Failed to auto-finish expired attempt:', error);
+          // Continue with the original attempt status if auto-finish fails
+        }
       }
 
       return {
@@ -241,20 +287,37 @@ export class AttemptsController {
         );
       }
 
-      // Check if user already has an active attempt for this quiz
+      // Check if user already has any attempt (active or finished) for this quiz
       const existingAttempt = await this.attemptRepository.findOne({
         where: {
           user: { id: userId } as User,
           dailyQuiz: { id: quiz.id } as DailyQuiz,
-          status: 'active',
         },
+        order: { createdAt: 'DESC' },
       });
 
       if (existingAttempt) {
-        throw new HttpException(
-          'You already have an active attempt for this quiz',
-          HttpStatus.CONFLICT,
-        );
+        if (existingAttempt.status === 'active') {
+          // Check if active attempt has expired
+          if (now > existingAttempt.deadline) {
+            this.logger.warn(
+              `Found expired active attempt ${existingAttempt.id}, user should not be able to start new attempt`,
+            );
+            throw new HttpException(
+              'Your previous attempt has expired. You cannot start a new attempt for today.',
+              HttpStatus.CONFLICT,
+            );
+          }
+          throw new HttpException(
+            'You already have an active attempt for this quiz',
+            HttpStatus.CONFLICT,
+          );
+        } else if (existingAttempt.status === 'finished') {
+          throw new HttpException(
+            "You have already completed today's quiz",
+            HttpStatus.CONFLICT,
+          );
+        }
       }
 
       // Check if we're within the join window (reuse the 'now' variable from above)
@@ -463,13 +526,15 @@ export class AttemptsController {
         return this.getFinishedAttemptResult(attempt);
       }
 
-      // Check if deadline has passed
+      // Check if deadline has passed - allow late submission with penalty
       const now = new Date();
-      if (now > attempt.deadline) {
-        throw new HttpException(
-          'Attempt deadline has expired',
-          HttpStatus.UNPROCESSABLE_ENTITY,
+      const isExpired = now > attempt.deadline;
+
+      if (isExpired) {
+        this.logger.warn(
+          `⏰ Late submission detected for attempt ${attemptId}. Deadline: ${attempt.deadline.toISOString()}, Current: ${now.toISOString()}`,
         );
+        // Continue processing but will result in score of 0 due to expiration
       }
 
       // If new answers are provided, save them first (bulk submission)
