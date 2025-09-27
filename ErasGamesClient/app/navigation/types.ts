@@ -1,6 +1,9 @@
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {QuizMock} from '../features/quiz/constants/quizMocks';
-import type {QuizAttempt} from '../core/services/quiz-attempt.service';
+import type {
+  QuizAttempt,
+  QuizSubmission,
+} from '../core/services/quiz-attempt.service';
 import type {QuizTemplate} from '../core/api/daily-quiz';
 
 // Root Stack Navigator
@@ -18,6 +21,9 @@ export type RootStackParamList = {
     selectedQuiz?: QuizMock;
     quizAttempt?: QuizAttempt;
     quizTemplate?: QuizTemplate;
+  };
+  QuizResults: {
+    quizResult: QuizSubmission;
   };
   Results: undefined;
 

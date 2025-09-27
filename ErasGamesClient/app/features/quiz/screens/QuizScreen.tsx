@@ -31,6 +31,7 @@ export default function QuizScreen({navigation, route}: Props) {
   const [quizResult, setQuizResult] = useState<QuizSubmission | null>(null);
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
   const [quizTemplate, setQuizTemplate] = useState<QuizTemplate | null>(route.params?.quizTemplate || null);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
   const isMountedRef = useRef(true);
 
   // Get selected quiz for metadata (title, description, etc.)
@@ -81,7 +82,7 @@ export default function QuizScreen({navigation, route}: Props) {
 
   // Timer countdown - calculates remaining time from deadline
   useEffect(() => {
-    if (!quizStarted || !quizAttempt) return;
+    if (!quizStarted || !quizAttempt || quizSubmitted) return;
     
     const interval = setInterval(() => {
       try {
@@ -108,7 +109,7 @@ export default function QuizScreen({navigation, route}: Props) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quizStarted, quizAttempt]);
+  }, [quizStarted, quizAttempt, quizSubmitted]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -265,22 +266,22 @@ export default function QuizScreen({navigation, route}: Props) {
       console.log('🎯 Accuracy Points:', result.accPoints);
       
       setQuizResult(result);
+      setQuizSubmitted(true); // Stop the timer
       
       if (isMountedRef.current) {
-        const totalQuestions = result.questions.length;
-        const correctAnswers = result.questions.filter(q => q.isCorrect).length;
+        // Create QuizSubmission object for results screen
+        const quizSubmission = {
+          finalScore: result.score,
+          scoreBreakdown: result.breakdown,
+          finishTimeSeconds: result.finishTimeSec,
+          accuracyPoints: result.accPoints,
+          questions: result.questions
+        };
         
-        Alert.alert(
-          'Quiz Submitted! 🎉',
-          `Your score: ${result.score} points\n` +
-          `Correct answers: ${correctAnswers}/${totalQuestions}\n` +
-          `Finish time: ${Math.floor(result.finishTimeSec / 60)}:${(result.finishTimeSec % 60).toString().padStart(2, '0')}`,
-          [{text: 'OK', onPress: () => {
-            if (isMountedRef.current) {
-              navigation.goBack();
-            }
-          }}]
-        );
+        // Navigate to results screen
+        navigation.navigate('QuizResults', {
+          quizResult: quizSubmission
+        });
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);

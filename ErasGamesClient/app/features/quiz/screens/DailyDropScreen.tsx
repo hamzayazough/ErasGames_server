@@ -392,7 +392,7 @@ export default function DailyDropScreen({navigation}: Props) {
                         ✅ Quiz Completed!
                       </Text>
                       <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.text}]}>
-                        Score: {status?.attempt?.score || 0}%
+                        Score: {status?.attempt?.score || 0} points
                       </Text>
                       <Text variant="caption" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
                         Come back tomorrow for a new quiz!

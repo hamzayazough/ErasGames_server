@@ -12,6 +12,7 @@ import DailyDropScreen from '../features/quiz/screens/DailyDropScreen';
 import StartQuizScreen from '../features/quiz/screens/StartQuizScreen';
 import QuizSelectionScreen from '../features/quiz/screens/QuizSelectionScreen';
 import QuizScreen from '../features/quiz/screens/QuizScreen';
+import QuizResultsScreen from '../features/quiz/screens/QuizResultsScreen';
 import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 
 // Import auth screens
@@ -84,6 +85,11 @@ export function RootNavigator() {
             <Stack.Screen 
               name="Quiz" 
               component={QuizScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="QuizResults" 
+              component={QuizResultsScreen}
               options={{headerShown: false}}
             />
             <Stack.Screen 
