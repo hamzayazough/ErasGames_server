@@ -34,113 +34,157 @@ export class DailyQuizTestController {
   ) {}
 
   /**
-   * 🚀 Create Today's Quiz (Launches in 5 minutes)
+   * 🚀 Create Today's and Tomorrow's Quiz
    *
    * This endpoint mimics the daily quiz job crons to:
    * 1. Create today's quiz with drop time in 5 minutes
-   * 2. Generate and upload CDN template immediately
-   * 3. Schedule notification for the drop time
+   * 2. Create tomorrow's quiz with standard drop time
+   * 3. Generate and upload CDN templates for both
+   * 4. Schedule notifications for both quizzes
    *
    * Perfect for testing the React Native app with real quiz data!
    */
   @Post('create-todays-quiz')
   async createTodaysQuiz() {
-    this.logger.log("🚀 Creating today's quiz for React Native testing...");
+    this.logger.log(
+      "🚀 Creating today's and tomorrow's quiz for React Native testing...",
+    );
 
     try {
-      // Calculate drop time (5 minutes from now)
-      const dropTime = new Date();
-      dropTime.setMinutes(dropTime.getMinutes() + 5);
-      dropTime.setSeconds(0, 0); // Clean up seconds/milliseconds
+      // Helper function to create a quiz
+      const createQuiz = async (
+        dropTime: Date,
+        dayLabel: string,
+        isToday: boolean = false,
+      ) => {
+        this.logger.log(`📋 Creating ${dayLabel}'s quiz...`);
 
-      this.logger.log(`⏰ Quiz will drop at: ${dropTime.toISOString()}`);
+        // Check if quiz already exists for this day
+        const startOfDay = new Date(dropTime);
+        startOfDay.setUTCHours(0, 0, 0, 0);
+        const endOfDay = new Date(dropTime);
+        endOfDay.setUTCHours(23, 59, 59, 999);
 
-      // Check if quiz already exists for today
-      const today = new Date();
-      const startOfDay = new Date(today);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(today);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+        const existingQuiz = await this.dailyQuizRepository
+          .createQueryBuilder('quiz')
+          .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
+          .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
+          .getOne();
 
-      const existingQuiz = await this.dailyQuizRepository
-        .createQueryBuilder('quiz')
-        .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
-        .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
-        .getOne();
+        if (existingQuiz) {
+          this.logger.log(
+            `⚠️  ${dayLabel}'s quiz already exists, cleaning up first...`,
+          );
 
-      if (existingQuiz) {
-        this.logger.log(
-          "⚠️  Today's quiz already exists, cleaning up first...",
+          // Delete existing quiz questions
+          await this.dailyQuizQuestionRepository.delete({
+            dailyQuiz: { id: existingQuiz.id },
+          });
+
+          // Delete existing quiz
+          await this.dailyQuizRepository.delete(existingQuiz.id);
+
+          this.logger.log(`✅ Cleaned up existing ${dayLabel} quiz`);
+        }
+
+        // STEP 1: Create the quiz
+        const compositionResult = await this.composerService.composeDailyQuiz(
+          dropTime,
+          DailyQuizMode.MIX,
         );
 
-        // Delete existing quiz questions
-        await this.dailyQuizQuestionRepository.delete({
-          dailyQuiz: { id: existingQuiz.id },
+        const quiz = compositionResult.dailyQuiz;
+        const questions = compositionResult.questions;
+
+        this.logger.log(
+          `✅ ${dayLabel} quiz created: ${quiz.id} with ${questions.length} questions`,
+        );
+
+        // STEP 2: Generate and upload template
+        this.logger.log(`🎨 Generating CDN template for ${dayLabel}...`);
+
+        const { templateUrl, version } =
+          await this.templateService.buildAndUploadTemplate(
+            quiz,
+            questions,
+            quiz.themePlanJSON as any,
+          );
+
+        // Update quiz with CDN URL
+        await this.dailyQuizRepository.update(quiz.id, {
+          templateCdnUrl: templateUrl,
         });
 
-        // Delete existing quiz
-        await this.dailyQuizRepository.delete(existingQuiz.id);
-
-        this.logger.log('✅ Cleaned up existing quiz');
-      }
-
-      // STEP 1: Create the quiz (mimics daily composition job)
-      this.logger.log('📋 Step 1: Creating quiz with questions...');
-
-      const compositionResult = await this.composerService.composeDailyQuiz(
-        dropTime,
-        DailyQuizMode.MIX,
-      );
-
-      const quiz = compositionResult.dailyQuiz;
-      const questions = compositionResult.questions;
-
-      this.logger.log(
-        `✅ Quiz created: ${quiz.id} with ${questions.length} questions`,
-      );
-
-      // STEP 2: Generate and upload template (mimics template warmup job)
-      this.logger.log('🎨 Step 2: Generating CDN template...');
-
-      const { templateUrl, version } =
-        await this.templateService.buildAndUploadTemplate(
-          quiz,
-          questions,
-          quiz.themePlanJSON as any,
+        this.logger.log(
+          `✅ ${dayLabel} template uploaded: ${templateUrl} (v${version})`,
         );
 
-      // Update quiz with CDN URL
-      await this.dailyQuizRepository.update(quiz.id, {
-        templateCdnUrl: templateUrl,
-      });
+        // STEP 3: Schedule notification
+        this.logger.log(`📱 Scheduling push notification for ${dayLabel}...`);
 
-      this.logger.log(`✅ Template uploaded: ${templateUrl} (v${version})`);
+        this.jobProcessor.scheduleNotificationForQuiz(quiz);
 
-      // STEP 3: Schedule notification (mimics notification scheduling)
-      this.logger.log('📱 Step 3: Scheduling push notification...');
+        this.logger.log(`✅ ${dayLabel} notification scheduled`);
 
-      this.jobProcessor.scheduleNotificationForQuiz(quiz);
+        return {
+          quiz,
+          questions,
+          templateUrl,
+          version,
+          dropTime,
+          timeUntilDrop: isToday ? '5 minutes' : 'tomorrow at usual time',
+        };
+      };
 
-      this.logger.log('✅ Notification scheduled for drop time');
+      // Calculate drop times
+      const todayDropTime = new Date();
+      todayDropTime.setMinutes(todayDropTime.getMinutes() + 5);
+      todayDropTime.setSeconds(0, 0); // Clean up seconds/milliseconds
+
+      const tomorrowDropTime = new Date();
+      tomorrowDropTime.setDate(tomorrowDropTime.getDate() + 1);
+      tomorrowDropTime.setHours(12, 0, 0, 0); // Set to noon tomorrow (adjust as needed)
+
+      this.logger.log(
+        `⏰ Today's quiz will drop at: ${todayDropTime.toISOString()}`,
+      );
+      this.logger.log(
+        `⏰ Tomorrow's quiz will drop at: ${tomorrowDropTime.toISOString()}`,
+      );
+
+      // Create both quizzes
+      const todayResult = await createQuiz(todayDropTime, 'Today', true);
+      const tomorrowResult = await createQuiz(
+        tomorrowDropTime,
+        'Tomorrow',
+        false,
+      );
 
       // Success response
       const response = {
         success: true,
-        message: "Today's quiz created successfully! 🎉",
-        quiz: {
-          id: quiz.id,
-          dropTime: dropTime.toISOString(),
-          templateUrl: templateUrl,
-          questionsCount: questions.length,
-          timeUntilDrop: '5 minutes',
+        message: "Today's and tomorrow's quizzes created successfully! 🎉",
+        today: {
+          id: todayResult.quiz.id,
+          dropTime: todayResult.dropTime.toISOString(),
+          templateUrl: todayResult.templateUrl,
+          questionsCount: todayResult.questions.length,
+          timeUntilDrop: todayResult.timeUntilDrop,
+        },
+        tomorrow: {
+          id: tomorrowResult.quiz.id,
+          dropTime: tomorrowResult.dropTime.toISOString(),
+          templateUrl: tomorrowResult.templateUrl,
+          questionsCount: tomorrowResult.questions.length,
+          timeUntilDrop: tomorrowResult.timeUntilDrop,
         },
         workflow: {
-          step1: '✅ Quiz composition complete',
-          step2: '✅ CDN template generated and uploaded',
-          step3: '✅ Push notification scheduled',
+          step1: '✅ Both quiz compositions complete',
+          step2: '✅ Both CDN templates generated and uploaded',
+          step3: '✅ Both push notifications scheduled',
         },
         testing: {
-          message: 'Your React Native app can now fetch the quiz!',
+          message: 'Your React Native app can now fetch both quizzes!',
           endpoints: {
             'GET /daily':
               'Check if quiz is available (returns 404 until drop time)',
@@ -151,123 +195,181 @@ export class DailyQuizTestController {
         },
       };
 
-      this.logger.log("🎉 TODAY'S QUIZ SETUP COMPLETE!");
-      this.logger.log(`   📋 Quiz ID: ${quiz.id}`);
-      this.logger.log(`   ⏰ Drops in: 5 minutes (${dropTime.toISOString()})`);
-      this.logger.log(`   🌐 Template: ${templateUrl}`);
-      this.logger.log(`   📱 React Native app ready for testing!`);
+      this.logger.log("🎉 TODAY'S AND TOMORROW'S QUIZ SETUP COMPLETE!");
+      this.logger.log("   📋 TODAY'S QUIZ:");
+      this.logger.log(`     ID: ${todayResult.quiz.id}`);
+      this.logger.log(
+        `     Drops in: 5 minutes (${todayResult.dropTime.toISOString()})`,
+      );
+      this.logger.log(`     Template: ${todayResult.templateUrl}`);
+      this.logger.log("   📋 TOMORROW'S QUIZ:");
+      this.logger.log(`     ID: ${tomorrowResult.quiz.id}`);
+      this.logger.log(
+        `     Drops at: ${tomorrowResult.dropTime.toISOString()}`,
+      );
+      this.logger.log(`     Template: ${tomorrowResult.templateUrl}`);
+      this.logger.log(`   📱 React Native app ready for testing both quizzes!`);
 
       return response;
     } catch (error) {
-      this.logger.error("❌ Failed to create today's quiz:", error);
+      this.logger.error(
+        "❌ Failed to create today's and tomorrow's quiz:",
+        error,
+      );
 
       return {
         success: false,
-        message: "Failed to create today's quiz",
+        message: "Failed to create today's and tomorrow's quiz",
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   /**
-   * 📊 Get current quiz status for testing
+   * 📊 Get current quiz status for testing (today and tomorrow)
    */
   @Get('status')
   async getQuizStatus() {
-    const today = new Date();
-    const startOfDay = new Date(today);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const endOfDay = new Date(today);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    const now = new Date();
 
-    const todaysQuiz = await this.dailyQuizRepository
-      .createQueryBuilder('quiz')
-      .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
-      .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
-      .getOne();
+    // Helper function to get quiz for a specific day
+    const getQuizForDay = async (dayOffset: number) => {
+      const targetDay = new Date();
+      targetDay.setDate(targetDay.getDate() + dayOffset);
 
-    if (!todaysQuiz) {
+      const startOfDay = new Date(targetDay);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDay);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const quiz = await this.dailyQuizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
+        .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
+        .getOne();
+
+      if (!quiz) return null;
+
+      const isLive = now >= quiz.dropAtUTC;
+      const timeUntilDrop = isLive
+        ? 'Quiz is live!'
+        : `${Math.ceil((quiz.dropAtUTC.getTime() - now.getTime()) / 1000 / 60)} minutes`;
+
+      const questionsCount = await this.dailyQuizQuestionRepository.count({
+        where: { dailyQuiz: { id: quiz.id } },
+      });
+
       return {
-        hasQuiz: false,
-        message: 'No quiz scheduled for today',
-        action: 'Use POST /test/daily-quiz/create-todays-quiz to create one',
+        id: quiz.id,
+        dropTime: quiz.dropAtUTC.toISOString(),
+        isLive,
+        timeUntilDrop,
+        templateUrl: quiz.templateCdnUrl,
+        questionsCount,
+        notificationSent: quiz.notificationSent,
+      };
+    };
+
+    const todaysQuiz = await getQuizForDay(0);
+    const tomorrowsQuiz = await getQuizForDay(1);
+
+    if (!todaysQuiz && !tomorrowsQuiz) {
+      return {
+        hasQuizzes: false,
+        message: 'No quizzes scheduled for today or tomorrow',
+        action: 'Use POST /test/daily-quiz/create-todays-quiz to create them',
       };
     }
 
-    const now = new Date();
-    const isLive = now >= todaysQuiz.dropAtUTC;
-    const timeUntilDrop = isLive
-      ? 'Quiz is live!'
-      : `${Math.ceil((todaysQuiz.dropAtUTC.getTime() - now.getTime()) / 1000 / 60)} minutes`;
-
-    const questionsCount = await this.dailyQuizQuestionRepository.count({
-      where: { dailyQuiz: { id: todaysQuiz.id } },
-    });
-
     return {
-      hasQuiz: true,
-      quiz: {
-        id: todaysQuiz.id,
-        dropTime: todaysQuiz.dropAtUTC.toISOString(),
-        isLive,
-        timeUntilDrop,
-        templateUrl: todaysQuiz.templateCdnUrl,
-        questionsCount,
-        notificationSent: todaysQuiz.notificationSent,
-      },
-      testing: {
-        message: isLive
-          ? 'Quiz is live! Your React Native app can access it now.'
-          : 'Quiz is scheduled. React Native app will get 404 until drop time.',
+      hasQuizzes: true,
+      today: todaysQuiz
+        ? {
+            ...todaysQuiz,
+            testing: todaysQuiz.isLive
+              ? 'Quiz is live! Your React Native app can access it now.'
+              : 'Quiz is scheduled. React Native app will get 404 until drop time.',
+          }
+        : { message: 'No quiz scheduled for today' },
+      tomorrow: tomorrowsQuiz
+        ? {
+            ...tomorrowsQuiz,
+            testing: "Tomorrow's quiz is prepared and ready.",
+          }
+        : { message: 'No quiz scheduled for tomorrow' },
+      overall: {
+        message: `${todaysQuiz ? 1 : 0} quiz(es) for today, ${tomorrowsQuiz ? 1 : 0} quiz(es) for tomorrow`,
       },
     };
   }
 
   /**
-   * 🧹 Clean up today's quiz (for testing)
+   * 🧹 Clean up today's and tomorrow's quizzes (for testing)
    */
   @Post('cleanup')
   async cleanupTodaysQuiz() {
-    this.logger.log("🧹 Cleaning up today's quiz...");
+    this.logger.log("🧹 Cleaning up today's and tomorrow's quizzes...");
 
-    const today = new Date();
-    const startOfDay = new Date(today);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const endOfDay = new Date(today);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    const cleanupResults = [];
 
-    const todaysQuiz = await this.dailyQuizRepository
-      .createQueryBuilder('quiz')
-      .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
-      .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
-      .getOne();
+    // Helper function to clean up quiz for a specific day
+    const cleanupQuizForDay = async (dayOffset: number, dayLabel: string) => {
+      const targetDay = new Date();
+      targetDay.setDate(targetDay.getDate() + dayOffset);
 
-    if (!todaysQuiz) {
+      const startOfDay = new Date(targetDay);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDay);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const quiz = await this.dailyQuizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
+        .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
+        .getOne();
+
+      if (!quiz) {
+        this.logger.log(`ℹ️  No ${dayLabel} quiz to clean up`);
+        return null;
+      }
+
+      // Delete quiz questions
+      const deletedQuestions = await this.dailyQuizQuestionRepository.delete({
+        dailyQuiz: { id: quiz.id },
+      });
+
+      // Delete quiz
+      await this.dailyQuizRepository.delete(quiz.id);
+
+      this.logger.log(
+        `✅ Cleaned up ${dayLabel} quiz ${quiz.id} and ${deletedQuestions.affected} questions`,
+      );
+
+      return {
+        day: dayLabel,
+        quizId: quiz.id,
+        questionsDeleted: deletedQuestions.affected,
+      };
+    };
+
+    // Clean up both days
+    const todayCleanup = await cleanupQuizForDay(0, "today's");
+    const tomorrowCleanup = await cleanupQuizForDay(1, "tomorrow's");
+
+    if (todayCleanup) cleanupResults.push(todayCleanup);
+    if (tomorrowCleanup) cleanupResults.push(tomorrowCleanup);
+
+    if (cleanupResults.length === 0) {
       return {
         success: true,
-        message: 'No quiz to clean up',
+        message: 'No quizzes to clean up',
       };
     }
 
-    // Delete quiz questions
-    const deletedQuestions = await this.dailyQuizQuestionRepository.delete({
-      dailyQuiz: { id: todaysQuiz.id },
-    });
-
-    // Delete quiz
-    await this.dailyQuizRepository.delete(todaysQuiz.id);
-
-    this.logger.log(
-      `✅ Cleaned up quiz ${todaysQuiz.id} and ${deletedQuestions.affected} questions`,
-    );
-
     return {
       success: true,
-      message: "Today's quiz cleaned up successfully",
-      cleaned: {
-        quizId: todaysQuiz.id,
-        questionsDeleted: deletedQuestions.affected,
-      },
+      message: `Successfully cleaned up ${cleanupResults.length} quiz(es)`,
+      cleaned: cleanupResults,
     };
   }
 }
