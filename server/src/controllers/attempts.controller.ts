@@ -429,9 +429,13 @@ export class AttemptsController {
     score: number;
     breakdown: {
       base: number;
-      accuracyBonus: number;
-      speedBonus: number;
-      earlyBonus: number;
+      questionPoints: number;
+      speedMultiplier: number;
+      earlyMultiplier: number;
+      totalQuestionPoints: number;
+      unusedSeconds: number;
+      startDelayMinutes: number;
+      minutesEarly: number;
     };
     accPoints: number;
     finishTimeSec: number;
@@ -440,6 +444,7 @@ export class AttemptsController {
       isCorrect: boolean;
       timeSpentMs: number;
       accuracyPoints: number;
+      difficulty: string;
     }>;
   }> {
     try {
