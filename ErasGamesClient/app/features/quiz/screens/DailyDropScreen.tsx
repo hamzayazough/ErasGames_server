@@ -1,11 +1,98 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
+import {StyleSheet, ScrollView, StatusBar, Alert, Animated} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
 import {useDailyQuizStatus, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 type Props = RootStackScreenProps<'DailyDrop'>;
+
+// Simple Circular Countdown Timer Component
+function CircularCountdownTimer({ timeLeft, totalTime, size = 120 }: { timeLeft: number; totalTime: number; size?: number }) {
+  const theme = useTheme();
+  
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  
+  // Color based on time remaining
+  const getColor = () => {
+    if (timeLeft > 1800) return '#4CAF50'; // > 30 min - green
+    if (timeLeft > 600) return '#FF9800'; // > 10 min - orange  
+    return '#F44336'; // < 10 min - red
+  };
+  
+  // Calculate progress - how much time is left (1.0 = full, 0.0 = empty)
+  const progress = totalTime > 0 ? timeLeft / totalTime : 0;
+  const progressPercentage = Math.round(progress * 100);
+  
+  // Calculate rotation for the progress circle
+  const rotation = 360 * progress; // 360 degrees = full circle
+  
+  return (
+    <View style={[styles.circularTimer, { width: size, height: size }]}>
+      {/* Background circle (gray) */}
+      <View style={[
+        styles.circularTimerBg,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 8,
+          borderColor: '#E0E0E0',
+          backgroundColor: 'transparent',
+        }
+      ]} />
+      
+      {/* Progress circle using border technique */}
+      <View style={[
+        styles.circularTimerProgress,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 8,
+          borderColor: 'transparent',
+          transform: [{ rotate: '-90deg' }], // Start from top
+          // Show progress using border colors
+          borderTopColor: rotation >= 0 ? getColor() : 'transparent',
+          borderRightColor: rotation >= 90 ? getColor() : 'transparent', 
+          borderBottomColor: rotation >= 180 ? getColor() : 'transparent',
+          borderLeftColor: rotation >= 270 ? getColor() : 'transparent',
+        }
+      ]} />
+      
+      {/* Partial segment for more precise progress */}
+      {rotation > 0 && rotation < 360 && (
+        <View style={[
+          styles.circularTimerPartial,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth: 8,
+            borderColor: 'transparent',
+            position: 'absolute',
+            transform: [
+              { rotate: '-90deg' },
+              { rotate: `${Math.floor(rotation / 90) * 90}deg` }
+            ],
+            borderTopColor: (rotation % 90) > 0 ? getColor() : 'transparent',
+          }
+        ]} />
+      )}
+      
+      {/* Time display */}
+      <View style={styles.circularTimerText}>
+        <Text variant="heading2" style={[styles.timerTime, { color: getColor() }]}>
+          {minutes}:{seconds.toString().padStart(2, '0')}
+        </Text>
+        <Text variant="caption" style={[styles.timerLabel, { color: theme.colors.textSecondary }]}>
+          {progressPercentage}% LEFT
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export default function DailyDropScreen({navigation}: Props) {
   const theme = useTheme();
@@ -30,11 +117,41 @@ export default function DailyDropScreen({navigation}: Props) {
   
   // Local countdown state for smooth UI updates
   const [localTimeLeft, setLocalTimeLeft] = useState(0);
+  
+  // Quiz window countdown state (when quiz is live)
+  const [quizWindowTimeLeft, setQuizWindowTimeLeft] = useState(0);
 
   // Initialize local countdown from server data  
   useEffect(() => {
     setLocalTimeLeft(timeUntilDrop);
   }, [timeUntilDrop]);
+
+  // Calculate quiz window time left when quiz is available
+  useEffect(() => {
+    if (isAvailable && status?.quiz?.window?.end) {
+      const now = new Date();
+      const endTime = new Date(status.quiz.window.end);
+      const timeLeft = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+
+      setQuizWindowTimeLeft(timeLeft);
+      
+      // Update quiz window countdown every second
+      const interval = setInterval(() => {
+        const now = new Date();
+        const endTime = new Date(status.quiz.window.end);
+        const timeLeft = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+        setQuizWindowTimeLeft(timeLeft);
+        
+        // If window expired, refresh status
+        if (timeLeft === 0) {
+          clearInterval(interval);
+          refresh();
+        }
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isAvailable, status?.quiz?.window?.end, refresh]);
 
   // Countdown timer for smooth UI updates
   useEffect(() => {
@@ -187,8 +304,17 @@ export default function DailyDropScreen({navigation}: Props) {
                         🎉 Quiz is Live!
                       </Text>
                       <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                        You have 1 hour to complete today's quiz
+                        Complete the quiz before time runs out!
                       </Text>
+                      
+                      {/* Circular countdown timer for quiz window */}
+                      <View style={styles.quizTimerContainer}>
+                        <CircularCountdownTimer 
+                          timeLeft={quizWindowTimeLeft}
+                          totalTime={3600} // 1 hour = 3600 seconds
+                          size={140}
+                        />
+                      </View>
                     </>
                   )}
                 </View>
@@ -396,5 +522,42 @@ const styles = StyleSheet.create({
   checkingText: {
     fontSize: 14,
     fontStyle: 'italic',
+  },
+  // Circular Timer Styles
+  quizTimerContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  circularTimer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  circularTimerBg: {
+    position: 'absolute',
+  },
+  circularTimerProgress: {
+    position: 'absolute',
+  },
+  circularTimerPartial: {
+    position: 'absolute',
+  },
+  circularTimerText: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  timerTime: {
+    fontWeight: 'bold',
+    fontSize: 24,
+    marginBottom: 2,
+  },
+  timerLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });
