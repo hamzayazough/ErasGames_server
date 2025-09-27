@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import type { Request } from 'express';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { Attempt } from '../database/entities/attempt.entity';
+import { AttemptAnswer } from '../database/entities/attempt-answer.entity';
 import { User } from '../database/entities/user.entity';
 import { AuthProvider } from '../database/enums/user.enums';
 
@@ -38,6 +39,8 @@ export class DailyQuizController {
     private readonly dailyQuizRepository: Repository<DailyQuiz>,
     @InjectRepository(Attempt)
     private readonly attemptRepository: Repository<Attempt>,
+    @InjectRepository(AttemptAnswer)
+    private readonly attemptAnswerRepository: Repository<AttemptAnswer>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
@@ -75,6 +78,12 @@ export class DailyQuizController {
       status: 'in_progress' | 'completed';
       score?: number;
       completedAt?: string;
+      timeTaken?: number; // in seconds
+      correctAnswers?: number;
+      totalQuestions?: number;
+      accuracyPoints?: number;
+      speedSeconds?: number;
+      earlySeconds?: number;
     };
   }> {
     try {
@@ -166,6 +175,25 @@ export class DailyQuizController {
         });
 
         if (existingAttempt) {
+          const timeTaken =
+            existingAttempt.finishAt && existingAttempt.startAt
+              ? Math.round(
+                  (existingAttempt.finishAt.getTime() -
+                    existingAttempt.startAt.getTime()) /
+                    1000,
+                )
+              : undefined;
+
+          // Get correct answers count from AttemptAnswer entities
+          const attemptAnswers = await this.attemptAnswerRepository.find({
+            where: { attempt: { id: existingAttempt.id } },
+          });
+
+          const correctAnswers = attemptAnswers.filter(
+            (answer) => answer.isCorrect,
+          ).length;
+          const totalQuestions = attemptAnswers.length;
+
           attemptData = {
             id: existingAttempt.id,
             status: existingAttempt.finishAt
@@ -173,6 +201,9 @@ export class DailyQuizController {
               : ('in_progress' as const),
             score: existingAttempt.score || undefined,
             completedAt: existingAttempt.finishAt?.toISOString(),
+            timeTaken, // in seconds
+            correctAnswers,
+            totalQuestions,
           };
         }
       }

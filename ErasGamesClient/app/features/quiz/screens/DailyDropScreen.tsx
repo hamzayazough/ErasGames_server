@@ -127,6 +127,10 @@ export default function DailyDropScreen({navigation}: Props) {
   // Quiz window countdown state (when quiz is live)
   const [quizWindowTimeLeft, setQuizWindowTimeLeft] = useState(0);
   
+  // Next day countdown state (when quiz is completed)
+  const [nextDayTimeLeft, setNextDayTimeLeft] = useState(0);
+  const [nextDayTotalTime, setNextDayTotalTime] = useState(86400); // Default to 24 hours
+  
   // Quiz starting state
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
 
@@ -191,6 +195,37 @@ export default function DailyDropScreen({navigation}: Props) {
       }
     };
   }, [localTimeLeft, refresh]);
+
+  // Calculate time until quiz window ends when current quiz is completed
+  useEffect(() => {
+    if (hasAttempt && attemptCompleted && status?.quiz?.window?.end) {
+      let isFirstCalculation = true;
+      
+      const calculateWindowEndCountdown = () => {
+        const now = new Date();
+        const windowEndTime = new Date(status.quiz.window.end);
+        const timeLeft = Math.max(0, Math.floor((windowEndTime.getTime() - now.getTime()) / 1000));
+        
+        // Set total time on first calculation for circular progress
+        if (isFirstCalculation && timeLeft > 0) {
+          setNextDayTotalTime(timeLeft);
+          isFirstCalculation = false;
+        }
+        
+        setNextDayTimeLeft(timeLeft);
+      };
+      
+      // Calculate initial time
+      calculateWindowEndCountdown();
+      
+      // Update every second
+      const interval = setInterval(() => {
+        calculateWindowEndCountdown();
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [hasAttempt, attemptCompleted, status?.quiz?.window?.end]);
 
   const handleStartQuiz = async () => {
     if (error) {
@@ -391,12 +426,55 @@ export default function DailyDropScreen({navigation}: Props) {
                       <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
                         ✅ Quiz Completed!
                       </Text>
-                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.text}]}>
-                        Score: {status?.attempt?.score || 0} points
+                      
+                      {/* Completion Stats Card */}
+                      <View style={[styles.completionStatsCard, {backgroundColor: theme.colors.surface, borderColor: theme.colors.success}]}>
+                        <View style={styles.scoreContainer}>
+                          <Text variant="heading1" style={[styles.finalScore, {color: theme.colors.success}]}>
+                            {status?.attempt?.score || 0}
+                          </Text>
+                          <Text variant="caption" style={[styles.scoreLabel, {color: theme.colors.textSecondary}]}>
+                            FINAL SCORE
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.statsRow}>
+                          <View style={styles.statItem}>
+                            <Text variant="heading3" style={[styles.statValue, {color: theme.colors.primary}]}>
+                              {status?.attempt?.correctAnswers || 0}/{status?.attempt?.totalQuestions || 6}
+                            </Text>
+                            <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
+                              CORRECT
+                            </Text>
+                          </View>
+                          
+                          <View style={styles.statItem}>
+                            <Text variant="heading3" style={[styles.statValue, {color: theme.colors.primary}]}>
+                              {status?.attempt?.timeTaken ? `${status.attempt.timeTaken}s` : 'N/A'}
+                            </Text>
+                            <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
+                              TIME TAKEN
+                            </Text>
+                          </View>
+                        </View>
+                        
+                        <Text variant="body" align="center" style={[styles.completionMessage, {color: theme.colors.textSecondary}]}>
+                          Come back tomorrow for a new quiz!
+                        </Text>
+                      </View>
+                      
+                      {/* Show countdown for quiz window end */}
+                      <Text variant="caption" align="center" style={[styles.nextQuizLabel, {color: theme.colors.textSecondary}]}>
+                        Quiz window ends in
                       </Text>
-                      <Text variant="caption" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                        Come back tomorrow for a new quiz!
-                      </Text>
+                      
+                      <View style={styles.nextQuizTimerContainer}>
+                        <CircularCountdownTimer 
+                          timeLeft={nextDayTimeLeft}
+                          totalTime={nextDayTotalTime}
+                          size={100}
+                        />
+                      </View>
                     </>
                   ) : hasAttempt && !attemptCompleted ? (
                     <>
@@ -470,24 +548,22 @@ export default function DailyDropScreen({navigation}: Props) {
             </View>
 
             {/* Quiz action button */}
-            {isAvailable && (
+            {isAvailable && !(hasAttempt && attemptCompleted) && (
               <>
                 <Button
                   title={
                     isStartingQuiz
                       ? "Starting Quiz..."
-                      : hasAttempt && attemptCompleted 
-                        ? "✅ Quiz Completed" 
-                        : hasAttempt && !attemptCompleted 
-                          ? "📝 Continue Quiz" 
-                          : "🚀 Start Today's Quiz"
+                      : hasAttempt && !attemptCompleted 
+                        ? "📝 Continue Quiz" 
+                        : "🚀 Start Today's Quiz"
                   }
                   onPress={handleStartQuiz}
                   style={[
                     styles.startQuizButton, 
-                    {backgroundColor: hasAttempt && attemptCompleted ? theme.colors.textSecondary : theme.colors.success}
+                    {backgroundColor: theme.colors.success}
                   ]}
-                  disabled={hasAttempt && attemptCompleted || isStartingQuiz}
+                  disabled={isStartingQuiz}
                 />
                 
                 {isStartingQuiz && (
@@ -680,5 +756,61 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  // Completion Stats Styles
+  completionStatsCard: {
+    marginTop: 16,
+    marginHorizontal: 8,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  scoreContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  finalScore: {
+    fontWeight: 'bold',
+    fontSize: 36,
+  },
+  scoreLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginTop: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginTop: 4,
+  },
+  completionMessage: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  nextQuizLabel: {
+    marginTop: 16,
+    marginBottom: 12,
+    fontSize: 14,
+  },
+  nextQuizTimerContainer: {
+    alignItems: 'center',
+    marginTop: 8,
   },
 });

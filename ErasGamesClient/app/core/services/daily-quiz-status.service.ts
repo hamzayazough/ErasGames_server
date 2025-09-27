@@ -28,6 +28,9 @@ export interface QuizStatusResponse {
     status: 'in_progress' | 'completed';
     score?: number;
     completedAt?: string;
+    timeTaken?: number; // in seconds
+    correctAnswers?: number;
+    totalQuestions?: number;
   };
 }
 
