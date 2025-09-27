@@ -1,9 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, ScrollView, StatusBar, Alert, Animated} from 'react-native';
+import {StyleSheet, ScrollView, StatusBar, Alert, Animated, ActivityIndicator} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
 import {useTheme} from '../../../core/theme/ThemeProvider';
 import {useDailyQuizStatus, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
 import type {RootStackScreenProps} from '../../../navigation/types';
+import { 
+  QuizAttemptService, 
+  QuizAttempt, 
+  QuizSubmission 
+} from '../../../core/services/quiz-attempt.service';
+import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 
 type Props = RootStackScreenProps<'DailyDrop'>;
 
@@ -120,6 +126,9 @@ export default function DailyDropScreen({navigation}: Props) {
   
   // Quiz window countdown state (when quiz is live)
   const [quizWindowTimeLeft, setQuizWindowTimeLeft] = useState(0);
+  
+  // Quiz starting state
+  const [isStartingQuiz, setIsStartingQuiz] = useState(false);
 
   // Initialize local countdown from server data  
   useEffect(() => {
@@ -213,9 +222,7 @@ export default function DailyDropScreen({navigation}: Props) {
       return;
     }
 
-    if (isAvailable) {
-      navigation.navigate('Quiz', { selectedQuiz: undefined });
-    } else {
+    if (!isAvailable) {
       const timeLeft = Math.max(0, timeUntilDrop);
       const hours = Math.floor(timeLeft / 3600);
       const minutes = Math.floor((timeLeft % 3600) / 60);
@@ -228,6 +235,108 @@ export default function DailyDropScreen({navigation}: Props) {
           { text: 'Refresh', onPress: refresh }
         ]
       );
+      return;
+    }
+
+    // Start the quiz directly - integrate logic from QuizScreen
+    console.log('🎯 USER CLICKED START QUIZ - Beginning quiz attempt...');
+    
+    try {
+      setIsStartingQuiz(true);
+      
+      // First check if user already has an attempt for today
+      console.log('🔍 Checking for existing attempt...');
+      const attemptStatus = await QuizAttemptService.getTodayAttemptStatus();
+      
+      if (attemptStatus.hasAttempt) {
+        console.log('⚠️ User already has an attempt for today:', attemptStatus.attempt);
+        
+        if (attemptStatus.attempt?.status === 'finished') {
+          // Show completed quiz message
+          Alert.alert(
+            'Quiz Already Completed',
+            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0}%! Come back tomorrow for a new quiz.`,
+            [{text: 'OK'}]
+          );
+        } else {
+          // Show active attempt message - continue to quiz screen
+          Alert.alert(
+            'Quiz In Progress',
+            'You have an active quiz attempt. Please finish it first or wait for it to expire.',
+            [
+              {text: 'Cancel', style: 'cancel'},
+              {text: 'Continue', onPress: () => navigation.navigate('Quiz', { selectedQuiz: undefined })}
+            ]
+          );
+        }
+        return;
+      }
+      
+      console.log('🔄 Calling QuizAttemptService.startAttempt()...');
+      
+      // Start quiz attempt on server
+      const attempt = await QuizAttemptService.startAttempt();
+      
+      console.log('✅ Quiz attempt started successfully!');
+      console.log('📋 Attempt ID:', attempt.attemptId);
+      console.log('⏰ Server Start:', attempt.serverStartAt);
+      console.log('⏰ Deadline:', attempt.deadline);
+      console.log('🌐 Template URL:', attempt.templateUrl);
+      console.log('🎲 Seed:', attempt.seed);
+      
+      // Fetch the quiz template from CDN
+      console.log('📥 Fetching quiz template from CDN...');
+      const templateResponse = await fetch(attempt.templateUrl);
+      if (!templateResponse.ok) {
+        throw new Error(`Failed to fetch quiz template: ${templateResponse.status}`);
+      }
+      const rawTemplate = await templateResponse.json();
+      console.log('✅ Quiz template loaded:', rawTemplate.questions.length, 'questions');
+      
+      // Transform CDN template format to match expected question structure
+      const transformedTemplate = {
+        ...rawTemplate,
+        questions: rawTemplate.questions.map((q: any) => ({
+          id: q.qid, // Map qid to id
+          questionType: q.type, // Map type to questionType
+          difficulty: q.payload.difficulty || 'medium',
+          themes: q.payload.themes || [],
+          subjects: q.payload.subjects || [], // Add subjects field
+          prompt: q.payload.prompt,
+          choices: q.payload.choices,
+          correct: q.payload.correct, // Include correct answers if available
+          mediaRefs: q.payload.mediaRefs, // Include media references if available
+          scoringHints: q.payload.scoringHints, // Include scoring hints if available
+          // Copy any other payload properties to the root level
+          ...q.payload
+        }))
+      };
+      
+      console.log('✅ Template transformed for client:', transformedTemplate.questions[0]);
+      
+      // Navigate to quiz screen with the loaded quiz data
+      navigation.navigate('Quiz', { 
+        selectedQuiz: {
+          id: 'daily-quiz',
+          title: "Today's Daily Quiz",
+          description: '6 questions (3 easy, 2 medium, 1 hard) • 1 minute time limit',
+          difficulty: 'mixed' as const,
+          estimatedTime: 1,
+          questions: transformedTemplate.questions
+        },
+        quizAttempt: attempt,
+        quizTemplate: transformedTemplate
+      });
+      
+    } catch (error) {
+      console.error('❌ QUIZ START FAILED:', error);
+      Alert.alert(
+        'Error Starting Quiz',
+        'Failed to start the quiz. Please check your connection and try again.',
+        [{text: 'OK'}]
+      );
+    } finally {
+      setIsStartingQuiz(false);
     }
   };
 
@@ -362,21 +471,33 @@ export default function DailyDropScreen({navigation}: Props) {
 
             {/* Quiz action button */}
             {isAvailable && (
-              <Button
-                title={
-                  hasAttempt && attemptCompleted 
-                    ? "✅ Quiz Completed" 
-                    : hasAttempt && !attemptCompleted 
-                      ? "📝 Continue Quiz" 
-                      : "🚀 Start Today's Quiz"
-                }
-                onPress={handleStartQuiz}
-                style={[
-                  styles.startQuizButton, 
-                  {backgroundColor: hasAttempt && attemptCompleted ? theme.colors.textSecondary : theme.colors.success}
-                ]}
-                disabled={hasAttempt && attemptCompleted}
-              />
+              <>
+                <Button
+                  title={
+                    isStartingQuiz
+                      ? "Starting Quiz..."
+                      : hasAttempt && attemptCompleted 
+                        ? "✅ Quiz Completed" 
+                        : hasAttempt && !attemptCompleted 
+                          ? "📝 Continue Quiz" 
+                          : "🚀 Start Today's Quiz"
+                  }
+                  onPress={handleStartQuiz}
+                  style={[
+                    styles.startQuizButton, 
+                    {backgroundColor: hasAttempt && attemptCompleted ? theme.colors.textSecondary : theme.colors.success}
+                  ]}
+                  disabled={hasAttempt && attemptCompleted || isStartingQuiz}
+                />
+                
+                {isStartingQuiz && (
+                  <ActivityIndicator 
+                    size="small" 
+                    color={theme.colors.primary} 
+                    style={{marginTop: 12}}
+                  />
+                )}
+              </>
             )}
           </View>
         </Card>

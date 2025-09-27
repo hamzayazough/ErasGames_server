@@ -24,13 +24,13 @@ export default function QuizScreen({navigation, route}: Props) {
   const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
   const [timeRemaining, setTimeRemaining] = useState(1 * 60); // 1 minute = 60 seconds
-  const [quizStarted, setQuizStarted] = useState(false);
-  const [quizAttempt, setQuizAttempt] = useState<QuizAttempt | null>(null);
+  const [quizStarted, setQuizStarted] = useState(!!route.params?.quizAttempt); // Start immediately if quiz data is passed
+  const [quizAttempt, setQuizAttempt] = useState<QuizAttempt | null>(route.params?.quizAttempt || null);
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<QuizSubmission | null>(null);
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
-  const [quizTemplate, setQuizTemplate] = useState<QuizTemplate | null>(null);
+  const [quizTemplate, setQuizTemplate] = useState<QuizTemplate | null>(route.params?.quizTemplate || null);
   const isMountedRef = useRef(true);
 
   // Get selected quiz for metadata (title, description, etc.)
@@ -54,6 +54,23 @@ export default function QuizScreen({navigation, route}: Props) {
       setSelectedAnswer(AnswerHandler.getDefaultAnswer(currentQuestion));
     }
   }, [currentQuestion, selectedAnswer]);
+
+  // Initialize quiz when data is passed via navigation
+  useEffect(() => {
+    if (route.params?.quizAttempt && route.params?.quizTemplate) {
+      console.log('🎯 Quiz data received via navigation - setting up quiz state...');
+      const attempt = route.params.quizAttempt;
+      const template = route.params.quizTemplate;
+      
+      setQuizAttempt(attempt);
+      setQuizTemplate(template);
+      setTimeRemaining(QuizAttemptService.getTimeRemaining(attempt.deadline));
+      setQuizStarted(true);
+      setQuestionStartTime(Date.now());
+      
+      console.log('✅ Quiz initialized from navigation params');
+    }
+  }, [route.params?.quizAttempt, route.params?.quizTemplate]);
 
   // Cleanup on unmount
   useEffect(() => {
