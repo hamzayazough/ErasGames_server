@@ -49,7 +49,7 @@ function CircularCountdownTimer({ timeLeft, totalTime, size = 120 }: { timeLeft:
         }
       ]} />
       
-      {/* Progress circle using border technique */}
+      {/* Simple progress circle using basic border approach */}
       <View style={[
         styles.circularTimerProgress,
         {
@@ -57,39 +57,19 @@ function CircularCountdownTimer({ timeLeft, totalTime, size = 120 }: { timeLeft:
           height: size,
           borderRadius: size / 2,
           borderWidth: 8,
-          borderColor: 'transparent',
+          position: 'absolute',
           transform: [{ rotate: '-90deg' }], // Start from top
-          // Show progress using border colors
-          borderTopColor: rotation >= 0 ? getColor() : 'transparent',
-          borderRightColor: rotation >= 90 ? getColor() : 'transparent', 
-          borderBottomColor: rotation >= 180 ? getColor() : 'transparent',
-          borderLeftColor: rotation >= 270 ? getColor() : 'transparent',
+          // Simple approach: show different amounts of border based on progress ranges
+          borderTopColor: progress > 0 ? getColor() : '#E0E0E0',
+          borderRightColor: progress > 0.25 ? getColor() : '#E0E0E0',
+          borderBottomColor: progress > 0.5 ? getColor() : '#E0E0E0',
+          borderLeftColor: progress > 0.75 ? getColor() : '#E0E0E0',
         }
       ]} />
       
-      {/* Partial segment for more precise progress */}
-      {rotation > 0 && rotation < 360 && (
-        <View style={[
-          styles.circularTimerPartial,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderWidth: 8,
-            borderColor: 'transparent',
-            position: 'absolute',
-            transform: [
-              { rotate: '-90deg' },
-              { rotate: `${Math.floor(rotation / 90) * 90}deg` }
-            ],
-            borderTopColor: (rotation % 90) > 0 ? getColor() : 'transparent',
-          }
-        ]} />
-      )}
-      
       {/* Time display */}
       <View style={styles.circularTimerText}>
-        <Text variant="heading2" style={[styles.timerTime, { color: getColor() }]}>
+        <Text variant="heading3" style={[styles.timerTime, { color: getColor() }]}>
           {minutes}:{seconds.toString().padStart(2, '0')}
         </Text>
         <Text variant="caption" style={[styles.timerLabel, { color: theme.colors.textSecondary }]}>
@@ -199,18 +179,15 @@ export default function DailyDropScreen({navigation}: Props) {
   // Calculate time until quiz window ends when current quiz is completed
   useEffect(() => {
     if (hasAttempt && attemptCompleted && status?.quiz?.window?.end) {
-      let isFirstCalculation = true;
+      // Calculate the total window duration (60 minutes = 3600 seconds)
+      const windowStartTime = new Date(status.quiz.window.start);
+      const windowEndTime = new Date(status.quiz.window.end);
+      const totalWindowDuration = Math.floor((windowEndTime.getTime() - windowStartTime.getTime()) / 1000);
+      setNextDayTotalTime(totalWindowDuration);
       
       const calculateWindowEndCountdown = () => {
         const now = new Date();
-        const windowEndTime = new Date(status.quiz.window.end);
         const timeLeft = Math.max(0, Math.floor((windowEndTime.getTime() - now.getTime()) / 1000));
-        
-        // Set total time on first calculation for circular progress
-        if (isFirstCalculation && timeLeft > 0) {
-          setNextDayTotalTime(timeLeft);
-          isFirstCalculation = false;
-        }
         
         setNextDayTimeLeft(timeLeft);
       };
