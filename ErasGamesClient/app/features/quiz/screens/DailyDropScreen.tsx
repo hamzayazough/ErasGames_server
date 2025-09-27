@@ -72,9 +72,6 @@ function CircularCountdownTimer({ timeLeft, totalTime, size = 120 }: { timeLeft:
         <Text variant="heading3" style={[styles.timerTime, { color: getColor() }]}>
           {minutes}:{seconds.toString().padStart(2, '0')}
         </Text>
-        <Text variant="caption" style={[styles.timerLabel, { color: theme.colors.textSecondary }]}>
-          {progressPercentage}% LEFT
-        </Text>
       </View>
     </View>
   );

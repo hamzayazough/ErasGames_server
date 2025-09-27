@@ -10,16 +10,16 @@ import { Difficulty } from '../../database/enums/question.enums';
 export interface ScoreCalculationResult {
   score: number;
   breakdown: {
-    base: number;
-    questionPoints: number;
-    speedMultiplier: number;
-    earlyMultiplier: number;
-    totalQuestionPoints: number;
+    base: number; // Base accuracy points
+    questionPoints: number; // Same as base (for compatibility)
+    speedMultiplier: number; // Display multiplier (for UI)
+    earlyMultiplier: number; // Display multiplier (for UI)
+    totalQuestionPoints: number; // Total bonus points added
     unusedSeconds: number;
     startDelayMinutes: number;
     minutesEarly: number;
   };
-  accPoints: number;
+  accPoints: number; // Raw accuracy points
   finishTimeSec: number;
   questions: Array<{
     questionId: string;
@@ -79,8 +79,9 @@ export class AttemptScoringService {
       `📊 Quiz timing: Total ${finishTimeSec}s (${totalTimeMs}ms), Avg per question: ${avgTimePerQuestionMs}ms`,
     );
 
-    // New scoring system: 100 base + question points + speed multiplier + early bonus
+    // New accuracy-first scoring system with scaled bonuses
     let questionPoints = 0;
+    let correctAnswersCount = 0;
     const questionResults: Array<{
       questionId: string;
       isCorrect: boolean;
@@ -88,6 +89,24 @@ export class AttemptScoringService {
       accuracyPoints: number;
       difficulty: string;
     }> = [];
+
+    // Calculate maximum possible points for this quiz (for scaling bonuses)
+    let maxPossiblePoints = 0;
+    for (const quizQuestion of quizQuestions) {
+      switch (quizQuestion.question.difficulty) {
+        case Difficulty.EASY:
+          maxPossiblePoints += 200;
+          break;
+        case Difficulty.MEDIUM:
+          maxPossiblePoints += 500;
+          break;
+        case Difficulty.HARD:
+          maxPossiblePoints += 1000;
+          break;
+        default:
+          maxPossiblePoints += 200; // fallback to easy
+      }
+    }
 
     for (const quizQuestion of quizQuestions) {
       const answer = answers.find(
@@ -105,6 +124,7 @@ export class AttemptScoringService {
         );
 
         if (isCorrect) {
+          correctAnswersCount++;
           // Points based on difficulty: Easy=200, Medium=500, Hard=1000
           switch (quizQuestion.question.difficulty) {
             case Difficulty.EASY:
@@ -138,39 +158,62 @@ export class AttemptScoringService {
       });
     }
 
-    // Calculate speed multiplier: Each unused second adds to multiplier
-    const unusedSeconds = Math.max(0, 60 - finishTimeSec);
-    const speedMultiplier = 1 + unusedSeconds * 0.05; // 5% bonus per unused second
+    // Calculate bonus scaling factor based on accuracy
+    const accuracyRatio =
+      maxPossiblePoints > 0 ? questionPoints / maxPossiblePoints : 0;
 
-    // Calculate early starter multiplier: +2% bonus per minute early (within 60-minute window)
+    this.logger.log(
+      `📊 Accuracy: ${correctAnswersCount}/${quizQuestions.length} correct, ${questionPoints}/${maxPossiblePoints} points (${Math.round(accuracyRatio * 100)}% ratio)`,
+    );
+
+    // Calculate timing variables
+    const unusedSeconds = Math.max(0, 60 - finishTimeSec);
     const quizDropTime = attempt.dailyQuiz.dropAtUTC;
     const startDelay =
-      (attempt.startAt.getTime() - quizDropTime.getTime()) / 1000; // seconds after drop
-    const startDelayMinutes = Math.max(0, Math.floor(startDelay / 60)); // minutes after drop
-    const maxDelayMinutes = 60; // 60 minutes window
-    const minutesEarly = Math.max(0, maxDelayMinutes - startDelayMinutes); // how many minutes early
-    const earlyMultiplier = 1 + minutesEarly * 0.02; // 2% bonus per minute early (1.0x to 2.2x)
+      (attempt.startAt.getTime() - quizDropTime.getTime()) / 1000;
+    const startDelayMinutes = Math.max(0, Math.floor(startDelay / 60));
+    const maxDelayMinutes = 60;
+    const minutesEarly = Math.max(0, maxDelayMinutes - startDelayMinutes);
 
-    // Final score calculation
-    const basePoints = 100;
-    const totalQuestionPoints = Math.round(
-      questionPoints * speedMultiplier * earlyMultiplier,
-    );
-    const score = basePoints + totalQuestionPoints;
+    // Calculate bonuses (only applied if user got some answers right)
+    let speedBonus = 0;
+    let earlyBonus = 0;
+    let speedMultiplier = 1;
+    let earlyMultiplier = 1;
+
+    if (questionPoints > 0) {
+      // Speed bonus: unused seconds * 5 points, scaled by accuracy
+      const rawSpeedBonus = unusedSeconds * 5;
+      speedBonus = Math.round(rawSpeedBonus * accuracyRatio);
+      speedMultiplier = speedBonus > 0 ? 1 + speedBonus / questionPoints : 1;
+
+      // Early starter bonus: minutes early * 10 points, scaled by accuracy
+      const rawEarlyBonus = minutesEarly * 10;
+      earlyBonus = Math.round(rawEarlyBonus * accuracyRatio);
+      earlyMultiplier = earlyBonus > 0 ? 1 + earlyBonus / questionPoints : 1;
+
+      this.logger.log(
+        `🎯 Bonuses: Speed ${speedBonus} (${unusedSeconds}s unused), Early ${earlyBonus} (${minutesEarly}min early), scaled by ${Math.round(accuracyRatio * 100)}%`,
+      );
+    }
+
+    // Final score calculation: base accuracy points + scaled bonuses
+    const score = questionPoints + speedBonus + earlyBonus;
+    const totalBonusPoints = speedBonus + earlyBonus; // For breakdown display
 
     return {
       score,
       breakdown: {
-        base: basePoints,
-        questionPoints: questionPoints,
+        base: questionPoints, // Base accuracy points
+        questionPoints: questionPoints, // Same as base for compatibility
         speedMultiplier: Math.round(speedMultiplier * 100) / 100,
         earlyMultiplier: Math.round(earlyMultiplier * 100) / 100,
-        totalQuestionPoints: totalQuestionPoints,
+        totalQuestionPoints: totalBonusPoints, // Bonus points
         unusedSeconds: unusedSeconds,
         startDelayMinutes: startDelayMinutes,
         minutesEarly: minutesEarly,
       },
-      accPoints: questionPoints, // Raw question points before multiplier
+      accPoints: questionPoints, // Raw accuracy points
       finishTimeSec,
       questions: questionResults,
     };
