@@ -14,9 +14,9 @@ export const dailyQuizMock: QuizMock = {
   id: 'daily-quiz',
   title: "Today's Daily Quiz",
   description:
-    'Complete 6 questions in 5 minutes. No hints, no retries - just your Taylor Swift knowledge!',
+    'Complete 6 questions in 1 minute. No hints, no retries - just your Taylor Swift knowledge!',
   difficulty: 'mixed',
-  estimatedTime: 5,
+  estimatedTime: 1,
   questions: [
     // 3 Easy Questions
     {

@@ -6,7 +6,7 @@ import type {RootStackScreenProps} from '../../../navigation/types';
 import { QuestionRenderer } from '../components/questions/QuestionRenderer';
 import { AnswerHandler, QuestionAnswer } from '../utils/AnswerHandler';
 import { AnyQuestion } from '../../../shared/interfaces/questions/any-question.type';
-import { basicQuizMock, dailyQuizMock } from '../constants/quizMocks';
+import { basicQuizMock } from '../constants/quizMocks';
 import { 
   QuizAttemptService, 
   QuizAttempt, 
@@ -34,7 +34,14 @@ export default function QuizScreen({navigation, route}: Props) {
   const isMountedRef = useRef(true);
 
   // Get selected quiz for metadata (title, description, etc.)
-  const selectedQuiz = route.params?.selectedQuiz || dailyQuizMock;
+  const selectedQuiz = route.params?.selectedQuiz || {
+    id: 'daily-quiz',
+    title: "Today's Daily Quiz",
+    description: '6 questions (3 easy, 2 medium, 1 hard) • 1 minute time limit',
+    difficulty: 'mixed' as const,
+    estimatedTime: 1,
+    questions: []
+  };
   
   // Use real quiz template if available, fallback to mock for development
   const questions = quizTemplate?.questions || selectedQuiz.questions;
