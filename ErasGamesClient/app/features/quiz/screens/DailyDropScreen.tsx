@@ -11,6 +11,7 @@ import {
 import {View} from '../../../ui/View';
 import {Text} from '../../../ui/Text';
 import {Button} from '../../../ui/Button';
+import {Card} from '../../../ui/Card';
 import {useTheme, RetroBackground} from '../../../core/theme';
 import {RootStackScreenProps} from '../../../navigation/types';
 import {useDailyQuizStatus, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
@@ -337,17 +338,33 @@ export default function DailyDropScreen({navigation}: Props) {
   if (error) {
     return (
       <RetroBackground style={styles.container}>
+        <GlobalHeader 
+          title="DAILY DROP"
+          showBack={false}
+          showProfile={true}
+          showLeaderboard={true}
+        />
         <View style={styles.centerContent}>
-          <Text style={[styles.errorText, { color: theme.colors.error }]}>
-            {getErrorMessage(error)}
-          </Text>
-          {shouldShowRetry(error) && (
-            <Button
-              title="Retry"
-              onPress={refresh}
-              style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
-            />
-          )}
+          <Card style={[styles.errorCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.errorContainer}>
+              <AnimatedLogo size={120} />
+              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text variant="heading1" align="center" style={[styles.errorTitle, { color: theme.colors.text }]}>
+                Oops!
+              </Text>
+              <Text variant="heading3" align="center" style={[styles.errorSubtitle, { color: theme.colors.text }]}>
+                Something went wrong
+              </Text>
+              {shouldShowRetry(error) && (
+                <Button
+                  title="🔄 Try Again"
+                  onPress={refresh}
+                  style={styles.retryButton}
+                  variant="primary"
+                />
+              )}
+            </View>
+          </Card>
         </View>
       </RetroBackground>
     );
@@ -493,14 +510,55 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 16,
   },
+  errorCard: {
+    marginHorizontal: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+  },
+  errorIcon: {
+    fontSize: 48,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  errorTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  errorSubtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  errorMessage: {
+    fontSize: 16,
+    marginBottom: 32,
+    lineHeight: 24,
+    paddingHorizontal: 8,
+  },
   errorText: {
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 16,
   },
   retryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    marginTop: 8,
+    minWidth: 160,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
   },
 });
