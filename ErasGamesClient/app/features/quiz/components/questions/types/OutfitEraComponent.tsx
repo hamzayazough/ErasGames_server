@@ -1,7 +1,7 @@
 import React from 'react';
 import { OutfitEraQuestion } from '../../../../../shared/interfaces/questions/outfit-era.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Pressable, Image, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, TouchableOpacity, Image, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { Text } from '../../../../../ui/Text';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
@@ -38,7 +38,6 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
         styles.choiceItem, 
         { 
           backgroundColor: theme.colors.success,
-          borderColor: theme.colors.success,
         }
       ];
     } else if (isWrong) {
@@ -46,7 +45,6 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
         styles.choiceItem, 
         { 
           backgroundColor: theme.colors.error,
-          borderColor: theme.colors.error,
         }
       ];
     } else if (isSelected) {
@@ -54,15 +52,13 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
         styles.choiceItem, 
         { 
           backgroundColor: theme.colors.primary,
-          borderColor: theme.colors.primary,
         }
       ];
     } else {
       return [
         styles.choiceItem, 
         { 
-          backgroundColor: theme.colors.surface, 
-          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.accent1,
         }
       ];
     }
@@ -74,20 +70,20 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
     const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer?.choiceIndex;
 
     if (isCorrect || isWrong || isSelected) {
-      return { color: 'white' };
+      return { color: theme.colors.textOnPrimary };
     }
-    return { color: theme.colors.text };
+    return { color: theme.colors.accent4 };
   };
 
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {question.prompt.task}
       </Text>
 
       {/* Outfit Images Section */}
       {question.mediaRefs && question.mediaRefs.length > 0 && (
-        <View style={[styles.imageSection, { backgroundColor: theme.colors.surface }]}>
+        <View style={[styles.imageSection, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
           {question.mediaRefs
             .filter(ref => ref.type === 'image')
             .map((mediaRef, index) => (
@@ -107,19 +103,17 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
       <View style={styles.choicesSection}>
         
         {question.choices?.map((choice, index) => (
-          <Pressable
+          <TouchableOpacity
             key={index}
             style={getChoiceStyle(index)}
             onPress={() => !disabled && handleChoiceSelect(index)}
             disabled={disabled}
+            activeOpacity={0.8}
           >
-            <Text 
-              variant="body" 
-              style={[styles.choiceText, getChoiceTextStyle(index)]}
-            >
+            <Text style={[styles.choiceText, getChoiceTextStyle(index)]}>
               {choice}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         )) || (
           <View style={styles.noChoicesContainer}>
             <Text variant="body" style={{ color: theme.colors.textSecondary }}>
@@ -142,24 +136,21 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
-    padding: 16,
+    gap: 20,
   },
-  questionText: {
-    textAlign: 'center',
-    lineHeight: 24,
+  simpleQuestionText: {
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    textAlign: 'center',
+    lineHeight: 22,
+    opacity: 0.8,
   },
   imageSection: {
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    borderWidth: 3,
+    padding: 24,
     alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    minHeight: 80,
   },
   imageContainer: {
     alignItems: 'center',
@@ -173,7 +164,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   choicesSection: {
-    gap: 8,
+    gap: 16,
+    marginTop: 8,
   },
   choicesLabel: {
     textAlign: 'center',
@@ -183,24 +175,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   choiceItem: {
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 3,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    minHeight: 56,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   choiceText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.5,
   },
   noChoicesContainer: {
     width: '100%',
