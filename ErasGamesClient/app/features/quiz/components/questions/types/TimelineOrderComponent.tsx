@@ -90,28 +90,24 @@ export const TimelineOrderComponent: React.FC<TimelineOrderComponentProps> = ({
                 
                 {!disabled && !showCorrect && (
                   <View style={styles.controls}>
-                    <TouchableOpacity
-                      onPress={() => moveItem(index, Math.max(0, index - 1))}
-                      disabled={index === 0}
-                      style={[styles.controlButton, { 
-                        backgroundColor: index === 0 ? theme.colors.disabled : theme.colors.primary,
-                        opacity: index === 0 ? 0.3 : 1
-                      }]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.controlButtonText, { color: theme.colors.textOnPrimary }]}>↑</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => moveItem(index, Math.min(currentOrder.length - 1, index + 1))}
-                      disabled={index === currentOrder.length - 1}
-                      style={[styles.controlButton, { 
-                        backgroundColor: index === currentOrder.length - 1 ? theme.colors.disabled : theme.colors.primary,
-                        opacity: index === currentOrder.length - 1 ? 0.3 : 1
-                      }]}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.controlButtonText, { color: theme.colors.textOnPrimary }]}>↓</Text>
-                    </TouchableOpacity>
+                    {index > 0 && (
+                      <TouchableOpacity
+                        onPress={() => moveItem(index, Math.max(0, index - 1))}
+                        style={[styles.controlButton, { backgroundColor: theme.colors.primary }]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.controlButtonText, { color: theme.colors.textOnPrimary }]}>↑</Text>
+                      </TouchableOpacity>
+                    )}
+                    {index < currentOrder.length - 1 && (
+                      <TouchableOpacity
+                        onPress={() => moveItem(index, Math.min(currentOrder.length - 1, index + 1))}
+                        style={[styles.controlButton, { backgroundColor: theme.colors.primary }]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.controlButtonText, { color: theme.colors.textOnPrimary }]}>↓</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
