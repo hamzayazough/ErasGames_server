@@ -19,80 +19,80 @@ export function CircularCountdownTimer({
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   
-  // Color based on time remaining - using theme colors
-  const getColor = () => {
-    if (timeLeft > 1800) return theme.colors.success; // > 30 min - green
-    if (timeLeft > 600) return theme.colors.warning; // > 10 min - orange  
-    return theme.colors.error; // < 10 min - red
-  };
-  
-  // Calculate progress - how much time is left (1.0 = full, 0.0 = empty)
+  // Progress calculation (0 to 1)
   const progress = totalTime > 0 ? timeLeft / totalTime : 0;
   
+  // Calculate the stroke dash array for the progress circle
+  const radius = (size - 8) / 2; // Account for border width
+  const circumference = 2 * Math.PI * radius;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference * (1 - progress);
+  
   return (
-    <View style={[styles.circularTimer, { width: size, height: size }]}>
-      {/* Background circle */}
+    <View style={[styles.container, { width: size, height: size }]}>
+      {/* Retro-styled circular progress indicator */}
       <View style={[
-        styles.circularTimerBg,
+        styles.circleContainer,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderWidth: 6,
-          borderColor: theme.colors.accent4,
-          backgroundColor: 'transparent',
         }
-      ]} />
-      
-      {/* Progress circle */}
-      <View style={[
-        styles.circularTimerProgress,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: 6,
-          position: 'absolute',
-          transform: [{ rotate: '-90deg' }],
-          borderTopColor: progress > 0 ? getColor() : theme.colors.accent4,
-          borderRightColor: progress > 0.25 ? getColor() : theme.colors.accent4,
-          borderBottomColor: progress > 0.5 ? getColor() : theme.colors.accent4,
-          borderLeftColor: progress > 0.75 ? getColor() : theme.colors.accent4,
-        }
-      ]} />
-      
-      {/* Time display */}
-      <View style={styles.circularTimerText}>
-        <Text style={[styles.timerTime, { color: theme.colors.textSecondary }]}>
-          {minutes}:{seconds.toString().padStart(2, '0')}
-        </Text>
+      ]}>
+        {/* Progress ring - using a simple approach with border */}
+        <View style={[
+          styles.progressRing,
+          {
+            width: size - 12,
+            height: size - 12,
+            borderRadius: (size - 12) / 2,
+            borderWidth: 8,
+            borderColor: progress > 0.1 ? theme.colors.textSecondary : 'transparent',
+            position: 'absolute',
+            top: 6,
+            left: 6,
+            opacity: progress > 0 ? 1 : 0.3,
+          }
+        ]} />
+        
+        {/* Time display */}
+        <View style={styles.timeContainer}>
+          <Text style={[styles.timeText, { color: theme.colors.textSecondary }]}>
+            {minutes}:{seconds.toString().padStart(2, '0')}
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  circularTimer: {
+  container: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  circleContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  circularTimerBg: {
-    position: 'absolute',
+  progressRing: {
+    backgroundColor: 'transparent',
   },
-  circularTimerProgress: {
-    position: 'absolute',
-  },
-  circularTimerText: {
+  timeContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute',
     width: '100%',
     height: '100%',
   },
-  timerTime: {
-    fontWeight: '300',
-    fontSize: 18,
+  timeText: {
+    fontSize: 20,
+    fontWeight: '900',
     fontFamily: 'monospace',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 3,
   },
 });
