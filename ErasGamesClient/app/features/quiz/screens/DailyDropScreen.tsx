@@ -391,7 +391,7 @@ export default function DailyDropScreen({navigation}: Props) {
           <>
             {/* Next Quiz Label */}
             <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
-              BE READY IN
+              NEXT QUIZ IN
             </Text>
 
             {/* Countdown Timer - Large numbers matching the design */}
