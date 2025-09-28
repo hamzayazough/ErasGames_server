@@ -21,6 +21,7 @@ import {
 } from '../../../core/services/quiz-attempt.service';
 import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 import {QuizAvailableState, QuizCompletedState} from '../components';
+import {GlobalHeader} from '../../../shared/components';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -357,6 +358,18 @@ export default function DailyDropScreen({navigation}: Props) {
 
   return (
     <RetroBackground style={styles.container}>
+      <GlobalHeader 
+        title="DAILY DROP"
+        showBack={false}
+        onProfilePress={() => {
+          // Navigate to profile or handle profile action
+          console.log('Profile pressed');
+        }}
+        onLeaderboardPress={() => {
+          // Navigate to leaderboard or handle leaderboard action
+          console.log('Leaderboard pressed');
+        }}
+      />
       <View style={styles.content}>
         {/* Logo Image - ERAS GAMES */}
         <View style={styles.logoContainer}>
