@@ -391,7 +391,7 @@ export default function DailyDropScreen({navigation}: Props) {
           <>
             {/* Next Quiz Label */}
             <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
-              NEXT QUIZ IN
+              BE READY IN
             </Text>
 
             {/* Countdown Timer - Large numbers matching the design */}
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
   nextQuizLabel: {
     fontSize: 28,
-    fontWeight: '600',
+    fontWeight: '900',
     letterSpacing: 4,
     textAlign: 'center',
     marginBottom: 20,
@@ -454,12 +454,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   countdownTime: {
-    fontSize: 96,
-    fontWeight: '300', // Light weight to match the design
+    fontSize: 52,
+    fontWeight: '900', // Maximum bold weight
     letterSpacing: 8,
     textAlign: 'center',
     fontFamily: 'monospace',
-    lineHeight: 110,
+    lineHeight: 85,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
   howToPlayContainer: {
     position: 'absolute',
