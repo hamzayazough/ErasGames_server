@@ -99,7 +99,7 @@ export function QuizAvailableState({
           activeOpacity={0.8}
         >
           <Text style={[styles.actionButtonText, { color: theme.colors.textOnPrimary }]}>
-            {isStartingQuiz ? "Starting..." : "Start Quiz"}
+            {isStartingQuiz ? "Starting..." : "Start Now"}
           </Text>
         </TouchableOpacity>
         
