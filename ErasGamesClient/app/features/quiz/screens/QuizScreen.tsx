@@ -419,17 +419,7 @@ export default function QuizScreen({navigation, route}: Props) {
         {/* Enhanced Quiz Header */}
         <View style={[styles.quizHeader, {backgroundColor: 'rgba(244, 229, 177, 0.1)', borderBottomColor: theme.colors.accent1}]}>
           <View style={styles.quizHeaderTop}>
-            {/* Quiz Info */}
-            <View style={styles.quizInfoSection}>
-              <Text style={[styles.quizTitleText, {color: theme.colors.primary}]}>
-                TODAY'S QUIZ
-              </Text>
-              <Text style={[styles.questionProgress, {color: theme.colors.textSecondary}]}>
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </Text>
-            </View>
-            
-            {/* Timer with enhanced styling */}
+            {/* Timer with enhanced styling - centered */}
             <View style={[styles.enhancedTimer, {backgroundColor: theme.colors.primary}]}>
               <Text style={[styles.timerLabel, {color: theme.colors.textOnPrimary}]}>
                 TIME
@@ -438,24 +428,6 @@ export default function QuizScreen({navigation, route}: Props) {
                 {formatTime(timeRemaining)}
               </Text>
             </View>
-          </View>
-          
-          {/* Enhanced Progress Bar */}
-          <View style={styles.progressSection}>
-            <View style={[styles.enhancedProgressBar, {backgroundColor: 'rgba(244, 229, 177, 0.3)'}]}>
-              <View 
-                style={[
-                  styles.enhancedProgressFill, 
-                  {
-                    backgroundColor: theme.colors.accent1,
-                    width: `${((currentQuestionIndex + 1) / questions.length) * 100}%`
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={[styles.progressLabel, {color: theme.colors.textSecondary}]}>
-              {Math.round(((currentQuestionIndex + 1) / questions.length) * 100)}% Complete
-            </Text>
           </View>
         </View>
       
@@ -471,24 +443,9 @@ export default function QuizScreen({navigation, route}: Props) {
               </View>
               
               <View style={styles.questionTypeContainer}>
-                <Text style={[styles.questionTypeLabel, {color: theme.colors.textSecondary}]}>TYPE:</Text>
                 <Text style={[styles.questionTypeValue, {color: theme.colors.accent4}]}>
                   {currentQuestion.questionType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </Text>
-              </View>
-            </View>
-
-            {/* Themes Section */}
-            <View style={styles.themesSection}>
-              <Text style={[styles.themesLabel, {color: theme.colors.textSecondary}]}>THEMES:</Text>
-              <View style={styles.themesContainer}>
-                {currentQuestion.themes.map((questionTheme, index) => (
-                  <View key={index} style={[styles.enhancedThemeTag, {backgroundColor: theme.colors.accent1}]}>
-                    <Text style={[styles.enhancedThemeText, {color: theme.colors.accent4}]}>
-                      {questionTheme.toUpperCase()}
-                    </Text>
-                  </View>
-                ))}
               </View>
             </View>
             
@@ -514,8 +471,8 @@ export default function QuizScreen({navigation, route}: Props) {
                 isSubmittingQuiz 
                   ? "SUBMITTING..." 
                   : isLastQuestion 
-                  ? "🏆 SUBMIT QUIZ" 
-                  : "➡️ NEXT QUESTION"
+                  ? "SUBMIT QUIZ" 
+                  : "NEXT QUESTION"
               }
               onPress={handleSubmitAnswer}
               disabled={isSubmittingQuiz}
@@ -676,7 +633,7 @@ const styles = StyleSheet.create({
   },
   quizHeaderTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
