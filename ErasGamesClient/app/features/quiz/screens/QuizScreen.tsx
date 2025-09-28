@@ -403,7 +403,15 @@ export default function QuizScreen({navigation, route}: Props) {
               disabled={isStartingQuiz}
               style={[styles.retroStartButton, {backgroundColor: theme.colors.primary}]}
             />
-          
+            
+            {isStartingQuiz && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.accent1} />
+                <Text style={[styles.loadingText, {color: theme.colors.textSecondary}]}>
+                  Preparing your quiz...
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       ) : (

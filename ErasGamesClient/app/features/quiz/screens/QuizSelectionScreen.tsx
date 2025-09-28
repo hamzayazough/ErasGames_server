@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, ScrollView, StatusBar } from 'react-native';
-import { View, Text, Button, Card } from '../../../ui';
+import { StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Button } from '../../../ui';
 import { useTheme, RetroBackground } from '../../../core/theme';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { allQuizMocks, QuizMock } from '../constants/quizMocks';
+import { GlobalHeader } from '../../../shared/components';
 
 type Props = RootStackScreenProps<'QuizSelection'>;
 
@@ -14,127 +15,64 @@ export default function QuizSelectionScreen({ navigation }: Props) {
     navigation.navigate('Quiz', { selectedQuiz: quiz });
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return theme.colors.success;
-      case 'medium': return theme.colors.warning;
-      case 'hard': return theme.colors.error;
-      case 'mixed': return theme.colors.primary;
-      default: return theme.colors.textSecondary;
-    }
-  };
-
-  const getDifficultyIcon = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return '🟢';
-      case 'medium': return '🟡';
-      case 'hard': return '🔴';
-      case 'mixed': return '🌈';
-      default: return '⚪';
-    }
-  };
-
   return (
     <RetroBackground style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
-      
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
-        <Text variant="h2" style={[styles.headerTitle, { color: theme.colors.text }]}>
-          Choose Your Quiz
-        </Text>
-        <Text variant="body" style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
-          Select a quiz to test different question types and difficulties
-        </Text>
-      </View>
+      {/* Global Header */}
+      <GlobalHeader
+        showBack={true}
+        showProfile={true}
+        showLeaderboard={true}
+        onProfilePress={() => {
+          console.log('Profile pressed');
+        }}
+        onLeaderboardPress={() => {
+          console.log('Leaderboard pressed');
+        }}
+      />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.quizGrid}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../../assets/images/erasgames-title.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Title */}
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          PRACTICE QUIZZES
+        </Text>
+
+
+        {/* Quiz List */}
+        <View style={styles.quizList}>
           {allQuizMocks.map((quiz, index) => (
-            <Card key={quiz.id} style={[styles.quizCard, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.quizHeader}>
-                <View style={styles.quizTitleRow}>
-                  <Text variant="h3" style={[styles.quizTitle, { color: theme.colors.text }]}>
+            <TouchableOpacity
+              key={quiz.id}
+              style={styles.quizItem}
+              onPress={() => handleQuizSelect(quiz)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.quizItemContent}>
+                <View style={styles.quizInfo}>
+                  <Text style={[styles.quizTitle, { color: theme.colors.textOnSurface }]}>
                     {quiz.title}
                   </Text>
-                  <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(quiz.difficulty) }]}>
-                    <Text variant="caption" style={[styles.difficultyText, { color: theme.colors.textOnPrimary }]}>
-                      {getDifficultyIcon(quiz.difficulty)} {quiz.difficulty.toUpperCase()}
-                    </Text>
-                  </View>
+                  <Text style={[styles.quizMeta, { color: theme.colors.textOnSurface }]}>
+                    {quiz.questions.length} questions • {quiz.estimatedTime} min • {quiz.difficulty}
+                  </Text>
                 </View>
-                
-                <Text variant="body" style={[styles.quizDescription, { color: theme.colors.textSecondary }]}>
-                  {quiz.description}
+                <Text style={[styles.arrow, { color: theme.colors.textOnSurface }]}>
+                  →
                 </Text>
               </View>
-
-              <View style={styles.quizStats}>
-                <View style={styles.statItem}>
-                  <Text variant="caption" style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                    Questions
-                  </Text>
-                  <Text variant="body" style={[styles.statValue, { color: theme.colors.text }]}>
-                    {quiz.questions.length}
-                  </Text>
-                </View>
-                
-                <View style={styles.statItem}>
-                  <Text variant="caption" style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-                    Est. Time
-                  </Text>
-                  <Text variant="body" style={[styles.statValue, { color: theme.colors.text }]}>
-                    {quiz.estimatedTime} min
-                  </Text>
-                </View>
-              </View>
-
-              {/* Question Types Preview */}
-              <View style={styles.questionTypes}>
-                <Text variant="caption" style={[styles.questionTypesLabel, { color: theme.colors.textSecondary }]}>
-                  Question Types:
-                </Text>
-                <View style={styles.questionTypesList}>
-                  {[...new Set(quiz.questions.map(q => q.questionType))].slice(0, 3).map((type, idx) => (
-                    <View key={idx} style={[styles.questionTypeTag, { backgroundColor: theme.colors.surface }]}>
-                      <Text variant="caption" style={[styles.questionTypeText, { color: theme.colors.text }]}>
-                        {type.replace('-', ' ')}
-                      </Text>
-                    </View>
-                  ))}
-                  {[...new Set(quiz.questions.map(q => q.questionType))].length > 3 && (
-                    <Text variant="caption" style={[styles.moreTypes, { color: theme.colors.textSecondary }]}>
-                      +{[...new Set(quiz.questions.map(q => q.questionType))].length - 3} more
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              <Button
-                title="Start Quiz"
-                onPress={() => handleQuizSelect(quiz)}
-                style={[styles.startButton, { backgroundColor: theme.colors.primary }]}
-              />
-            </Card>
+            </TouchableOpacity>
           ))}
         </View>
 
-        {/* Quick Start Section */}
-        <Card style={[styles.quickStartCard, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="h3" style={[styles.quickStartTitle, { color: theme.colors.text }]}>
-            🚀 Quick Start
-          </Text>
-          <Text variant="body" style={[styles.quickStartDescription, { color: theme.colors.textSecondary }]}>
-            Not sure which quiz to take? Start with the Basic Quiz to get familiar with the question formats.
-          </Text>
-          <Button
-            title="Start Basic Quiz"
-            onPress={() => handleQuizSelect(allQuizMocks[0])}
-            variant="outline"
-            style={styles.quickStartButton}
-          />
-        </Card>
-
+        {/* Bottom spacing */}
         <View style={styles.bottomPadding} />
       </ScrollView>
     </RetroBackground>
@@ -145,121 +83,74 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    lineHeight: 20,
-  },
   scrollView: {
     flex: 1,
   },
-  quizGrid: {
-    padding: 24,
-    gap: 20,
+  logoContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
   },
-  quizCard: {
-    padding: 20,
-    borderRadius: 16,
+  logoImage: {
+    width: 280,
+    height: 120,
   },
-  quizHeader: {
+  title: {
+    fontSize: 32,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 1,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginBottom: 40,
+    paddingHorizontal: 24,
+    lineHeight: 24,
+  },
+  quizList: {
+    paddingHorizontal: 24,
+  },
+  quizItem: {
     marginBottom: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 229, 177, 0.3)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  quizTitleRow: {
+  quizItemContent: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+  },
+  quizInfo: {
+    flex: 1,
   },
   quizTitle: {
-    flex: 1,
-    fontWeight: 'bold',
-    marginRight: 12,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  difficultyText: {
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 6,
     letterSpacing: 0.5,
   },
-  quizDescription: {
-    lineHeight: 20,
+  quizMeta: {
+    fontSize: 14,
+    fontWeight: '400',
+    opacity: 0.8,
   },
-  quizStats: {
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 11,
-    marginBottom: 2,
-  },
-  statValue: {
+  arrow: {
+    fontSize: 20,
     fontWeight: '600',
-  },
-  questionTypes: {
-    marginBottom: 20,
-  },
-  questionTypesLabel: {
-    fontSize: 11,
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  questionTypesList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    alignItems: 'center',
-  },
-  questionTypeTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  questionTypeText: {
-    fontSize: 10,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
-  moreTypes: {
-    fontSize: 10,
-    fontStyle: 'italic',
-  },
-  startButton: {
-    paddingVertical: 14,
-  },
-  quickStartCard: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-    padding: 20,
-    borderRadius: 16,
-  },
-  quickStartTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  quickStartDescription: {
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  quickStartButton: {
-    paddingVertical: 12,
+    marginLeft: 16,
   },
   bottomPadding: {
-    height: 40,
+    height: 60,
   },
 });

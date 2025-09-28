@@ -1,8 +1,10 @@
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import {Text} from '../../../ui/Text';
+import {Button} from '../../../ui/Button';
 import {useTheme} from '../../../core/theme';
 import {CircularCountdownTimer} from './CircularCountdownTimer';
+import type {RootStackScreenProps} from '../../../navigation/types';
 
 interface QuizCompletedStateProps {
   score: number;
@@ -11,6 +13,7 @@ interface QuizCompletedStateProps {
   timeTaken?: string;
   nextDayTimeLeft: number;
   nextDayTotalTime: number;
+  navigation: RootStackScreenProps<'DailyDrop'>['navigation'];
 }
 
 export function QuizCompletedState({
@@ -19,7 +22,8 @@ export function QuizCompletedState({
   totalQuestions,
   timeTaken,
   nextDayTimeLeft,
-  nextDayTotalTime
+  nextDayTotalTime,
+  navigation
 }: QuizCompletedStateProps) {
   const theme = useTheme();
 
@@ -47,6 +51,14 @@ export function QuizCompletedState({
           size={120}
         />
       </View>
+
+      {/* Practice Button */}
+      <Button
+        title="Practice demo quizzes"
+        variant="outline"
+        onPress={() => navigation.navigate('QuizSelection')}
+        style={styles.practiceButton}
+      />
     </View>
   );
 }
@@ -77,5 +89,11 @@ const styles = StyleSheet.create({
   },
   timerContainer: {
     alignItems: 'center',
+    marginBottom: 30,
+  },
+  practiceButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    minWidth: 200,
   },
 });

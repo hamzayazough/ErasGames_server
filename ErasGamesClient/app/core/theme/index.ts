@@ -106,6 +106,16 @@ const retroGameTheme = {
     glitter1: '#6BDDDD', // Light teal sparkles
     glitter2: '#F7EBC4', // Light cream sparkles
     glitter3: '#8BEEEE', // Very light teal sparkles
+
+    // Additional colors from design assets
+    richRed: '#8B2635', // Deep burgundy red from image
+    darkRed: '#6B1D2A', // Darker burgundy for depth
+    lightRed: '#A53142', // Lighter burgundy for highlights
+    rustRed: '#B8342F', // Rust red variant
+    warmNeutral: '#E8D5C4', // Warm cream/beige from image
+    darkNeutral: '#8B7355', // Darker neutral tone
+    lightNeutral: '#F2E8D9', // Very light cream
+    charcoal: '#3A3A3A', // Dark charcoal for contrast
   },
 } as const;
 

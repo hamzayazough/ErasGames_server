@@ -404,6 +404,7 @@ export default function DailyDropScreen({navigation}: Props) {
               timeTaken={status?.attempt?.timeTaken ? `${status.attempt.timeTaken}s` : undefined}
               nextDayTimeLeft={nextDayTimeLeft}
               nextDayTotalTime={nextDayTotalTime}
+              navigation={navigation}
             />
           ) : (
             <QuizAvailableState
