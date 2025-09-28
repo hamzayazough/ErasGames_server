@@ -65,7 +65,7 @@ export function CircularCountdownTimer({
             position: 'absolute',
             top: 6,
             left: 6,
-            transform: [{ rotate: '-90deg' }], // Start from top
+            transform: [{ rotate: '135deg' }], // Start from top
             borderTopColor: progress > 0 ? theme.colors.textSecondary : 'transparent',
             borderRightColor: progress > 0.25 ? theme.colors.textSecondary : 'transparent',
             borderBottomColor: progress > 0.5 ? theme.colors.textSecondary : 'transparent',
