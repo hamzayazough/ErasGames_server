@@ -6,7 +6,7 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import {useTheme} from '../../../core/theme/ThemeProvider';
+import {useTheme, RetroBackground} from '../../../core/theme';
 import {Text, Button, Card} from '../../../ui';
 import type {RootStackScreenProps} from '../../../navigation/types';
 import type {QuizSubmission} from '../../../core/services/quiz-attempt.service';
@@ -51,7 +51,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   };
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+    <RetroBackground style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -151,7 +151,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </RetroBackground>
   );
 }
 

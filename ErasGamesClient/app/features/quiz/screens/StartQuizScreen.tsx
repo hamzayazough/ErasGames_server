@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
-import {useTheme} from '../../../core/theme/ThemeProvider';
+import {useTheme, RetroBackground} from '../../../core/theme';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 type Props = RootStackScreenProps<'StartQuiz'>;
@@ -45,7 +45,7 @@ export default function StartQuizScreen({navigation}: Props) {
   };
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+    <RetroBackground style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -205,7 +205,7 @@ export default function StartQuizScreen({navigation}: Props) {
         {/* Bottom padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </RetroBackground>
   );
 }
 

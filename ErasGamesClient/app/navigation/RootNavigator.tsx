@@ -1,10 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {useColorScheme, ActivityIndicator, View} from 'react-native';
-import {useTheme} from '../core/theme/ThemeProvider';
+import {useColorScheme, View, StyleSheet} from 'react-native';
+import {useTheme, RetroBackground} from '../core/theme';
 import {useAuth} from '../core/context/AuthContext';
 import {FCMService} from '../core/services/FCMService';
+import {AnimatedLogo} from '../shared/components';
+import {Text} from '../ui';
 import type {RootStackParamList} from './types';
 
 // Import our quiz screens
@@ -51,9 +53,11 @@ export function RootNavigator() {
   // Show loading screen while checking authentication state
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
+      <RetroBackground style={styles.loadingContainer}>
+        <View style={styles.loadingContent}>
+          <AnimatedLogo size={200} />
+        </View>
+      </RetroBackground>
     );
   }
   
@@ -117,3 +121,19 @@ export function RootNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+  },
+  loadingContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    marginTop: 24,
+    fontSize: 16,
+  },
+});

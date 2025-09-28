@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, ScrollView, StatusBar } from 'react-native';
 import { View, Text, Button, Card } from '../../../ui';
-import { useTheme } from '../../../core/theme/ThemeProvider';
+import { useTheme, RetroBackground } from '../../../core/theme';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { allQuizMocks, QuizMock } from '../constants/quizMocks';
 
@@ -35,7 +35,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <RetroBackground style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       
       {/* Header */}
@@ -137,7 +137,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </RetroBackground>
   );
 }
 

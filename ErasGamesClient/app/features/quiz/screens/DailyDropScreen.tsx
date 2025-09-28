@@ -21,7 +21,7 @@ import {
 } from '../../../core/services/quiz-attempt.service';
 import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 import {QuizAvailableState, QuizCompletedState} from '../components';
-import {GlobalHeader} from '../../../shared/components';
+import {GlobalHeader, AnimatedLogo} from '../../../shared/components';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -328,10 +328,7 @@ export default function DailyDropScreen({navigation}: Props) {
     return (
       <RetroBackground style={styles.container}>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={[styles.loadingText, { color: theme.colors.textOnBackground }]}>
-            Loading...
-          </Text>
+          <AnimatedLogo size={200} />
         </View>
       </RetroBackground>
     );
@@ -442,10 +439,10 @@ const styles = StyleSheet.create({
     paddingVertical: 80,
   },
   centerContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    marginVertical: 40,
   },
   logoContainer: {
     alignItems: 'center',
