@@ -34,7 +34,7 @@ export const OddOneOutComponent: React.FC<OddOneOutComponentProps> = ({
       {/* Rule container with teal theme */}
       <View style={[styles.ruleContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
         <Text style={[styles.ruleText, { color: theme.colors.textSecondary }]}>
-          {question.prompt.setRule}
+          Rule: {question.prompt.setRule}
         </Text>
       </View>
 
