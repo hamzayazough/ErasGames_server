@@ -46,11 +46,13 @@ export const SongAlbumMatchComponent: React.FC<SongAlbumMatchComponentProps> = (
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
+    gap: 24,
   },
   questionText: {
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 32,
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
 });

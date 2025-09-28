@@ -61,27 +61,38 @@ export const SimpleChoiceComponent: React.FC<SimpleChoiceComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
+    gap: 24,
   },
   questionText: {
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 32,
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
   subtitleContainer: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(244, 229, 177, 0.4)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   icon: {
-    fontSize: 16,
-    marginRight: 8,
+    fontSize: 20,
+    marginRight: 12,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

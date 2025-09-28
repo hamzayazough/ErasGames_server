@@ -51,22 +51,36 @@ export const AlbumYearGuessComponent: React.FC<AlbumYearGuessComponentProps> = (
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
+    gap: 24,
   },
   questionText: {
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 32,
     flexWrap: 'wrap',
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
   albumContainer: {
-    padding: 20,
-    borderRadius: 16,
+    padding: 24,
+    borderRadius: 20,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(244, 229, 177, 0.4)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   albumName: {
-    fontWeight: 'bold',
+    fontWeight: '900',
     textAlign: 'center',
     flexWrap: 'wrap',
+    fontSize: 22,
+    letterSpacing: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 });

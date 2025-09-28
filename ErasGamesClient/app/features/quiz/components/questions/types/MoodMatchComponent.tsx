@@ -104,27 +104,39 @@ export const MoodMatchComponent: React.FC<MoodMatchComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
+    gap: 24,
   },
   questionText: {
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 28,
-    marginBottom: 8,
+    lineHeight: 32,
+    fontSize: 18,
+    letterSpacing: 0.5,
+    marginBottom: 12,
   },
   choicesContainer: {
-    gap: 12,
+    gap: 16,
   },
   choiceButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
   selectedChoice: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(232, 90, 63, 0.15)',
+    shadowColor: 'rgba(0, 0, 0, 0.25)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
   },
   correctChoice: {
     backgroundColor: 'rgba(34, 197, 94, 0.9)',
@@ -134,15 +146,17 @@ const styles = StyleSheet.create({
   },
   choiceText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   noChoicesContainer: {
-    paddingVertical: 32,
+    paddingVertical: 36,
     alignItems: 'center',
   },
   noChoicesText: {
-    fontSize: 14,
+    fontSize: 15,
     fontStyle: 'italic',
+    fontWeight: '500',
   },
 });

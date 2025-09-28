@@ -27,16 +27,16 @@ export function QuizCompletedState({
     <View style={styles.container}>
       {/* Simple completion message matching original clean design */}
       <Text style={[styles.completedMessage, { color: theme.colors.textSecondary }]}>
-        Quiz completed! Your score: {score}
+        Quiz completed! Your scored
+      </Text>
+      <Text style={[styles.completedMessage, { color: theme.colors.textSecondary }]}>
+        {score} points
       </Text>
       
-      <Text style={[styles.completedSubtext, { color: theme.colors.textSecondary }]}>
-        ({correctAnswers}/{totalQuestions} correct)
-      </Text>
 
       {/* Next Quiz Label */}
       <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
-        QUIZ WINDOW ENDS IN
+        TODAY QUIZ ENDS IN
       </Text>
 
       {/* Countdown Timer for window end */}
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   },
   completedMessage: {
     fontSize: 20,
-    fontWeight: '400',
+    fontWeight: '900',
     textAlign: 'center',
     marginBottom: 8,
   },

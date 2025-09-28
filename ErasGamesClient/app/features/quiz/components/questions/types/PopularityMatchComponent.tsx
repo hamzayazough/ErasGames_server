@@ -62,25 +62,37 @@ export const PopularityMatchComponent: React.FC<PopularityMatchComponentProps> =
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
+    gap: 24,
   },
   questionText: {
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 32,
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
   instructionContainer: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(244, 229, 177, 0.4)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   instructionText: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'center',
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   asOfText: {
-    fontSize: 11,
-    marginTop: 4,
+    fontSize: 12,
+    marginTop: 6,
     fontStyle: 'italic',
+    fontWeight: '500',
   },
 });
