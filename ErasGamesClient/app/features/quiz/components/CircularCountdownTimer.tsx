@@ -39,7 +39,22 @@ export function CircularCountdownTimer({
           borderRadius: size / 2,
         }
       ]}>
-        {/* Progress ring - using a simple approach with border */}
+        {/* Progress ring - background (full circle) */}
+        <View style={[
+          styles.progressRingBg,
+          {
+            width: size - 12,
+            height: size - 12,
+            borderRadius: (size - 12) / 2,
+            borderWidth: 8,
+            borderColor: 'rgba(244, 229, 177, 0.3)', // Semi-transparent cream for background
+            position: 'absolute',
+            top: 6,
+            left: 6,
+          }
+        ]} />
+        
+        {/* Progress ring - actual progress */}
         <View style={[
           styles.progressRing,
           {
@@ -47,11 +62,14 @@ export function CircularCountdownTimer({
             height: size - 12,
             borderRadius: (size - 12) / 2,
             borderWidth: 8,
-            borderColor: progress > 0.1 ? theme.colors.textSecondary : 'transparent',
             position: 'absolute',
             top: 6,
             left: 6,
-            opacity: progress > 0 ? 1 : 0.3,
+            transform: [{ rotate: '-90deg' }], // Start from top
+            borderTopColor: progress > 0 ? theme.colors.textSecondary : 'transparent',
+            borderRightColor: progress > 0.25 ? theme.colors.textSecondary : 'transparent',
+            borderBottomColor: progress > 0.5 ? theme.colors.textSecondary : 'transparent',
+            borderLeftColor: progress > 0.75 ? theme.colors.textSecondary : 'transparent',
           }
         ]} />
         
