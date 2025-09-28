@@ -12,7 +12,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
   const theme = useTheme();
 
   const handleQuizSelect = (quiz: QuizMock) => {
-    navigation.navigate('Quiz', { selectedQuiz: quiz });
+    navigation.navigate('TestQuiz', { selectedQuiz: quiz });
   };
 
   return (

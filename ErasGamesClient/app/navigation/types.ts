@@ -22,6 +22,9 @@ export type RootStackParamList = {
     quizAttempt?: QuizAttempt;
     quizTemplate?: QuizTemplate;
   };
+  TestQuiz: {
+    selectedQuiz: QuizMock;
+  };
   QuizResults: {
     quizResult: QuizSubmission;
   };

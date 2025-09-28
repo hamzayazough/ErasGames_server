@@ -14,6 +14,7 @@ import DailyDropScreen from '../features/quiz/screens/DailyDropScreen';
 import StartQuizScreen from '../features/quiz/screens/StartQuizScreen';
 import QuizSelectionScreen from '../features/quiz/screens/QuizSelectionScreen';
 import QuizScreen from '../features/quiz/screens/QuizScreen';
+import TestQuizScreen from '../features/quiz/screens/TestQuizScreen';
 import QuizResultsScreen from '../features/quiz/screens/QuizResultsScreen';
 import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 
@@ -89,6 +90,11 @@ export function RootNavigator() {
             <Stack.Screen 
               name="Quiz" 
               component={QuizScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="TestQuiz" 
+              component={TestQuizScreen}
               options={{headerShown: false}}
             />
             <Stack.Screen 
