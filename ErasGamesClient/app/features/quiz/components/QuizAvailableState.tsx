@@ -10,6 +10,7 @@ interface QuizAvailableStateProps {
   quizWindowTimeLeft: number;
   isStartingQuiz: boolean;
   onStartQuiz: () => void;
+  onHowToPlay?: () => void;
 }
 
 export function QuizAvailableState({
@@ -17,7 +18,8 @@ export function QuizAvailableState({
   attemptCompleted,
   quizWindowTimeLeft,
   isStartingQuiz,
-  onStartQuiz
+  onStartQuiz,
+  onHowToPlay
 }: QuizAvailableStateProps) {
   const theme = useTheme();
 
@@ -25,6 +27,11 @@ export function QuizAvailableState({
     // Quiz In Progress State - Clean minimal design
     return (
       <View style={styles.container}>
+        {/* Quiz In Progress Message */}
+        <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
+          QUIZ IN PROGRESS!
+        </Text>
+        
         {/* Quiz window countdown - simple and clean */}
         <View style={styles.timerContainer}>
           <CircularCountdownTimer 
@@ -54,24 +61,36 @@ export function QuizAvailableState({
               style={styles.loadingIndicator}
             />
           )}
+          
+          {/* How to Play text below button */}
+          {onHowToPlay && (
+            <TouchableOpacity onPress={onHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
+              <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
+                How do you play?
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
   }
 
   // Quiz Available State - Clean minimal design matching original theme
-  return (
-    <View style={styles.container}>
-      {/* Quiz window countdown - simple and clean */}
-      <View style={styles.timerContainer}>
-        <CircularCountdownTimer 
-          timeLeft={quizWindowTimeLeft}
-          totalTime={3600} // 1 hour = 3600 seconds
-          size={120}
-        />
-      </View>
-
-      {/* Start Quiz Button */}
+    return (
+      <View style={styles.container}>
+        {/* Quiz Available Message */}
+        <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
+          QUIZ IS AVAILABLE NOW!
+        </Text>
+        
+        {/* Quiz window countdown - simple and clean */}
+        <View style={styles.timerContainer}>
+          <CircularCountdownTimer 
+            timeLeft={quizWindowTimeLeft}
+            totalTime={3600} // 1 hour = 3600 seconds
+            size={120}
+          />
+        </View>      {/* Start Quiz Button */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
@@ -90,6 +109,15 @@ export function QuizAvailableState({
             color={theme.colors.primary} 
             style={styles.loadingIndicator}
           />
+        )}
+        
+        {/* How to Play text below button */}
+        {onHowToPlay && (
+          <TouchableOpacity onPress={onHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
+            <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
+              How do you play?
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -129,5 +157,23 @@ const styles = StyleSheet.create({
   },
   loadingIndicator: {
     marginTop: 12,
+  },
+  howToPlayContainer: {
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  howToPlayText: {
+    fontSize: 18,
+    fontWeight: '400',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+  },
+  nextQuizLabel: {
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 4,
+    textAlign: 'center',
+    marginBottom: 20,
+    textTransform: 'uppercase',
   },
 });

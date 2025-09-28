@@ -398,6 +398,7 @@ export default function DailyDropScreen({navigation}: Props) {
               quizWindowTimeLeft={quizWindowTimeLeft}
               isStartingQuiz={isStartingQuiz}
               onStartQuiz={handleStartQuiz}
+              onHowToPlay={handleHowToPlay}
             />
           )
         ) : (
@@ -416,12 +417,14 @@ export default function DailyDropScreen({navigation}: Props) {
           </>
         )}
 
-        {/* How to Play - Bottom text */}
-        <TouchableOpacity onPress={handleHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
-          <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
-            How do you play?
-          </Text>
-        </TouchableOpacity>
+        {/* How to Play - Bottom text - only show when quiz is not available */}
+        {!isAvailable && (
+          <TouchableOpacity onPress={handleHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
+            <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
+              How do you play?
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </RetroBackground>
   );
