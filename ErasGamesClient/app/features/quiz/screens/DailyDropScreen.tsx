@@ -1,86 +1,35 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, ScrollView, StatusBar, Alert, Animated, ActivityIndicator} from 'react-native';
-import {View, Text, Button, Card} from '../../../ui';
-import {useTheme} from '../../../core/theme/ThemeProvider';
+import {
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Dimensions,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import {View} from '../../../ui/View';
+import {Text} from '../../../ui/Text';
+import {Button} from '../../../ui/Button';
+import {useTheme, RetroBackground} from '../../../core/theme';
+import {RootStackScreenProps} from '../../../navigation/types';
 import {useDailyQuizStatus, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
-import type {RootStackScreenProps} from '../../../navigation/types';
 import { 
   QuizAttemptService, 
   QuizAttempt, 
   QuizSubmission 
 } from '../../../core/services/quiz-attempt.service';
 import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
+import {QuizAvailableState, QuizCompletedState} from '../components';
+
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 type Props = RootStackScreenProps<'DailyDrop'>;
-
-// Simple Circular Countdown Timer Component
-function CircularCountdownTimer({ timeLeft, totalTime, size = 120 }: { timeLeft: number; totalTime: number; size?: number }) {
-  const theme = useTheme();
-  
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  
-  // Color based on time remaining
-  const getColor = () => {
-    if (timeLeft > 1800) return '#4CAF50'; // > 30 min - green
-    if (timeLeft > 600) return '#FF9800'; // > 10 min - orange  
-    return '#F44336'; // < 10 min - red
-  };
-  
-  // Calculate progress - how much time is left (1.0 = full, 0.0 = empty)
-  const progress = totalTime > 0 ? timeLeft / totalTime : 0;
-  const progressPercentage = Math.round(progress * 100);
-  
-  // Calculate rotation for the progress circle
-  const rotation = 360 * progress; // 360 degrees = full circle
-  
-  return (
-    <View style={[styles.circularTimer, { width: size, height: size }]}>
-      {/* Background circle (gray) */}
-      <View style={[
-        styles.circularTimerBg,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: 8,
-          borderColor: '#E0E0E0',
-          backgroundColor: 'transparent',
-        }
-      ]} />
-      
-      {/* Simple progress circle using basic border approach */}
-      <View style={[
-        styles.circularTimerProgress,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: 8,
-          position: 'absolute',
-          transform: [{ rotate: '-90deg' }], // Start from top
-          // Simple approach: show different amounts of border based on progress ranges
-          borderTopColor: progress > 0 ? getColor() : '#E0E0E0',
-          borderRightColor: progress > 0.25 ? getColor() : '#E0E0E0',
-          borderBottomColor: progress > 0.5 ? getColor() : '#E0E0E0',
-          borderLeftColor: progress > 0.75 ? getColor() : '#E0E0E0',
-        }
-      ]} />
-      
-      {/* Time display */}
-      <View style={styles.circularTimerText}>
-        <Text variant="heading3" style={[styles.timerTime, { color: getColor() }]}>
-          {minutes}:{seconds.toString().padStart(2, '0')}
-        </Text>
-      </View>
-    </View>
-  );
-}
 
 export default function DailyDropScreen({navigation}: Props) {
   const theme = useTheme();
   
-  // Use the new consolidated hook that handles everything
+  // Use the consolidated hook that handles everything
   const { 
     status, 
     isLoading, 
@@ -349,219 +298,119 @@ export default function DailyDropScreen({navigation}: Props) {
     }
   };
 
+  const handleHowToPlay = () => {
+    // TODO: Navigate to how to play screen or show modal
+    Alert.alert('How to Play', 'How to play instructions coming soon!');
+  };
+
   const handleRetry = () => {
     refresh();
   };
 
-  return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text variant="heading1" align="center" style={[styles.appTitle, {color: theme.colors.primary}]}>
-            ✨ Eras Quiz ✨
-          </Text>
-          <Text variant="body" color="secondary" align="center" style={styles.subtitle}>
-            It's Era Time! Daily drops await...
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    return {
+      hours: hours.toString().padStart(2, '0'),
+      minutes: minutes.toString().padStart(2, '0'),
+      seconds: secs.toString().padStart(2, '0')
+    };
+  };
+
+  const timeComponents = formatTime(localTimeLeft);
+
+
+
+  if (isLoading) {
+    return (
+      <RetroBackground style={styles.container}>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textOnBackground }]}>
+            Loading...
           </Text>
         </View>
+      </RetroBackground>
+    );
+  }
 
-        {/* Main Drop Card */}
-        <Card style={[styles.dropCard, {backgroundColor: theme.colors.card, borderColor: theme.colors.primary}]}>
-          <View style={styles.dropContent}>
-            <Text variant="heading2" align="center" style={[styles.dropTitle, {color: theme.colors.primary}]}>
-              🌙 Tonight's Drop
+  if (error) {
+    return (
+      <RetroBackground style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text style={[styles.errorText, { color: theme.colors.error }]}>
+            {getErrorMessage(error)}
+          </Text>
+          {shouldShowRetry(error) && (
+            <Button
+              title="Retry"
+              onPress={refresh}
+              style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+            />
+          )}
+        </View>
+      </RetroBackground>
+    );
+  }
+
+  return (
+    <RetroBackground style={styles.container}>
+      <View style={styles.content}>
+        {/* Logo Image - ERAS GAMES */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../../assets/images/erasgames-title.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Status Display */}
+        {isAvailable ? (
+          hasAttempt && attemptCompleted ? (
+            <QuizCompletedState
+              score={status?.attempt?.score || 0}
+              correctAnswers={status?.attempt?.correctAnswers || 0}
+              totalQuestions={status?.attempt?.totalQuestions || 6}
+              timeTaken={status?.attempt?.timeTaken ? `${status.attempt.timeTaken}s` : undefined}
+              nextDayTimeLeft={nextDayTimeLeft}
+              nextDayTotalTime={nextDayTotalTime}
+            />
+          ) : (
+            <QuizAvailableState
+              hasAttempt={hasAttempt}
+              attemptCompleted={attemptCompleted}
+              quizWindowTimeLeft={quizWindowTimeLeft}
+              isStartingQuiz={isStartingQuiz}
+              onStartQuiz={handleStartQuiz}
+            />
+          )
+        ) : (
+          <>
+            {/* Next Quiz Label */}
+            <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
+              NEXT QUIZ IN
             </Text>
-            
-            {/* Status Display */}
+
+            {/* Countdown Timer - Large numbers matching the design */}
             <View style={styles.countdownContainer}>
-              {isLoading ? (
-                <Text variant="body" align="center" style={[styles.loadingText, {color: theme.colors.textSecondary}]}>
-                  Loading quiz status...
-                </Text>
-              ) : error ? (
-                <View style={styles.errorContainer}>
-                  <Text variant="body" align="center" style={[styles.errorText, {color: theme.colors.error}]}>
-                    {error}
-                  </Text>
-                  <Button
-                    title="Retry"
-                    variant="outline"
-                    onPress={handleRetry}
-                    style={styles.retryButton}
-                  />
-                </View>
-              ) : isAvailable ? (
-                <View style={styles.availableContainer}>
-                  {hasAttempt && attemptCompleted ? (
-                    <>
-                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
-                        ✅ Quiz Completed!
-                      </Text>
-                      
-                      {/* Completion Stats Card */}
-                      <View style={[styles.completionStatsCard, {backgroundColor: theme.colors.surface, borderColor: theme.colors.success}]}>
-                        <View style={styles.scoreContainer}>
-                          <Text variant="heading1" style={[styles.finalScore, {color: theme.colors.success}]}>
-                            {status?.attempt?.score || 0}
-                          </Text>
-                          <Text variant="caption" style={[styles.scoreLabel, {color: theme.colors.textSecondary}]}>
-                            FINAL SCORE
-                          </Text>
-                        </View>
-                        
-                        <View style={styles.statsRow}>
-                          <View style={styles.statItem}>
-                            <Text variant="heading3" style={[styles.statValue, {color: theme.colors.primary}]}>
-                              {status?.attempt?.correctAnswers || 0}/{status?.attempt?.totalQuestions || 6}
-                            </Text>
-                            <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                              CORRECT
-                            </Text>
-                          </View>
-                          
-                          <View style={styles.statItem}>
-                            <Text variant="heading3" style={[styles.statValue, {color: theme.colors.primary}]}>
-                              {status?.attempt?.timeTaken ? `${status.attempt.timeTaken}s` : 'N/A'}
-                            </Text>
-                            <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                              TIME TAKEN
-                            </Text>
-                          </View>
-                        </View>
-                        
-                        <Text variant="body" align="center" style={[styles.completionMessage, {color: theme.colors.textSecondary}]}>
-                          Come back tomorrow for a new quiz!
-                        </Text>
-                      </View>
-                      
-                      {/* Show countdown for quiz window end */}
-                      <Text variant="caption" align="center" style={[styles.nextQuizLabel, {color: theme.colors.textSecondary}]}>
-                        Quiz window ends in
-                      </Text>
-                      
-                      <View style={styles.nextQuizTimerContainer}>
-                        <CircularCountdownTimer 
-                          timeLeft={nextDayTimeLeft}
-                          totalTime={nextDayTotalTime}
-                          size={100}
-                        />
-                      </View>
-                    </>
-                  ) : hasAttempt && !attemptCompleted ? (
-                    <>
-                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.primary}]}>
-                        📝 Quiz In Progress
-                      </Text>
-                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                        You can continue your quiz
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text variant="heading3" align="center" style={[styles.availableText, {color: theme.colors.success}]}>
-                        🎉 Quiz is Live!
-                      </Text>
-                      <Text variant="body" align="center" style={[styles.availableSubtext, {color: theme.colors.textSecondary}]}>
-                        Complete the quiz before time runs out!
-                      </Text>
-                      
-                      {/* Circular countdown timer for quiz window */}
-                      <View style={styles.quizTimerContainer}>
-                        <CircularCountdownTimer 
-                          timeLeft={quizWindowTimeLeft}
-                          totalTime={3600} // 1 hour = 3600 seconds
-                          size={140}
-                        />
-                      </View>
-                    </>
-                  )}
-                </View>
-              ) : (
-                <>
-                  <Text variant="caption" align="center" style={[styles.countdownLabel, {color: theme.colors.textSecondary}]}>
-                    {status?.nextDrop?.isToday ? 'Next drop today' : 'Next drop tomorrow'} • Random time between 5-8 PM Toronto
-                  </Text>
-                  
-                  <View style={styles.timeContainer}>
-                    <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent1}]}>
-                      <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                        {Math.floor(localTimeLeft / 3600).toString().padStart(2, '0')}
-                      </Text>
-                      <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
-                        HOURS
-                      </Text>
-                    </View>
-                    
-                    <Text variant="heading1" style={[styles.separator, {color: theme.colors.primary}]}>:</Text>
-                    
-                    <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent2}]}>
-                      <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                        {Math.floor((localTimeLeft % 3600) / 60).toString().padStart(2, '0')}
-                      </Text>
-                      <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
-                        MINUTES
-                      </Text>
-                    </View>
-                    
-                    <Text variant="heading1" style={[styles.separator, {color: theme.colors.primary}]}>:</Text>
-                    
-                    <View style={[styles.timeBlock, {backgroundColor: theme.colors.accent3}]}>
-                      <Text variant="heading1" style={[styles.timeNumber, {color: theme.colors.textOnPrimary}]}>
-                        {(localTimeLeft % 60).toString().padStart(2, '0')}
-                      </Text>
-                      <Text variant="caption" style={[styles.timeLabel, {color: theme.colors.textOnPrimary}]}>
-                        SECONDS
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              )}
+              <Text style={[styles.countdownTime, { color: theme.colors.textSecondary }]}>
+                {timeComponents.hours}:{timeComponents.minutes}:{timeComponents.seconds}
+              </Text>
             </View>
+          </>
+        )}
 
-            {/* Quiz action button */}
-            {isAvailable && !(hasAttempt && attemptCompleted) && (
-              <>
-                <Button
-                  title={
-                    isStartingQuiz
-                      ? "Starting Quiz..."
-                      : hasAttempt && !attemptCompleted 
-                        ? "📝 Continue Quiz" 
-                        : "🚀 Start Today's Quiz"
-                  }
-                  onPress={handleStartQuiz}
-                  style={[
-                    styles.startQuizButton, 
-                    {backgroundColor: theme.colors.success}
-                  ]}
-                  disabled={isStartingQuiz}
-                />
-                
-                {isStartingQuiz && (
-                  <ActivityIndicator 
-                    size="small" 
-                    color={theme.colors.primary} 
-                    style={{marginTop: 12}}
-                  />
-                )}
-              </>
-            )}
-          </View>
-        </Card>
-
-
-
-
-
-
-
-        {/* Bottom padding */}
-        <View style={styles.bottomPadding} />
-      </ScrollView>
-    </View>
+        {/* How to Play - Bottom text */}
+        <TouchableOpacity onPress={handleHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
+          <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
+            How do you play?
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </RetroBackground>
   );
 }
 
@@ -569,222 +418,73 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
+  content: {
     flex: 1,
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 32,
-  },
-  appTitle: {
-    marginBottom: 8,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 18,
-    fontStyle: 'italic',
-  },
-  dropCard: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-    borderWidth: 2,
-    borderRadius: 20,
-  },
-  dropContent: {
-    padding: 24,
-  },
-  dropTitle: {
-    marginBottom: 24,
-    fontWeight: 'bold',
-  },
-  countdownContainer: {
-    marginBottom: 24,
-  },
-  countdownLabel: {
-    marginBottom: 16,
-    fontSize: 14,
-  },
-  timeContainer: {
-    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 40,
+    paddingVertical: 80,
   },
-  timeBlock: {
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    minWidth: 80,
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginVertical: 40,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 60,
+  },
+  logoImage: {
+    width: screenWidth * 0.8, // 80% of screen width
+    height: screenHeight * 0.25, // 25% of screen height
+    maxWidth: 400,
+    maxHeight: 200,
+  },
+  nextQuizLabel: {
+    fontSize: 28,
+    fontWeight: '600',
+    letterSpacing: 4,
+    textAlign: 'center',
+    marginBottom: 20,
+    textTransform: 'uppercase',
+  },
+  countdownContainer: {
+    marginBottom: 60,
     alignItems: 'center',
   },
-  timeNumber: {
-    fontWeight: 'bold',
-    fontSize: 28,
+  countdownTime: {
+    fontSize: 96,
+    fontWeight: '300', // Light weight to match the design
+    letterSpacing: 8,
+    textAlign: 'center',
+    fontFamily: 'monospace',
+    lineHeight: 110,
   },
-  timeLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginTop: 4,
-    letterSpacing: 1,
+  howToPlayContainer: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
   },
-  separator: {
-    fontWeight: 'bold',
+  howToPlayText: {
     fontSize: 24,
-    marginHorizontal: 4,
-  },
-  bottomPadding: {
-    height: 40,
+    fontWeight: '400',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
   loadingText: {
     fontSize: 16,
     fontStyle: 'italic',
-  },
-  errorContainer: {
-    alignItems: 'center',
-    gap: 12,
+    marginTop: 16,
   },
   errorText: {
     fontSize: 16,
     textAlign: 'center',
+    marginBottom: 16,
   },
   retryButton: {
     paddingHorizontal: 24,
-  },
-  availableContainer: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  availableText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  availableSubtext: {
-    fontSize: 16,
-  },
-  startQuizButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  completedContainer: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  completedTitle: {
-    marginBottom: 4,
-  },
-  completedText: {
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  statusCard: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-    padding: 16,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  checkingText: {
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  // Circular Timer Styles
-  quizTimerContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  circularTimer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  circularTimerBg: {
-    position: 'absolute',
-  },
-  circularTimerProgress: {
-    position: 'absolute',
-  },
-  circularTimerPartial: {
-    position: 'absolute',
-  },
-  circularTimerText: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  timerTime: {
-    fontWeight: 'bold',
-    fontSize: 24,
-    marginBottom: 2,
-  },
-  timerLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  // Completion Stats Styles
-  completionStatsCard: {
-    marginTop: 16,
-    marginHorizontal: 8,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  scoreContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  finalScore: {
-    fontWeight: 'bold',
-    fontSize: 36,
-  },
-  scoreLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    marginTop: 4,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    marginTop: 4,
-  },
-  completionMessage: {
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  nextQuizLabel: {
-    marginTop: 16,
-    marginBottom: 12,
-    fontSize: 14,
-  },
-  nextQuizTimerContainer: {
-    alignItems: 'center',
-    marginTop: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
 });

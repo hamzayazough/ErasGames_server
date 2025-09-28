@@ -1,9 +1,7 @@
 import React, {createContext, useContext, useMemo} from 'react';
-import {useColorScheme} from 'react-native';
-import {useAppStore} from '../state/appStore';
-import {themes, Theme, ThemeMode, EraName} from './index';
+import {themes, Theme} from './index';
 
-const ThemeContext = createContext<Theme>(themes.lover);
+const ThemeContext = createContext<Theme>(themes.retro);
 
 export const useTheme = () => useContext(ThemeContext);
 
@@ -12,24 +10,8 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({children}: ThemeProviderProps) {
-  const systemColorScheme = useColorScheme();
-  const themePref = useAppStore(state => state.theme);
-  const currentEra = useAppStore(state => state.currentEra);
-  
-  const themeMode: ThemeMode = useMemo(() => {
-    // If an era is selected, use that theme
-    if (currentEra && currentEra in themes) {
-      return currentEra as ThemeMode;
-    }
-    
-    // Otherwise use theme preference
-    if (themePref === 'system') {
-      return systemColorScheme === 'dark' ? 'midnights' : 'lover'; // Use era themes instead of light/dark
-    }
-    return themePref || 'lover'; // Default to lover theme
-  }, [themePref, systemColorScheme, currentEra]);
-  
-  const theme = useMemo(() => themes[themeMode], [themeMode]);
+  // Always use the retro theme for now
+  const theme = useMemo(() => themes.retro, []);
   
   return (
     <ThemeContext.Provider value={theme}>

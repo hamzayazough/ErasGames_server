@@ -29,8 +29,6 @@ export class AuthApiService {
       const response = await httpService.post<AuthenticatedUser>(
         '/auth/authenticate',
       );
-
-      console.log('✅ User authenticated with server:', response.id);
       return response;
     } catch (error) {
       console.error('❌ Authentication failed:', error);
@@ -52,7 +50,6 @@ export class AuthApiService {
    */
   logout() {
     httpService.setAuthToken(null);
-    console.log('🚪 Logged out - auth token cleared');
   }
 
   /**
