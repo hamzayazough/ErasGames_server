@@ -59,12 +59,10 @@ export const FillBlankComponent: React.FC<FillBlankComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Question Box - Teal background like AlbumYearGuessComponent */}
-      <View style={[styles.questionBox, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
-        <Text style={[styles.questionText, { color: theme.colors.textSecondary }]}>
-          {question.prompt.task}
-        </Text>
-      </View>
+      {/* Question Instruction - Simple text since it's not the main focus */}
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
+        {question.prompt.task}
+      </Text>
       
       {/* Text with blank - same teal background style */}
       <View style={[styles.textContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
@@ -118,19 +116,12 @@ const styles = StyleSheet.create({
   container: {
     gap: 20,
   },
-  questionBox: {
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 80,
-  },
-  questionText: {
-    fontSize: 18,
-    fontWeight: '700',
+  simpleQuestionText: {
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
+    opacity: 0.8,
   },
   textContainer: {
     padding: 24,
