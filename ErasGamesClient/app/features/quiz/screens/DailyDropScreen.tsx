@@ -23,7 +23,7 @@ import {
 } from '../../../core/services/quiz-attempt.service';
 import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 import {QuizAvailableState, QuizCompletedState} from '../components';
-import {GlobalHeader, AnimatedLogo, ThemeSwitcher} from '../../../shared/components';
+import {GlobalHeader, AnimatedLogo, ThemeSwitcher, CountdownTimer} from '../../../shared/components';
 import { FONTS } from '../../../core/config/fonts';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -311,19 +311,7 @@ export default function DailyDropScreen({navigation}: Props) {
     refresh();
   };
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    return {
-      hours: hours.toString().padStart(2, '0'),
-      minutes: minutes.toString().padStart(2, '0'),
-      seconds: secs.toString().padStart(2, '0')
-    };
-  };
 
-  const timeComponents = formatTime(localTimeLeft);
 
 
 
@@ -420,65 +408,13 @@ export default function DailyDropScreen({navigation}: Props) {
             />
           )
         ) : (
-          <>
-            {/* Clean Countdown Container */}
-            <View style={styles.countdownWrapper}>
-              <View style={[styles.dreamyContainer, {
-                shadowColor: theme.name === 'dark' ? '#9d4edd' : '#c77dff',
-              }]}>
-                {/* Gradient overlay for extra depth */}
-                <View style={styles.gradientOverlay} />
-                
-                {/* Next Quiz Label */}
-                <Text style={[styles.nextQuizLabel, { color: theme.colors.text }]}>
-                  NEXT QUIZ IN
-                </Text>
-
-                {/* Countdown Timer in fancy container */}
-                <View style={styles.countdownDisplay}>
-                  <View style={[styles.timeBox, {
-                    backgroundColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.15)' : 'rgba(199, 125, 255, 0.15)',
-                    borderColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.3)' : 'rgba(199, 125, 255, 0.3)',
-                  }]}>
-                    <Text style={[styles.countdownTime, { color: theme.colors.text }]}>
-                      {timeComponents.hours}
-                    </Text>
-                    <Text style={[styles.timeLabel, { color: theme.colors.textSecondary }]}>
-                      HRS
-                    </Text>
-                  </View>
-                  
-                  <Text style={[styles.timeSeparator, { color: theme.colors.text }]}>:</Text>
-                  
-                  <View style={[styles.timeBox, {
-                    backgroundColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.15)' : 'rgba(199, 125, 255, 0.15)',
-                    borderColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.3)' : 'rgba(199, 125, 255, 0.3)',
-                  }]}>
-                    <Text style={[styles.countdownTime, { color: theme.colors.text }]}>
-                      {timeComponents.minutes}
-                    </Text>
-                    <Text style={[styles.timeLabel, { color: theme.colors.textSecondary }]}>
-                      MIN
-                    </Text>
-                  </View>
-                  
-                  <Text style={[styles.timeSeparator, { color: theme.colors.text }]}>:</Text>
-                  
-                  <View style={[styles.timeBox, {
-                    backgroundColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.15)' : 'rgba(199, 125, 255, 0.15)',
-                    borderColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.3)' : 'rgba(199, 125, 255, 0.3)',
-                  }]}>
-                    <Text style={[styles.countdownTime, { color: theme.colors.text }]}>
-                      {timeComponents.seconds}
-                    </Text>
-                    <Text style={[styles.timeLabel, { color: theme.colors.textSecondary }]}>
-                      SEC
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </>
+          <CountdownTimer 
+            timeLeft={localTimeLeft}
+            title="NEXT QUIZ IN"
+            showBackground={true}
+            size="medium"
+            containerStyle={styles.countdownWrapper}
+          />
         )}
 
         {/* How to Play - Bottom text - only show when quiz is not available */}
@@ -531,91 +467,8 @@ const styles = StyleSheet.create({
   countdownWrapper: {
     marginBottom: 120,
     marginTop: 20,
-    alignItems: 'center',
-    position: 'relative',
     flex: 1,
     justifyContent: 'center',
-  },
-  dreamyContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 32,
-    paddingHorizontal: 32,
-    paddingVertical: 32,
-    marginHorizontal: 20,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
-    position: 'relative',
-    overflow: 'hidden',
-    minWidth: 300,
-    maxWidth: screenWidth - 40,
-  },
-  gradientOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    borderRadius: 32,
-  },
-  nextQuizLabel: {
-    fontSize: 19,
-    fontWeight: '900',
-    letterSpacing: 3,
-    textAlign: 'center',
-    marginBottom: 20,
-    textTransform: 'uppercase',
-    opacity: 1,
-    fontFamily: Platform.OS === 'ios' ? 'Arial Black' : 'sans-serif-black',
-  },
-  countdownDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  timeBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    minWidth: 75,
-    minHeight: 70,
-    shadowColor: 'rgba(157, 78, 221, 0.3)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  countdownTime: {
-    fontSize: 32,
-    fontWeight: '900',
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia-Bold' : 'serif',
-    lineHeight: 36,
-    textShadowColor: 'rgba(0, 0, 0, 0.15)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  timeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginTop: 2,
-    textTransform: 'uppercase',
-  },
-  timeSeparator: {
-    fontSize: 32,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
   },
   howToPlayContainer: {
     position: 'absolute',
