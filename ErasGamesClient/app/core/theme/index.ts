@@ -119,11 +119,94 @@ const retroGameTheme = {
   },
 } as const;
 
+// Main Theme - Pastel, dreamy, whimsical with fairytale magic
+const mainTheme = {
+  name: 'Main',
+  description:
+    'Pastel, dreamy, whimsical design with a touch of fairytale magic. Features soft gradients from lavender to soft pink to pastel blue, with sparkles and magical elements.',
+  colors: {
+    // Main gradient colors: lavender → soft pink → pastel blue
+    primary: '#FF69B4', // Vivid pink for main action buttons
+    primaryLight: '#FFB6C1', // Light pink for hover states
+    primaryDark: '#E91E63', // Darker pink for pressed states
+
+    // Background - will use image background (main-erasgames-background.png)
+    background: 'transparent', // Transparent to show image background
+    backgroundDark: '#E6E6FA', // Lavender for overlays/modals
+    surface: 'rgba(255, 255, 255, 0.8)', // Semi-transparent white for cards
+    card: 'rgba(255, 255, 255, 0.9)', // Slightly more opaque for content cards
+
+    // Gradient colors for various elements
+    gradientStart: '#E6E6FA', // Lavender
+    gradientMiddle: '#FFB6C1', // Soft pink
+    gradientEnd: '#B0E0E6', // Pastel blue
+
+    // Accent colors
+    accent1: '#FFFFE0', // Pale yellow for stars and sparkles
+    accent2: '#F0E68C', // Slightly richer yellow for highlights
+    accent3: '#FF69B4', // Vivid pink (same as primary)
+    accent4: '#DDA0DD', // Plum for depth and contrast
+
+    // Text colors with good contrast on pastel backgrounds
+    text: '#4B0082', // Indigo for primary text (good contrast on pastels)
+    textSecondary: '#8B008B', // Dark magenta for secondary text
+    textMuted: '#9370DB', // Medium slate blue for muted text
+    textOnPrimary: '#FFFFFF', // White text on vivid pink buttons
+    textOnBackground: '#4B0082', // Indigo text on light backgrounds
+    textOnSurface: '#2F4F4F', // Dark slate gray on white surfaces
+
+    // Borders and dividers
+    border: '#DDA0DD', // Plum for borders
+    borderLight: 'rgba(221, 160, 221, 0.3)', // Light plum for subtle borders
+
+    // Status colors (adapted to pastel palette)
+    success: '#98FB98', // Pale green
+    warning: '#F0E68C', // Khaki
+    error: '#F08080', // Light coral
+    info: '#87CEEB', // Sky blue
+
+    // Interactive states
+    disabled: 'rgba(221, 160, 221, 0.5)', // Muted plum
+    placeholder: '#C8A2C8', // Light orchid
+
+    // Button variants
+    buttonPrimary: '#FF69B4', // Vivid pink
+    buttonSecondary: '#E6E6FA', // Lavender
+    buttonOutline: 'transparent',
+
+    // Timer and countdown colors
+    timerBackground: 'rgba(255, 255, 255, 0.3)', // Semi-transparent white
+    timerProgress: '#FF69B4', // Vivid pink
+    timerText: '#4B0082', // Indigo
+
+    // Sparkle and magical effect colors
+    sparkle1: '#FFFFE0', // Pale yellow sparkles
+    sparkle2: '#F0E68C', // Golden sparkles
+    sparkle3: '#FFB6C1', // Pink sparkles
+    sparkle4: '#E6E6FA', // Lavender sparkles
+    sparkle5: '#B0E0E6', // Blue sparkles
+
+    // Gradient definitions for various UI elements
+    headerGradient: ['#E6E6FA', '#FFB6C1'], // Lavender to soft pink
+    cardGradient: ['rgba(255, 255, 255, 0.9)', 'rgba(240, 230, 240, 0.9)'], // White to light lavender
+    buttonGradient: ['#FF69B4', '#FF1493'], // Pink gradient for buttons
+    backgroundGradient: ['#E6E6FA', '#FFB6C1', '#B0E0E6'], // Full three-color gradient
+
+    // Additional magical/whimsical colors
+    stardust: '#F5DEB3', // Wheat for stardust effects
+    moonbeam: '#F8F8FF', // Ghost white for moonbeam effects
+    fairyDust: '#FFEFD5', // Papaya whip for fairy dust
+    dreamMist: 'rgba(230, 230, 250, 0.4)', // Semi-transparent lavender mist
+    magicGlow: 'rgba(255, 105, 180, 0.3)', // Semi-transparent pink glow
+  },
+} as const;
+
 export const themes = {
+  main: {...base, colors: mainTheme.colors},
   retro: {...base, colors: retroGameTheme.colors},
 } as const;
 
-export type Theme = typeof themes.retro;
+export type Theme = typeof themes.main;
 export type ThemeMode = keyof typeof themes;
 
 // Re-export from ThemeProvider
@@ -131,3 +214,31 @@ export {ThemeProvider, useTheme} from './ThemeProvider';
 
 // Re-export theme components
 export * from './components';
+
+// Re-export theme hooks
+export {useThemeSwitch} from './useThemeSwitch';
+
+// Theme utility functions
+export const createGradientStyle = (
+  colors: string[],
+  direction: 'horizontal' | 'vertical' = 'vertical',
+) => {
+  // This would typically use react-native-linear-gradient
+  // For now, we'll return the first color as fallback
+  return {
+    backgroundColor: colors[0],
+  };
+};
+
+export const getThemeAssets = (mode: ThemeMode) => {
+  return {
+    backgroundImage:
+      mode === 'main'
+        ? require('../../assets/images/main-erasgames-background.png')
+        : null,
+    titleImage:
+      mode === 'main'
+        ? require('../../assets/images/main-erasgames-title.png')
+        : require('../../assets/images/erasgames-title.png'),
+  };
+};

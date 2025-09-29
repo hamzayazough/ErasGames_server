@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useColorScheme, View, StyleSheet} from 'react-native';
-import {useTheme, RetroBackground} from '../core/theme';
+import {useTheme, ThemedBackground} from '../core/theme';
 import {useAuth} from '../core/context/AuthContext';
 import {FCMService} from '../core/services/FCMService';
 import {AnimatedLogo} from '../shared/components';
@@ -54,11 +54,11 @@ export function RootNavigator() {
   // Show loading screen while checking authentication state
   if (isLoading) {
     return (
-      <RetroBackground style={styles.loadingContainer}>
+      <ThemedBackground style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
           <AnimatedLogo size={200} />
         </View>
-      </RetroBackground>
+      </ThemedBackground>
     );
   }
   

@@ -2,7 +2,7 @@ import React from 'react';
 import {FlatList, RefreshControl, StyleSheet} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {View, Text, Card, Button} from '../../../ui';
-import {useTheme, RetroBackground} from '../../../core/theme';
+import {useTheme, ThemedBackground} from '../../../core/theme';
 import {useFeed} from '../hooks';
 import type {Quiz} from '../api';
 
@@ -90,7 +90,7 @@ export default function FeedScreen() {
   };
   
   return (
-    <RetroBackground style={styles.container}>
+    <ThemedBackground style={styles.container}>
       <View style={styles.header}>
         <Text variant="heading2" style={styles.headerTitle}>
           🎮 Daily Quizzes
@@ -118,7 +118,7 @@ export default function FeedScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-    </RetroBackground>
+    </ThemedBackground>
   );
 }
 

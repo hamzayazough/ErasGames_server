@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {StyleSheet, Alert} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {View, Text, Button, Input, Card} from '../../../ui';
-import {useTheme, RetroBackground} from '../../../core/theme';
+import {useTheme, ThemedBackground} from '../../../core/theme';
 import {useAuth} from '../../../core/context/AuthContext';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
@@ -56,7 +56,7 @@ export default function RegisterScreen({navigation}: Props) {
   };
   
   return (
-    <RetroBackground style={styles.container}>
+    <ThemedBackground style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
           <Text variant="heading1" align="center" style={styles.title}>
@@ -116,7 +116,7 @@ export default function RegisterScreen({navigation}: Props) {
           />
         </View>
       </View>
-    </RetroBackground>
+    </ThemedBackground>
   );
 }
 

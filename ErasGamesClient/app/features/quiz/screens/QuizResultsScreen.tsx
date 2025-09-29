@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
-import {useTheme, RetroBackground} from '../../../core/theme';
+import {useTheme, ThemedBackground} from '../../../core/theme';
 import {Text} from '../../../ui';
 import type {RootStackScreenProps} from '../../../navigation/types';
 import type {QuizSubmission} from '../../../core/services/quiz-attempt.service';
@@ -82,7 +82,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   const rank = getRank(finalScore);
 
   return (
-    <RetroBackground style={styles.container}>
+    <ThemedBackground style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -210,7 +210,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </RetroBackground>
+    </ThemedBackground>
   );
 }
 

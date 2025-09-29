@@ -12,7 +12,7 @@ import {View} from '../../../ui/View';
 import {Text} from '../../../ui/Text';
 import {Button} from '../../../ui/Button';
 import {Card} from '../../../ui/Card';
-import {useTheme, RetroBackground} from '../../../core/theme';
+import {useTheme, ThemedBackground} from '../../../core/theme';
 import {RootStackScreenProps} from '../../../navigation/types';
 import {useDailyQuizStatus, useDailyQuizErrorHandler} from '../hooks/useDailyQuiz';
 import { 
@@ -22,7 +22,7 @@ import {
 } from '../../../core/services/quiz-attempt.service';
 import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 import {QuizAvailableState, QuizCompletedState} from '../components';
-import {GlobalHeader, AnimatedLogo} from '../../../shared/components';
+import {GlobalHeader, AnimatedLogo, ThemeSwitcher} from '../../../shared/components';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -327,17 +327,17 @@ export default function DailyDropScreen({navigation}: Props) {
 
   if (isLoading) {
     return (
-      <RetroBackground style={styles.container}>
+      <ThemedBackground style={styles.container}>
         <View style={styles.centerContent}>
           <AnimatedLogo size={200} />
         </View>
-      </RetroBackground>
+      </ThemedBackground>
     );
   }
 
   if (error) {
     return (
-      <RetroBackground style={styles.container}>
+      <ThemedBackground style={styles.container}>
         <GlobalHeader 
           title="DAILY DROP"
           showBack={false}
@@ -366,12 +366,13 @@ export default function DailyDropScreen({navigation}: Props) {
             </View>
           </Card>
         </View>
-      </RetroBackground>
+      </ThemedBackground>
     );
   }
 
   return (
-    <RetroBackground style={styles.container}>
+    <ThemedBackground style={styles.container}>
+      <ThemeSwitcher />
       <GlobalHeader 
         title="DAILY DROP"
         showBack={false}
@@ -388,7 +389,7 @@ export default function DailyDropScreen({navigation}: Props) {
         {/* Logo Image - ERAS GAMES */}
         <View style={styles.logoContainer}>
           <Image 
-            source={require('../../../assets/images/erasgames-title.png')}
+            source={theme.assets.titleImage}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -441,7 +442,7 @@ export default function DailyDropScreen({navigation}: Props) {
           </TouchableOpacity>
         )}
       </View>
-    </RetroBackground>
+    </ThemedBackground>
   );
 }
 

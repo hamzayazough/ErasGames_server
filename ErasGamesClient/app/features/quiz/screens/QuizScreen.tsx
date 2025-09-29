@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert, ActivityIndicator, Dimensions, Animated} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
-import {useTheme, RetroBackground} from '../../../core/theme';
+import {useTheme, ThemedBackground} from '../../../core/theme';
 import GlobalHeader from '../../../shared/components/GlobalHeader';
 import type {RootStackScreenProps} from '../../../navigation/types';
 import { QuestionRenderer } from '../components/questions/QuestionRenderer';
@@ -304,7 +304,7 @@ export default function QuizScreen({navigation, route}: Props) {
   };
 
   return (
-    <RetroBackground style={styles.container}>
+    <ThemedBackground style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
       
       {/* Global Header */}
@@ -470,7 +470,7 @@ export default function QuizScreen({navigation, route}: Props) {
         </ScrollView>
         </>
       )}
-    </RetroBackground>
+    </ThemedBackground>
   );
 }
 

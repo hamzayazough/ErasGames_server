@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet } from 'react-native';
+import { useTheme } from '../../core/theme';
 
 interface AnimatedLogoProps {
   size?: number;
 }
 
 export function AnimatedLogo({ size = 200 }: AnimatedLogoProps) {
+  const theme = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export function AnimatedLogo({ size = 200 }: AnimatedLogoProps) {
       ]}
     >
       <Image
-        source={require('../../assets/images/erasgames-title.png')}
+        source={theme.assets.titleImage}
         style={[styles.logo, { width: size, height: size * 0.6 }]} // Maintain aspect ratio
         resizeMode="contain"
       />

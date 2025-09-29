@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { View, Text, Button } from '../../../ui';
-import { useTheme, RetroBackground } from '../../../core/theme';
+import { useTheme, ThemedBackground } from '../../../core/theme';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { allQuizMocks, QuizMock } from '../constants/quizMocks';
 import { GlobalHeader } from '../../../shared/components';
@@ -16,7 +16,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
   };
 
   return (
-    <RetroBackground style={styles.container}>
+    <ThemedBackground style={styles.container}>
       {/* Global Header */}
       <GlobalHeader
         showBack={true}
@@ -34,7 +34,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image 
-            source={require('../../../assets/images/erasgames-title.png')}
+            source={theme.assets.titleImage}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -75,7 +75,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
         {/* Bottom spacing */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </RetroBackground>
+    </ThemedBackground>
   );
 }
 
