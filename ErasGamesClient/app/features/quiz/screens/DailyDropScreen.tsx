@@ -7,6 +7,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
+  Platform,
 } from 'react-native';
 import {View} from '../../../ui/View';
 import {Text} from '../../../ui/Text';
@@ -23,6 +24,7 @@ import {
 import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 import {QuizAvailableState, QuizCompletedState} from '../components';
 import {GlobalHeader, AnimatedLogo, ThemeSwitcher} from '../../../shared/components';
+import { FONTS } from '../../../core/config/fonts';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -435,9 +437,16 @@ export default function DailyDropScreen({navigation}: Props) {
 
         {/* How to Play - Bottom text - only show when quiz is not available */}
         {!isAvailable && (
-          <TouchableOpacity onPress={handleHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
-            <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
-              How do you play?
+          <TouchableOpacity 
+            onPress={handleHowToPlay} 
+            activeOpacity={0.8} 
+            style={[styles.howToPlayButton, { 
+              backgroundColor: theme.colors.accent4,
+              borderColor: theme.colors.border 
+            }]}
+          >
+            <Text style={[styles.howToPlayButtonText, { color: theme.colors.text }]}>
+              HOW TO PLAY
             </Text>
           </TouchableOpacity>
         )}
@@ -506,6 +515,27 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'center',
     textDecorationLine: 'underline',
+  },
+  howToPlayButton: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 30,
+    borderWidth: 1,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  howToPlayButtonText: {
+    fontSize: 18,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Arial Black' : 'sans-serif-black',
+    textAlign: 'center',
+    letterSpacing: 1,
   },
   loadingText: {
     fontSize: 16,
