@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ReverseAudioQuestion } from '../../../../../shared/interfaces/questions/reverse-audio.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
 interface ReverseAudioComponentProps extends Omit<QuestionComponentProps, 'question'> {
@@ -32,55 +32,29 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
     setTimeout(() => setIsPlayingReversed(false), 3000); // Simulate 3-second playback
   };
 
-  const getChoiceStyle = (index: number) => {
-    const isSelected = selectedAnswer?.choiceIndex === index;
-    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
-    const isWrong = showCorrect && isSelected && index !== correctAnswer?.choiceIndex;
 
-    if (isCorrect) {
-      return [styles.choiceContainer, styles.correctChoice, { borderColor: theme.colors.success }];
-    } else if (isWrong) {
-      return [styles.choiceContainer, styles.wrongChoice, { borderColor: theme.colors.error }];
-    } else if (isSelected) {
-      return [styles.choiceContainer, styles.selectedChoice, { borderColor: theme.colors.primary }];
-    } else {
-      return [styles.choiceContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }];
-    }
-  };
-
-  const getChoiceTextStyle = (index: number) => {
-    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
-    const isWrong = showCorrect && selectedAnswer?.choiceIndex === index && index !== correctAnswer?.choiceIndex;
-
-    if (isCorrect) {
-      return [styles.choiceText, { color: theme.colors.textOnSuccess }];
-    } else if (isWrong) {
-      return [styles.choiceText, { color: theme.colors.textOnError }];
-    } else {
-      return [styles.choiceText, { color: theme.colors.text }];
-    }
-  };
 
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {question.prompt.task}
       </Text>
 
-      <View style={[styles.audioContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="body" style={[styles.instructionText, { color: theme.colors.textSecondary }]}>
+      <View style={[styles.audioContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
+        <Text style={[styles.instructionText, { color: theme.colors.textPrimary }]}>
           🔄 Listen to the reversed audio clip
         </Text>
         
-        <Pressable
+        <TouchableOpacity
           style={[styles.playButton, { backgroundColor: theme.colors.primary }]}
           onPress={handlePlayReversedAudio}
           disabled={disabled || isPlayingReversed}
+          activeOpacity={0.8}
         >
           <Text style={[styles.playButtonText, { color: theme.colors.textOnPrimary }]}>
             {isPlayingReversed ? '🔄 Playing...' : '▶️ Play Reversed Audio'}
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
         {isPlayingReversed && (
           <View style={styles.playingIndicator}>
@@ -97,18 +71,41 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
         </Text>
         
         {question.choices && question.choices.length > 0 ? (
-          question.choices.map((choice, index) => (
-            <Pressable
-              key={index}
-              style={getChoiceStyle(index)}
-              onPress={() => handleChoiceSelect(index)}
-              disabled={disabled}
-            >
-              <Text variant="body" style={getChoiceTextStyle(index)}>
-                {typeof choice === 'string' ? choice : `Choice ${index + 1}`}
-              </Text>
-            </Pressable>
-          ))
+          question.choices.map((choice, index) => {
+            const isSelected = selectedAnswer?.choiceIndex === index;
+            const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+            const isWrong = showCorrect && isSelected && index !== correctAnswer?.choiceIndex;
+            
+            let buttonStyle = [styles.choiceContainer];
+            let textColor = theme.colors.accent4;
+            
+            if (isCorrect) {
+              buttonStyle.push({ backgroundColor: theme.colors.success });
+              textColor = theme.colors.textOnPrimary;
+            } else if (isWrong) {
+              buttonStyle.push({ backgroundColor: theme.colors.error });
+              textColor = theme.colors.textOnPrimary;
+            } else if (isSelected) {
+              buttonStyle.push({ backgroundColor: theme.colors.primary });
+              textColor = theme.colors.textOnPrimary;
+            } else {
+              buttonStyle.push({ backgroundColor: theme.colors.accent1 });
+            }
+            
+            return (
+              <TouchableOpacity
+                key={index}
+                style={buttonStyle}
+                onPress={() => handleChoiceSelect(index)}
+                disabled={disabled}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.choiceText, { color: textColor }]}>
+                  {typeof choice === 'string' ? choice : `Choice ${index + 1}`}
+                </Text>
+              </TouchableOpacity>
+            );
+          })
         ) : (
           <Text variant="body" style={[styles.noChoicesText, { color: theme.colors.textSecondary }]}>
             No song choices available
@@ -129,27 +126,21 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 24,
+    gap: 20,
   },
-  questionText: {
-    fontWeight: '700',
+  simpleQuestionText: {
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 32,
-    fontSize: 18,
-    letterSpacing: 0.5,
+    lineHeight: 22,
+    opacity: 0.8,
   },
   audioContainer: {
     padding: 24,
-    borderRadius: 20,
+    borderRadius: 16,
+    borderWidth: 3,
     alignItems: 'center',
     gap: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(244, 229, 177, 0.4)',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
   },
   instructionText: {
     textAlign: 'center',
@@ -195,28 +186,19 @@ const styles = StyleSheet.create({
   choiceContainer: {
     paddingVertical: 18,
     paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 3,
+    borderRadius: 12,
     alignItems: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  selectedChoice: {
-    backgroundColor: 'rgba(232, 90, 63, 0.15)',
-  },
-  correctChoice: {
-    backgroundColor: 'rgba(34, 197, 94, 0.9)',
-  },
-  wrongChoice: {
-    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    minHeight: 56,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   choiceText: {
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    textAlign: 'center',
   },
   noChoicesText: {
     textAlign: 'center',

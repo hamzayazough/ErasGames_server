@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { SpeedTapQuestion } from '../../../../../shared/interfaces/questions/speed-tap.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { Text } from '../../../../../ui/Text';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../../../../../ui';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
 interface SpeedTapComponentProps extends Omit<QuestionComponentProps, 'question'> {
@@ -174,11 +174,12 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text variant="h3" style={[styles.questionText, { color: theme.colors.text }]}>
+      {/* Question Instruction - Simple text */}
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {question.prompt.task}
       </Text>
 
-      <Text variant="body" style={[styles.ruleText, { color: theme.colors.textSecondary }]}>
+      <Text style={[styles.ruleText, { color: theme.colors.textPrimary, opacity: 0.7 }]}>
         Rule: {question.prompt.targetRule}
       </Text>
 
@@ -194,28 +195,30 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
 
       <View style={styles.gridContainer}>
         {question.prompt.grid.map((item, index) => (
-          <Pressable
+          <TouchableOpacity
             key={index}
             style={getItemStyle(item)}
             onPress={() => handleItemTap(item)}
             disabled={!isActive || disabled}
+            activeOpacity={0.8}
           >
-            <Text variant="body" style={[styles.itemText, getItemTextStyle(item)]}>
+            <Text style={[styles.itemText, getItemTextStyle(item)]}>
               {item}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         ))}
       </View>
 
       {isActive && !disabled && (
-        <Pressable 
+        <TouchableOpacity 
           style={[styles.submitButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleManualSubmit}
+          activeOpacity={0.8}
         >
-          <Text variant="body" weight="semibold" style={[styles.submitButtonText, { color: theme.colors.textOnPrimary }]}>
+          <Text style={[styles.submitButtonText, { color: theme.colors.textOnPrimary }]}>
             Submit Answer
           </Text>
-        </Pressable>
+        </TouchableOpacity>
       )}
 
       {isFinished && showCorrect && (
@@ -252,20 +255,18 @@ const styles = StyleSheet.create({
   container: {
     gap: 20,
   },
-  questionText: {
-    fontWeight: '700',
+  simpleQuestionText: {
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 32,
-    fontSize: 18,
-    letterSpacing: 0.5,
+    lineHeight: 22,
+    opacity: 0.8,
   },
   ruleText: {
     textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '500',
     fontStyle: 'italic',
-    marginBottom: 12,
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.3,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -273,73 +274,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderRadius: 16,
-    marginBottom: 12,
     borderWidth: 2,
-    borderColor: 'rgba(244, 229, 177, 0.4)',
     shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowRadius: 2,
+    elevation: 1,
   },
   timer: {
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 1,
+    fontSize: 24,
+    fontWeight: '700',
   },
   tapCount: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: '600',
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
     justifyContent: 'center',
-    marginTop: 12,
   },
   gridItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    padding: 16,
     borderRadius: 16,
-    borderWidth: 3,
-    minWidth: 120,
+    borderWidth: 2,
+    minWidth: 100,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   tappedItem: {
     transform: [{ scale: 0.95 }],
-    shadowColor: 'rgba(0, 0, 0, 0.25)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
   },
   itemText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.3,
   },
   resultsContainer: {
     padding: 20,
     borderRadius: 16,
-    marginTop: 20,
     borderWidth: 2,
-    borderColor: 'rgba(244, 229, 177, 0.4)',
   },
   resultsTitle: {
-    fontWeight: '900',
+    fontWeight: '600',
     marginBottom: 12,
     textAlign: 'center',
     fontSize: 16,
-    letterSpacing: 0.5,
   },
   resultsRow: {
     flexDirection: 'row',
@@ -349,30 +335,21 @@ const styles = StyleSheet.create({
   hintContainer: {
     padding: 16,
     borderRadius: 12,
-    marginTop: 12,
   },
   hintText: {
     textAlign: 'center',
-    fontStyle: 'italic',
     fontSize: 14,
     fontWeight: '500',
   },
   submitButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    padding: 16,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: '600',
   },
 });

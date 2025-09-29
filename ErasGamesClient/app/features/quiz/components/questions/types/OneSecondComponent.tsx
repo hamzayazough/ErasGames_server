@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { OneSecondQuestion } from '../../../../../shared/interfaces/questions/one-second.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
 interface OneSecondComponentProps extends Omit<QuestionComponentProps, 'question'> {
@@ -30,51 +30,38 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
     setTimeout(() => setIsPlaying(false), 1000); // Simulate 1-second playback
   };
 
-  const getSongStyle = (index: number) => {
-    const isSelected = selectedAnswer?.choiceIndex === index;
-    const isCorrect = showCorrect && index === correctAnswer;
-    const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer;
 
-    if (isCorrect) {
-      return [styles.songOption, { backgroundColor: theme.colors.success, borderColor: theme.colors.success }];
-    } else if (isWrong) {
-      return [styles.songOption, { backgroundColor: theme.colors.error, borderColor: theme.colors.error }];
-    } else if (isSelected) {
-      return [styles.songOption, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }];
-    } else {
-      return [styles.songOption, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }];
-    }
-  };
 
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {question.prompt.task}
       </Text>
 
-      <View style={[styles.audioContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="body" style={[styles.instructionText, { color: theme.colors.textSecondary }]}>
+      <View style={[styles.audioContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
+        <Text style={[styles.instructionText, { color: theme.colors.textPrimary }]}>
           ⚡ Listen to this 1-second clip
         </Text>
         
         <View style={styles.timerContainer}>
-          <Text variant="heading2" style={[styles.timerText, { color: theme.colors.primary }]}>
+          <Text style={[styles.timerText, { color: theme.colors.primary }]}>
             1.0s
           </Text>
-          <Text variant="caption" style={[styles.timerLabel, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.timerLabel, { color: theme.colors.accent4 }]}>
             duration
           </Text>
         </View>
         
-        <Pressable
+        <TouchableOpacity
           style={[styles.playButton, { backgroundColor: theme.colors.primary }]}
           onPress={handlePlayAudio}
           disabled={disabled || isPlaying}
+          activeOpacity={0.8}
         >
           <Text style={[styles.playButtonText, { color: theme.colors.textOnPrimary }]}>
             {isPlaying ? '⏱️ Playing...' : '▶️ Play 1-Second Clip'}
           </Text>
-        </Pressable>
+        </TouchableOpacity>
 
         {isPlaying && (
           <View style={styles.playingIndicator}>
@@ -90,17 +77,41 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
           Which song is this?
         </Text>
         
-        {question.choices?.map((choice, index) => (
-          <Pressable
-            key={index}
-            style={getSongStyle(index)}
-            onPress={() => !disabled && handleSongSelect(index)}
-            disabled={disabled}
-          >
-            <Text variant="body" style={[styles.songText, { color: theme.colors.text }]}>
-              {choice}
-            </Text>
-          </Pressable>
+        {question.choices?.map((choice, index) => {
+          const isSelected = selectedAnswer?.choiceIndex === index;
+          const isCorrect = showCorrect && index === correctAnswer;
+          const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer;
+          
+          let buttonStyle = [styles.songOption];
+          let textColor = theme.colors.accent4;
+          
+          if (isCorrect) {
+            buttonStyle.push({ backgroundColor: theme.colors.success });
+            textColor = theme.colors.textOnPrimary;
+          } else if (isWrong) {
+            buttonStyle.push({ backgroundColor: theme.colors.error });
+            textColor = theme.colors.textOnPrimary;
+          } else if (isSelected) {
+            buttonStyle.push({ backgroundColor: theme.colors.primary });
+            textColor = theme.colors.textOnPrimary;
+          } else {
+            buttonStyle.push({ backgroundColor: theme.colors.accent1 });
+          }
+          
+          return (
+            <TouchableOpacity
+              key={index}
+              style={buttonStyle}
+              onPress={() => !disabled && handleSongSelect(index)}
+              disabled={disabled}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.songText, { color: textColor }]}>
+                {choice}
+              </Text>
+            </TouchableOpacity>
+          );
+        })
         )) || (
           <Text variant="body" style={[styles.noSongsText, { color: theme.colors.textSecondary }]}>
             No song options available
@@ -121,27 +132,21 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 24,
+    gap: 20,
   },
-  questionText: {
-    fontWeight: '700',
+  simpleQuestionText: {
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 32,
-    fontSize: 18,
-    letterSpacing: 0.5,
+    lineHeight: 22,
+    opacity: 0.8,
   },
   audioContainer: {
     padding: 24,
-    borderRadius: 20,
+    borderRadius: 16,
+    borderWidth: 3,
     alignItems: 'center',
     gap: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(244, 229, 177, 0.4)',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
   },
   instructionText: {
     textAlign: 'center',
@@ -202,19 +207,19 @@ const styles = StyleSheet.create({
   songOption: {
     paddingVertical: 18,
     paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 3,
+    borderRadius: 12,
     alignItems: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    minHeight: 56,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   songText: {
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    textAlign: 'center',
   },
   noSongsText: {
     textAlign: 'center',

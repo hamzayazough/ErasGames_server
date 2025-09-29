@@ -1,7 +1,7 @@
 import React from 'react';
 import { LifeTriviaQuestion } from '../../../../../shared/interfaces/questions/life-trivia.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from '../../../../../ui/Text';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
@@ -36,7 +36,6 @@ export const LifeTriviaComponent: React.FC<LifeTriviaComponentProps> = ({
         styles.choiceItem,
         {
           backgroundColor: theme.colors.success,
-          borderColor: theme.colors.success,
         }
       ];
     } else if (isWrong) {
@@ -44,7 +43,6 @@ export const LifeTriviaComponent: React.FC<LifeTriviaComponentProps> = ({
         styles.choiceItem,
         {
           backgroundColor: theme.colors.error,
-          borderColor: theme.colors.error,
         }
       ];
     } else if (isSelected) {
@@ -52,15 +50,13 @@ export const LifeTriviaComponent: React.FC<LifeTriviaComponentProps> = ({
         styles.choiceItem,
         {
           backgroundColor: theme.colors.primary,
-          borderColor: theme.colors.primary,
         }
       ];
     } else {
       return [
         styles.choiceItem,
         {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.accent1,
         }
       ];
     }
@@ -72,28 +68,24 @@ export const LifeTriviaComponent: React.FC<LifeTriviaComponentProps> = ({
     const isWrong = showCorrect && isSelected && index !== correctAnswer?.choiceIndex;
 
     if (isCorrect || isWrong || isSelected) {
-      return { color: 'white' };
+      return { color: theme.colors.textOnPrimary };
     }
-    return { color: theme.colors.text };
+    return { color: theme.colors.accent4 };
   };
 
   return (
     <View style={styles.container}>
-      {/* Header with icon and category */}
-      <View style={[styles.headerSection, { backgroundColor: theme.colors.surface }]}>
-        <View style={styles.headerText}>
-          <Text variant="caption" style={[styles.categoryLabel, { color: theme.colors.primary }]}>
-            LIFE TRIVIA
-          </Text>
-          <Text variant="body" style={[styles.taskText, { color: theme.colors.textSecondary }]}>
-            {question.prompt.task}
-          </Text>
-        </View>
-      </View>
+      {/* Simple question text */}
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
+        {question.prompt.task}
+      </Text>
 
-      {/* Main trivia question */}
-      <View style={styles.questionSection}>
-        <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      {/* Main trivia question in teal container */}
+      <View style={[styles.questionContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
+        <Text style={[styles.categoryLabel, { color: theme.colors.accent4 }]}>
+          🧠 LIFE TRIVIA
+        </Text>
+        <Text style={[styles.questionText, { color: theme.colors.textPrimary }]}>
           {question.prompt.question}
         </Text>
       </View>
@@ -101,26 +93,24 @@ export const LifeTriviaComponent: React.FC<LifeTriviaComponentProps> = ({
       {/* Answer choices */}
       <View style={styles.choicesSection}>
         {question.choices?.map((choice, index) => (
-          <Pressable
+          <TouchableOpacity
             key={index}
             style={getChoiceStyle(index)}
             onPress={() => handleChoiceSelect(index)}
             disabled={disabled}
+            activeOpacity={0.8}
           >
             <View style={styles.choiceContent}>
-              <View style={[styles.choiceNumber, { backgroundColor: theme.colors.primary + '20' }]}>
-                <Text variant="body" style={[styles.choiceNumberText, { color: theme.colors.primary }]}>
+              <View style={[styles.choiceNumber, { backgroundColor: theme.colors.primary }]}>
+                <Text style={[styles.choiceNumberText, { color: theme.colors.textOnPrimary }]}>
                   {String.fromCharCode(65 + index)}
                 </Text>
               </View>
-              <Text
-                variant="body"
-                style={[styles.choiceText, getChoiceTextStyle(index)]}
-              >
+              <Text style={[styles.choiceText, getChoiceTextStyle(index)]}>
                 {typeof choice === 'string' ? choice : choice.text}
               </Text>
             </View>
-          </Pressable>
+          </TouchableOpacity>
         )) || (
           <View style={styles.noChoicesContainer}>
             <Text variant="body" style={{ color: theme.colors.textSecondary }}>
@@ -146,60 +136,45 @@ const styles = StyleSheet.create({
   container: {
     gap: 20,
   },
-  headerSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
+  simpleQuestionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 22,
+    opacity: 0.8,
+  },
+  questionContainer: {
+    padding: 24,
     borderRadius: 16,
-    gap: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(244, 229, 177, 0.4)',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  categoryIcon: {
-    fontSize: 28,
-  },
-  headerText: {
-    flex: 1,
-    gap: 6,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
+    gap: 12,
   },
   categoryLabel: {
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-  },
-  taskText: {
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  questionSection: {
-    paddingHorizontal: 8,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   questionText: {
     textAlign: 'center',
-    lineHeight: 32,
+    lineHeight: 26,
     fontWeight: '700',
-    fontSize: 18,
-    letterSpacing: 0.5,
+    fontSize: 17,
+    letterSpacing: 0.3,
   },
   choicesSection: {
     gap: 16,
   },
   choiceItem: {
-    borderRadius: 16,
-    borderWidth: 3,
+    borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   choiceContent: {
     flexDirection: 'row',
@@ -208,28 +183,21 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   choiceNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.2)',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
   },
   choiceNumberText: {
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontSize: 14,
+    fontWeight: '700',
   },
   choiceText: {
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
     lineHeight: 22,
-    letterSpacing: 0.3,
   },
   noChoicesContainer: {
     alignItems: 'center',

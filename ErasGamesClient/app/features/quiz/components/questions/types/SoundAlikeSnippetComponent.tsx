@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { SoundAlikeSnippetQuestion } from '../../../../../shared/interfaces/questions/sound-alike-snippet.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Text, Pressable } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../../../../../ui';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
-import { StyleSheet } from 'react-native';
 
 interface SoundAlikeSnippetComponentProps extends Omit<QuestionComponentProps, 'question'> {
   question: SoundAlikeSnippetQuestion;
@@ -22,14 +22,6 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
   const [isPlaying, setIsPlaying] = useState(false);
   const [playCount, setPlayCount] = useState(0);
   const [audioDuration, setAudioDuration] = useState(8); // Default 8 seconds
-
-  // Debug logging to understand the structure
-  console.log('SoundAlikeSnippetComponent Debug:', {
-    choices: question.choices,
-    choicesType: typeof question.choices,
-    firstChoice: question.choices?.[0],
-    firstChoiceType: typeof question.choices?.[0]
-  });
 
   const handleChoiceSelect = (index: number) => {
     if (!disabled) {
@@ -52,62 +44,72 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
 
   const getChoiceStyle = (index: number) => {
     const isSelected = selectedAnswer?.choiceIndex === index;
-    const isCorrect = showCorrect && correctAnswer && index === correctAnswer.choiceIndex;
-    const isWrong = showCorrect && isSelected && correctAnswer && index !== correctAnswer.choiceIndex;
-
-    if (isCorrect) {
-      return [styles.choiceButton, styles.correctChoice, { borderColor: theme.colors.success }];
-    } else if (isWrong) {
-      return [styles.choiceButton, styles.wrongChoice, { borderColor: theme.colors.error }];
-    } else if (isSelected) {
-      return [styles.choiceButton, styles.selectedChoice, { borderColor: theme.colors.primary }];
-    } else {
-      return [styles.choiceButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }];
+    
+    if (showCorrect && correctAnswer) {
+      const isCorrect = index === correctAnswer.choiceIndex;
+      const isWrong = isSelected && index !== correctAnswer.choiceIndex;
+      
+      if (isCorrect) {
+        return [styles.choiceButton, { backgroundColor: theme.colors.success, borderColor: theme.colors.success }];
+      } else if (isWrong) {
+        return [styles.choiceButton, { backgroundColor: theme.colors.error, borderColor: theme.colors.error }];
+      }
     }
+    
+    return [
+      styles.choiceButton,
+      {
+        backgroundColor: isSelected ? theme.colors.accent1 : theme.colors.background,
+        borderColor: theme.colors.accent1,
+      }
+    ];
   };
 
-  const getChoiceTextStyle = (index: number) => {
-    const isCorrect = showCorrect && correctAnswer && index === correctAnswer.choiceIndex;
-    const isWrong = showCorrect && selectedAnswer?.choiceIndex === index && correctAnswer && index !== correctAnswer.choiceIndex;
-
-    if (isCorrect) {
-      return [styles.choiceText, { color: theme.colors.textOnSuccess }];
-    } else if (isWrong) {
-      return [styles.choiceText, { color: theme.colors.textOnError }];
-    } else {
-      return [styles.choiceText, { color: theme.colors.text }];
+  const getChoiceTextColor = (index: number) => {
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    
+    if (showCorrect && correctAnswer) {
+      const isCorrect = index === correctAnswer.choiceIndex;
+      const isWrong = isSelected && index !== correctAnswer.choiceIndex;
+      
+      if (isCorrect || isWrong) {
+        return theme.colors.textOnPrimary;
+      }
     }
+    
+    return isSelected ? theme.colors.accent4 : theme.colors.textPrimary;
   };
 
   return (
     <View style={styles.container}>
-      {/* Prompt */}
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      {/* Question Instruction - Simple text */}
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {question.prompt.task}
       </Text>
 
       {/* Audio Player */}
-      <View style={[styles.audioPlayerContainer, { backgroundColor: theme.colors.surface }]}>
-        <Pressable
+      <View style={[styles.audioPlayerContainer, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.accent1 }]}>
+        <TouchableOpacity
           style={[
             styles.playButton,
-            { backgroundColor: isPlaying ? theme.colors.accent : theme.colors.primary },
+            { backgroundColor: isPlaying ? theme.colors.primary : theme.colors.accent4 },
             (disabled || playCount >= 2) && styles.playButtonDisabled
           ]}
           onPress={handlePlayAudio}
           disabled={disabled || isPlaying || playCount >= 2}
+          activeOpacity={0.8}
         >
           <Text style={[styles.playButtonIcon, { color: theme.colors.textOnPrimary }]}>
             {isPlaying ? '⏸️' : '▶️'}
           </Text>
-        </Pressable>
+        </TouchableOpacity>
         
         <View style={styles.audioInfo}>
-          <Text variant="body" style={[styles.audioLabel, { color: theme.colors.text }]}>
+          <Text style={[styles.audioLabel, { color: theme.colors.accent4 }]}>
             {isPlaying ? 'Playing Snippet...' : `Play Snippet (0:0${audioDuration})`}
           </Text>
           {playCount > 0 && (
-            <Text variant="caption" style={[styles.playCountText, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.playCountText, { color: theme.colors.accent4, opacity: 0.7 }]}>
               Played {playCount}/2 times
             </Text>
           )}
@@ -117,16 +119,17 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
       {/* Multiple Choice Options */}
       <View style={styles.choicesContainer}>
         {question.choices.map((choice, index) => (
-          <Pressable
+          <TouchableOpacity
             key={index}
             style={getChoiceStyle(index)}
             onPress={() => handleChoiceSelect(index)}
             disabled={disabled}
+            activeOpacity={0.8}
           >
-            <Text variant="body" style={getChoiceTextStyle(index)}>
+            <Text style={[styles.choiceText, { color: getChoiceTextColor(index) }]}>
               {typeof choice === 'string' ? choice : choice?.text || choice?.id || `Option ${index + 1}`}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         ))}
       </View>
     </View>
@@ -135,90 +138,70 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
 
 const styles = StyleSheet.create({
   container: {
-    gap: 24,
+    gap: 20,
   },
-  questionText: {
-    fontWeight: '700',
+  simpleQuestionText: {
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 32,
-    fontSize: 18,
-    letterSpacing: 0.5,
-    marginBottom: 12,
+    lineHeight: 22,
+    opacity: 0.8,
   },
   audioPlayerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 24,
-    borderRadius: 20,
-    gap: 20,
+    padding: 20,
+    borderRadius: 16,
+    gap: 16,
     borderWidth: 2,
-    borderColor: 'rgba(244, 229, 177, 0.4)',
     shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 2,
+    elevation: 1,
   },
   playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   playButtonDisabled: {
     opacity: 0.5,
   },
   playButtonIcon: {
-    fontSize: 24,
+    fontSize: 20,
   },
   audioInfo: {
     flex: 1,
   },
   audioLabel: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.5,
   },
   playCountText: {
-    fontSize: 13,
-    marginTop: 6,
+    fontSize: 12,
+    marginTop: 4,
     fontWeight: '500',
   },
   choicesContainer: {
-    gap: 16,
+    gap: 12,
   },
   choiceButton: {
-    paddingVertical: 18,
-    paddingHorizontal: 24,
+    padding: 16,
     borderRadius: 16,
-    borderWidth: 3,
+    borderWidth: 2,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  selectedChoice: {
-    backgroundColor: 'rgba(232, 90, 63, 0.15)',
-  },
-  correctChoice: {
-    backgroundColor: 'rgba(34, 197, 94, 0.9)',
-  },
-  wrongChoice: {
-    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   choiceText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
-    letterSpacing: 0.3,
   },
 });
