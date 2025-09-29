@@ -130,10 +130,10 @@ export default function GlobalHeader({
           {showBack && navigation.canGoBack() && (
             <TouchableOpacity
               onPress={handleBackPress}
-              style={[styles.retroButton, {backgroundColor: theme.colors.primary}]}
+              style={[styles.headerButton, {backgroundColor: theme.colors.accent4}]}
               activeOpacity={0.8}
             >
-              <Text style={[styles.backIcon, {color: theme.colors.textSecondary}]}>
+              <Text style={[styles.backIcon, {color: theme.colors.text}]}>
                 ←
               </Text>
             </TouchableOpacity>
@@ -146,20 +146,20 @@ export default function GlobalHeader({
           {showLeaderboard && (
             <TouchableOpacity
               onPress={handleLeaderboardPress}
-              style={[styles.retroButton, {backgroundColor: theme.colors.primary}]}
+              style={[styles.headerButton, {backgroundColor: theme.colors.accent4}]}
               activeOpacity={0.8}
             >
-              <LeaderboardIcon color={theme.colors.textSecondary} size={24} />
+              <LeaderboardIcon color={theme.colors.text} size={20} />
             </TouchableOpacity>
           )}
           
           {showProfile && (
             <TouchableOpacity
               onPress={handleProfilePress}
-              style={[styles.retroButton, styles.profileButton, {backgroundColor: theme.colors.primary}]}
+              style={[styles.headerButton, styles.profileButton, {backgroundColor: theme.colors.accent4}]}
               activeOpacity={0.8}
             >
-              <ProfileIcon color={theme.colors.textSecondary} size={24} />
+              <ProfileIcon color={theme.colors.text} size={20} />
             </TouchableOpacity>
           )}
         </View>
@@ -224,15 +224,25 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
   profileButton: {
     marginLeft: 12,
   },
   backIcon: {
-    fontSize: 28,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 24,
   },
   iconText: {
     fontSize: 22,
