@@ -77,7 +77,7 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
           Which song is this?
         </Text>
         
-        {question.choices?.map((choice, index) => {
+        {question.choices?.length ? question.choices.map((choice, index) => {
           const isSelected = selectedAnswer?.choiceIndex === index;
           const isCorrect = showCorrect && index === correctAnswer;
           const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer;
@@ -111,8 +111,7 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
               </Text>
             </TouchableOpacity>
           );
-        })
-        )) || (
+        }) : (
           <Text variant="body" style={[styles.noSongsText, { color: theme.colors.textSecondary }]}>
             No song options available
           </Text>

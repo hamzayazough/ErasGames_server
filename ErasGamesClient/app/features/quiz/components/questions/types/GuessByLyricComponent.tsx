@@ -65,14 +65,14 @@ export const GuessByLyricComponent: React.FC<GuessByLyricComponentProps> = ({
 
           return (
             <TouchableOpacity
-              key={choice.id || index}
+              key={index}
               style={buttonStyle}
               onPress={() => handleChoiceSelect(index)}
               disabled={disabled}
               activeOpacity={0.8}
             >
               <Text style={textStyle}>
-                {choice.text}
+                {choice}
               </Text>
             </TouchableOpacity>
           );

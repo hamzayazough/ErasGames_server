@@ -190,6 +190,7 @@ export default function QuizScreen({navigation, route}: Props) {
       }
       const rawTemplate = await templateResponse.json();
       console.log('✅ Quiz template loaded:', rawTemplate.questions.length, 'questions');
+      console.log('🔍 RAW first question from server:', JSON.stringify(rawTemplate.questions[0], null, 2));
       
       // Transform CDN template format to match expected question structure
       const transformedTemplate = {
@@ -211,6 +212,8 @@ export default function QuizScreen({navigation, route}: Props) {
       };
       
       console.log('✅ Template transformed for client:', transformedTemplate.questions[0]);
+      console.log('🔍 First question choices:', transformedTemplate.questions[0]?.choices);
+      console.log('🔍 First question full structure:', JSON.stringify(transformedTemplate.questions[0], null, 2));
       
       // Store quiz template and attempt data
       setQuizTemplate(transformedTemplate);
@@ -451,6 +454,17 @@ export default function QuizScreen({navigation, route}: Props) {
             
             {/* Question Content */}
             <View style={styles.questionContentSection}>
+              {(() => {
+                console.log('🎯 RENDERING QUESTION:', {
+                  type: currentQuestion?.questionType,
+                  id: currentQuestion?.id,
+                  hasChoices: !!currentQuestion?.choices,
+                  choicesLength: currentQuestion?.choices?.length,
+                  choices: currentQuestion?.choices,
+                  fullQuestion: currentQuestion
+                });
+                return null;
+              })()}
               <QuestionRenderer
                 question={currentQuestion}
                 selectedAnswer={selectedAnswer}
