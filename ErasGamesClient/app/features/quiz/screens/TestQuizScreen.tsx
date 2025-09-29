@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert, ActivityIndicator} from 'react-native';
 import {View, Text, Button} from '../../../ui';
 import {useTheme, RetroBackground} from '../../../core/theme';
@@ -45,15 +45,15 @@ export default function TestQuizScreen({navigation, route}: Props) {
 
   // Timer countdown - simple countdown for test mode
   useEffect(() => {
-    if (!quizStarted) return;
+    if (!quizStarted || isSubmittingQuiz) return;
     
     const interval = setInterval(() => {
       setTimeRemaining(prev => {
         const newTime = Math.max(0, prev - 1);
-        if (newTime === 0 && isMountedRef.current) {
+        if (newTime === 0 && isMountedRef.current && !isSubmittingQuiz) {
           // Time's up! Auto-submit quiz
           setTimeout(() => {
-            if (isMountedRef.current) {
+            if (isMountedRef.current && !isSubmittingQuiz) {
               handleQuizSubmit();
             }
           }, 100);
@@ -63,7 +63,7 @@ export default function TestQuizScreen({navigation, route}: Props) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quizStarted]);
+  }, [quizStarted, isSubmittingQuiz, handleQuizSubmit]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -76,13 +76,12 @@ export default function TestQuizScreen({navigation, route}: Props) {
   };
 
   const handleStartQuiz = () => {
-    console.log('🎯 Starting test quiz:', selectedQuiz.title);
     setQuizStarted(true);
     setQuestionStartTime(Date.now());
   };
 
-  const handleQuizSubmit = async () => {
-    console.log('📝 Submitting test quiz...');
+  const handleQuizSubmit = useCallback(async () => {
+    if (isSubmittingQuiz) return; // Prevent multiple submissions
     
     try {
       setIsSubmittingQuiz(true);
@@ -107,10 +106,6 @@ export default function TestQuizScreen({navigation, route}: Props) {
       });
       
       const finalScore = Math.round((correctCount / totalQuestions) * 100);
-      
-      console.log('✅ Test quiz completed!');
-      console.log('🎯 Final Score:', finalScore);
-      console.log('✅ Correct:', correctCount, 'out of', totalQuestions);
       
       if (isMountedRef.current) {
         // Create mock QuizSubmission object for results screen
@@ -142,20 +137,19 @@ export default function TestQuizScreen({navigation, route}: Props) {
         'Submission Error',
         'Failed to submit your quiz. Please try again.',
         [
-          {text: 'Retry', onPress: handleQuizSubmit},
+          {text: 'Retry', onPress: () => handleQuizSubmit()},
           {text: 'Cancel', onPress: () => navigation.goBack()}
         ]
       );
     } finally {
       setIsSubmittingQuiz(false);
     }
-  };
+  }, [isSubmittingQuiz, answeredQuestions, selectedAnswer, currentQuestion, questions, selectedQuiz.estimatedTime, timeRemaining, navigation]);
 
   const handleSubmitAnswer = async () => {
     if (!selectedAnswer) return;
 
     // Save the current answer locally
-    console.log('💾 Saving answer locally for question:', currentQuestion.id);
     setAnsweredQuestions(prev => ({
       ...prev,
       [currentQuestion.id]: selectedAnswer

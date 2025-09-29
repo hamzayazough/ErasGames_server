@@ -60,7 +60,6 @@ export default function QuizScreen({navigation, route}: Props) {
   // Initialize quiz when data is passed via navigation
   useEffect(() => {
     if (route.params?.quizAttempt && route.params?.quizTemplate) {
-      console.log('🎯 Quiz data received via navigation - setting up quiz state...');
       const attempt = route.params.quizAttempt;
       const template = route.params.quizTemplate;
       
@@ -69,8 +68,6 @@ export default function QuizScreen({navigation, route}: Props) {
       setTimeRemaining(QuizAttemptService.getTimeRemaining(attempt.deadline));
       setQuizStarted(true);
       setQuestionStartTime(Date.now());
-      
-      console.log('✅ Quiz initialized from navigation params');
     }
   }, [route.params?.quizAttempt, route.params?.quizTemplate]);
 
@@ -92,7 +89,6 @@ export default function QuizScreen({navigation, route}: Props) {
         
         if (remaining === 0 && isMountedRef.current && !quizSubmitted) {
           // Time's up! Auto-submit quiz immediately
-          console.log('⏰ TIME EXPIRED - Auto-submitting quiz...');
           setTimeout(() => {
             if (isMountedRef.current && !quizSubmitted) {
               handleQuizSubmit();
@@ -132,7 +128,6 @@ export default function QuizScreen({navigation, route}: Props) {
         selectedAnswer,
         timeSpent
       );
-      console.log('✅ Answer submitted for question:', currentQuestion.id);
     } catch (error) {
       console.error('❌ Failed to submit answer for question:', currentQuestion.id, error);
       // Continue anyway - we'll retry at the end
@@ -140,18 +135,13 @@ export default function QuizScreen({navigation, route}: Props) {
   };
 
   const handleStartQuiz = async () => {
-    console.log('🎯 USER CLICKED START QUIZ - Beginning quiz attempt...');
-    
     try {
       setIsStartingQuiz(true);
       
       // First check if user already has an attempt for today
-      console.log('🔍 Checking for existing attempt...');
       const attemptStatus = await QuizAttemptService.getTodayAttemptStatus();
       
       if (attemptStatus.hasAttempt) {
-        console.log('⚠️ User already has an attempt for today:', attemptStatus.attempt);
-        
         if (attemptStatus.attempt?.status === 'finished') {
           // Show completed quiz message
           Alert.alert(
@@ -170,27 +160,15 @@ export default function QuizScreen({navigation, route}: Props) {
         return;
       }
       
-      console.log('🔄 Calling QuizAttemptService.startAttempt()...');
-      
       // Start quiz attempt on server
       const attempt = await QuizAttemptService.startAttempt();
       
-      console.log('✅ Quiz attempt started successfully!');
-      console.log('📋 Attempt ID:', attempt.attemptId);
-      console.log('⏰ Server Start:', attempt.serverStartAt);
-      console.log('⏰ Deadline:', attempt.deadline);
-      console.log('🌐 Template URL:', attempt.templateUrl);
-      console.log('🎲 Seed:', attempt.seed);
-      
       // Fetch the quiz template from CDN
-      console.log('📥 Fetching quiz template from CDN...');
       const templateResponse = await fetch(attempt.templateUrl);
       if (!templateResponse.ok) {
         throw new Error(`Failed to fetch quiz template: ${templateResponse.status}`);
       }
       const rawTemplate = await templateResponse.json();
-      console.log('✅ Quiz template loaded:', rawTemplate.questions.length, 'questions');
-      console.log('🔍 RAW first question from server:', JSON.stringify(rawTemplate.questions[0], null, 2));
       
       // Transform CDN template format to match expected question structure
       const transformedTemplate = {
@@ -210,10 +188,6 @@ export default function QuizScreen({navigation, route}: Props) {
           ...q.payload
         }))
       };
-      
-      console.log('✅ Template transformed for client:', transformedTemplate.questions[0]);
-      console.log('🔍 First question choices:', transformedTemplate.questions[0]?.choices);
-      console.log('🔍 First question full structure:', JSON.stringify(transformedTemplate.questions[0], null, 2));
       
       // Store quiz template and attempt data
       setQuizTemplate(transformedTemplate);
@@ -454,17 +428,6 @@ export default function QuizScreen({navigation, route}: Props) {
             
             {/* Question Content */}
             <View style={styles.questionContentSection}>
-              {(() => {
-                console.log('🎯 RENDERING QUESTION:', {
-                  type: currentQuestion?.questionType,
-                  id: currentQuestion?.id,
-                  hasChoices: !!currentQuestion?.choices,
-                  choicesLength: currentQuestion?.choices?.length,
-                  choices: currentQuestion?.choices,
-                  fullQuestion: currentQuestion
-                });
-                return null;
-              })()}
               <QuestionRenderer
                 question={currentQuestion}
                 selectedAnswer={selectedAnswer}

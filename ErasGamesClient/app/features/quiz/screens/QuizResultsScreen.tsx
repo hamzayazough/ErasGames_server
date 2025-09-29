@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   StatusBar,
   ScrollView,
   Dimensions,
+  TouchableOpacity,
+  Animated,
 } from 'react-native';
 import {useTheme, RetroBackground} from '../../../core/theme';
-import {Text, Button, Card} from '../../../ui';
+import {Text} from '../../../ui';
 import type {RootStackScreenProps} from '../../../navigation/types';
 import type {QuizSubmission} from '../../../core/services/quiz-attempt.service';
 
@@ -20,6 +22,8 @@ interface ScoreBreakdown {
   earlyBonus: number;
 }
 
+
+
 export default function QuizResultsScreen({navigation, route}: Props) {
   const theme = useTheme();
   const {width} = Dimensions.get('window');
@@ -30,6 +34,11 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   const breakdown = scoreBreakdown as ScoreBreakdown;
   const totalQuestions = questions?.length || 0;
   const correctAnswers = questions?.filter(q => q.isCorrect).length || 0;
+  const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
+  
+  // Animation values
+  const [scoreAnimation] = useState(new Animated.Value(0));
+  const [showDetails, setShowDetails] = useState(false);
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -37,116 +46,166 @@ export default function QuizResultsScreen({navigation, route}: Props) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 3000) return '#4CAF50'; // Green for excellent
-    if (score >= 2000) return '#FF9800'; // Orange for good
-    return '#F44336'; // Red for needs improvement
+  const getRank = (score: number) => {
+    if (score >= 4000) return { title: 'LEGENDARY', emoji: '👑', color: '#FFD700' };
+    if (score >= 3000) return { title: 'EXPERT', emoji: '🏆', color: '#4CAF50' };
+    if (score >= 2000) return { title: 'SKILLED', emoji: '⭐', color: theme.colors.primary };
+    if (score >= 1000) return { title: 'LEARNING', emoji: '📈', color: '#FF9800' };
+    return { title: 'ROOKIE', emoji: '🌱', color: '#9E9E9E' };
   };
 
-  const getPerformanceMessage = (score: number) => {
-    if (score >= 3000) return 'Outstanding Performance! 🏆';
-    if (score >= 2000) return 'Great Job! 👏';
-    if (score >= 1000) return 'Good Effort! 👍';
-    return 'Keep Practicing! 💪';
-  };
+
+
+
+
+    
+    if (finalScore >= 3000) {
+      achievements.push({
+        id: 'highscore',
+        title: 'High Achiever',
+        icon: '�',
+        description: 'Scored over 3000 points',
+        unlocked: true
+      });
+    }
+  useEffect(() => {
+    // Animate score reveal
+    Animated.timing(scoreAnimation, {
+      toValue: 1,
+      duration: 1500,
+      useNativeDriver: false,
+    }).start(() => {
+      setTimeout(() => setShowDetails(true), 300);
+    });
+  }, []);
+
+  const rank = getRank(finalScore);
 
   return (
     <RetroBackground style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, {color: theme.colors.text}]}>
-            Quiz Complete! 🎉
+          <Text style={[styles.gameCompleteText, { color: theme.colors.accent1 }]}>
+            QUIZ COMPLETE
           </Text>
-          <Text style={[styles.subtitle, {color: theme.colors.textSecondary}]}>
-            {getPerformanceMessage(finalScore)}
+          <Text style={[styles.rankTitle, { color: rank.color }]}>
+            {rank.emoji} {rank.title}
           </Text>
         </View>
 
-        {/* Final Score Card */}
-        <Card style={[styles.scoreCard, {borderColor: getScoreColor(finalScore)}]}>
-          <View style={styles.scoreContent}>
-            <Text style={[styles.scoreLabel, {color: theme.colors.textSecondary}]}>
-              Final Score
+        {/* Main Score Display */}
+        <View style={[styles.scoreContainer, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.accent1 }]}>
+          <View style={styles.scoreHeader}>
+            <Text style={[styles.scoreLabel, { color: theme.colors.accent4 }]}>
+              FINAL SCORE
             </Text>
-            <Text style={[styles.finalScore, {color: getScoreColor(finalScore)}]}>
-              {finalScore.toLocaleString()}
-            </Text>
-            <View style={styles.scoreBadge}>
-              <Text style={[styles.scoreBadgeText, {color: theme.colors.background}]}>
-                {finalScore >= 3000 ? 'EXCELLENT' : finalScore >= 2000 ? 'GREAT' : 'GOOD'}
-              </Text>
-            </View>
           </View>
-        </Card>
-
-        {/* Performance Stats */}
-        <Card style={styles.statsCard}>
-          <Text style={[styles.sectionTitle, {color: theme.colors.text}]}>
-            Performance Stats
-          </Text>
           
-          <View style={styles.statRow}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, {color: theme.colors.primary}]}>
-                {formatTime(finishTimeSeconds)}
-              </Text>
-              <Text style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                Finish Time
-              </Text>
-            </View>
+          <Animated.View style={[styles.scoreDisplay, {
+            transform: [{
+              scale: scoreAnimation.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [0.5, 1.1, 1],
+              })
+            }]
+          }]}>
+            <Text style={[styles.finalScore, { color: theme.colors.primary }]}>
+              {Math.floor(finalScore * scoreAnimation._value).toLocaleString()}
+            </Text>
+          </Animated.View>
+          
+          <View style={[styles.rankBadge, { backgroundColor: rank.color }]}>
+            <Text style={[styles.rankBadgeText, { color: '#FFFFFF' }]}>
+              {rank.title}
+            </Text>
+          </View>
+        </View>
+
+        {/* Performance Breakdown */}
+        {showDetails && (
+          <View style={[styles.statsContainer, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.accent1 }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.accent4 }]}>
+              PERFORMANCE BREAKDOWN
+            </Text>
             
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, {color: theme.colors.primary}]}>
-                {correctAnswers}/{totalQuestions}
-              </Text>
-              <Text style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                Correct
-              </Text>
-            </View>
-            
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, {color: theme.colors.primary}]}>
-                {Math.round((correctAnswers / totalQuestions) * 100)}%
-              </Text>
-              <Text style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                Accuracy
-              </Text>
-            </View>
-            
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, {color: theme.colors.success}]}>
-                {breakdown.minutesEarly}m
-              </Text>
-              <Text style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                Early
-              </Text>
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: theme.colors.primary }]}>
+                  <Text style={styles.statIconText}>⏱️</Text>
+                </View>
+                <Text style={[styles.statValue, { color: theme.colors.accent4 }]}>
+                  {formatTime(finishTimeSeconds)}
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.colors.accent4, opacity: 0.7 }]}>
+                  TIME
+                </Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: theme.colors.success }]}>
+                  <Text style={styles.statIconText}>✓</Text>
+                </View>
+                <Text style={[styles.statValue, { color: theme.colors.accent4 }]}>
+                  {correctAnswers}/{totalQuestions}
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.colors.accent4, opacity: 0.7 }]}>
+                  CORRECT
+                </Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: theme.colors.warning }]}>
+                  <Text style={styles.statIconText}>🎯</Text>
+                </View>
+                <Text style={[styles.statValue, { color: theme.colors.accent4 }]}>
+                  {accuracy}%
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.colors.accent4, opacity: 0.7 }]}>
+                  ACCURACY
+                </Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: theme.colors.info }]}>
+                  <Text style={styles.statIconText}>⚡</Text>
+                </View>
+                <Text style={[styles.statValue, { color: theme.colors.accent4 }]}>
+                  {Math.max(0, 300 - finishTimeSeconds)}s
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.colors.accent4, opacity: 0.7 }]}>
+                  BONUS
+                </Text>
+              </View>
             </View>
           </View>
-        </Card>
+        )}
 
 
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <Button
-            title="Back to Daily Drop"
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: theme.colors.primary }]}
             onPress={() => navigation.navigate('DailyDrop')}
-            style={[styles.primaryButton, {backgroundColor: theme.colors.primary}]}
-            textStyle={{color: theme.colors.background}}
-          />
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, { color: theme.colors.accent1 }]}>
+              🏠 BACK TO DAILY DROP
+            </Text>
+          </TouchableOpacity>
           
-          <Button
-            title="View Leaderboard"
-            onPress={() => {
-              // TODO: Navigate to leaderboard when implemented
-              navigation.navigate('DailyDrop');
-            }}
-            style={[styles.secondaryButton, {borderColor: theme.colors.primary}]}
-            textStyle={{color: theme.colors.primary}}
-          />
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.accent4 }]}
+            onPress={() => navigation.navigate('DailyDrop')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, { color: theme.colors.accent4 }]}>
+              🏆 VIEW LEADERBOARD
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.bottomPadding} />
@@ -165,101 +224,157 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 60,
     paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingBottom: 20,
     alignItems: 'center',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 18,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  scoreCard: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-    borderWidth: 3,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-  },
-  scoreContent: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  scoreLabel: {
+  gameCompleteText: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: '700',
+    letterSpacing: 2,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    marginBottom: 8,
+    opacity: 0.8,
   },
-  finalScore: {
-    fontSize: 48,
-    fontWeight: 'bold',
+  rankTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1,
+    textAlign: 'center',
+  },
+  scoreContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  scoreHeader: {
     marginBottom: 16,
   },
-  scoreBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#4CAF50',
-  },
-  scoreBadgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  statsCard: {
-    marginHorizontal: 24,
-    marginBottom: 24,
-    borderRadius: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  scoreLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
     textAlign: 'center',
   },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
+  scoreDisplay: {
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 20,
+  },
+  finalScore: {
+    fontSize: 56,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: -1,
+  },
+  rankBadge: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  rankBadgeText: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  statsContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    padding: 20,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    width: '48%',
+    alignItems: 'center',
+    padding: 16,
+    gap: 8,
+  },
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statIconText: {
+    fontSize: 18,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
     textAlign: 'center',
   },
 
   actionButtons: {
-    marginHorizontal: 24,
-    gap: 16,
+    marginHorizontal: 20,
+    gap: 12,
+    marginTop: 10,
   },
   primaryButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   secondaryButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 16,
     borderWidth: 2,
-    backgroundColor: 'transparent',
+    alignItems: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   bottomPadding: {
-    height: 40,
+    height: 30,
   },
 });
