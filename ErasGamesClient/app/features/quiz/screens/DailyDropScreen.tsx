@@ -421,16 +421,62 @@ export default function DailyDropScreen({navigation}: Props) {
           )
         ) : (
           <>
-            {/* Next Quiz Label */}
-            <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
-              NEXT QUIZ IN
-            </Text>
+            {/* Clean Countdown Container */}
+            <View style={styles.countdownWrapper}>
+              <View style={[styles.dreamyContainer, {
+                shadowColor: theme.name === 'dark' ? '#9d4edd' : '#c77dff',
+              }]}>
+                {/* Gradient overlay for extra depth */}
+                <View style={styles.gradientOverlay} />
+                
+                {/* Next Quiz Label */}
+                <Text style={[styles.nextQuizLabel, { color: theme.colors.text }]}>
+                  NEXT QUIZ IN
+                </Text>
 
-            {/* Countdown Timer - Large numbers matching the design */}
-            <View style={styles.countdownContainer}>
-              <Text style={[styles.countdownTime, { color: theme.colors.textSecondary }]}>
-                {timeComponents.hours}:{timeComponents.minutes}:{timeComponents.seconds}
-              </Text>
+                {/* Countdown Timer in fancy container */}
+                <View style={styles.countdownDisplay}>
+                  <View style={[styles.timeBox, {
+                    backgroundColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.15)' : 'rgba(199, 125, 255, 0.15)',
+                    borderColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.3)' : 'rgba(199, 125, 255, 0.3)',
+                  }]}>
+                    <Text style={[styles.countdownTime, { color: theme.colors.text }]}>
+                      {timeComponents.hours}
+                    </Text>
+                    <Text style={[styles.timeLabel, { color: theme.colors.textSecondary }]}>
+                      HRS
+                    </Text>
+                  </View>
+                  
+                  <Text style={[styles.timeSeparator, { color: theme.colors.text }]}>:</Text>
+                  
+                  <View style={[styles.timeBox, {
+                    backgroundColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.15)' : 'rgba(199, 125, 255, 0.15)',
+                    borderColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.3)' : 'rgba(199, 125, 255, 0.3)',
+                  }]}>
+                    <Text style={[styles.countdownTime, { color: theme.colors.text }]}>
+                      {timeComponents.minutes}
+                    </Text>
+                    <Text style={[styles.timeLabel, { color: theme.colors.textSecondary }]}>
+                      MIN
+                    </Text>
+                  </View>
+                  
+                  <Text style={[styles.timeSeparator, { color: theme.colors.text }]}>:</Text>
+                  
+                  <View style={[styles.timeBox, {
+                    backgroundColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.15)' : 'rgba(199, 125, 255, 0.15)',
+                    borderColor: theme.name === 'dark' ? 'rgba(157, 78, 221, 0.3)' : 'rgba(199, 125, 255, 0.3)',
+                  }]}>
+                    <Text style={[styles.countdownTime, { color: theme.colors.text }]}>
+                      {timeComponents.seconds}
+                    </Text>
+                    <Text style={[styles.timeLabel, { color: theme.colors.textSecondary }]}>
+                      SEC
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </View>
           </>
         )}
@@ -474,7 +520,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 40,
   },
   logoImage: {
     width: screenWidth * 0.9, // 90% of screen width (increased from 80%)
@@ -482,28 +528,93 @@ const styles = StyleSheet.create({
     maxWidth: 500, // Increased max width
     maxHeight: 300, // Increased max height
   },
+  countdownWrapper: {
+    marginBottom: 120,
+    marginTop: 20,
+    alignItems: 'center',
+    position: 'relative',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  dreamyContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 32,
+    paddingHorizontal: 32,
+    paddingVertical: 32,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 12,
+    position: 'relative',
+    overflow: 'hidden',
+    minWidth: 300,
+    maxWidth: screenWidth - 40,
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 32,
+  },
   nextQuizLabel: {
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 4,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 2,
     textAlign: 'center',
     marginBottom: 20,
     textTransform: 'uppercase',
+    opacity: 0.9,
   },
-  countdownContainer: {
-    marginBottom: 60,
+  countdownDisplay: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  timeBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    minWidth: 75,
+    minHeight: 70,
+    shadowColor: 'rgba(157, 78, 221, 0.3)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   countdownTime: {
-    fontSize: 52,
-    fontWeight: '900', // Maximum bold weight
-    letterSpacing: 8,
+    fontSize: 32,
+    fontWeight: '900',
     textAlign: 'center',
-    fontFamily: 'monospace',
-    lineHeight: 85,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    lineHeight: 36,
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  timeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginTop: 2,
+    textTransform: 'uppercase',
+  },
+  timeSeparator: {
+    fontSize: 32,
+    fontWeight: '900',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   howToPlayContainer: {
     position: 'absolute',
@@ -518,7 +629,7 @@ const styles = StyleSheet.create({
   },
   howToPlayButton: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 40,
     alignSelf: 'center',
     paddingHorizontal: 32,
     paddingVertical: 16,
