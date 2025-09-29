@@ -468,10 +468,10 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   logoImage: {
-    width: screenWidth * 0.8, // 80% of screen width
-    height: screenHeight * 0.25, // 25% of screen height
-    maxWidth: 400,
-    maxHeight: 200,
+    width: screenWidth * 0.9, // 90% of screen width (increased from 80%)
+    height: screenHeight * 0.35, // 35% of screen height (increased from 25%)
+    maxWidth: 500, // Increased max width
+    maxHeight: 300, // Increased max height
   },
   nextQuizLabel: {
     fontSize: 28,
