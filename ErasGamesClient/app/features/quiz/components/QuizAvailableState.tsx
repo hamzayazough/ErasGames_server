@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   centerButtonContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 30,
+    marginVertical: 10,
     paddingVertical: 0,
   },
   startNowText: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
-    marginBottom: 16,
+    marginBottom: 8,
     textShadowColor: 'rgba(0, 0, 0, 0.15)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
