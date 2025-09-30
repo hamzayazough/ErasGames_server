@@ -71,7 +71,7 @@ export const OddOneOutComponent: React.FC<OddOneOutComponentProps> = ({
               activeOpacity={0.8}
             >
               <Text style={textStyle}>
-                {choice}
+                {typeof choice === 'string' ? choice : choice.text}
               </Text>
             </TouchableOpacity>
           );

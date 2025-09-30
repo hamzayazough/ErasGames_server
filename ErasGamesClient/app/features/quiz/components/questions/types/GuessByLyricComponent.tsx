@@ -72,7 +72,7 @@ export const GuessByLyricComponent: React.FC<GuessByLyricComponentProps> = ({
               activeOpacity={0.8}
             >
               <Text style={textStyle}>
-                {choice}
+                {typeof choice === 'string' ? choice : choice.text}
               </Text>
             </TouchableOpacity>
           );

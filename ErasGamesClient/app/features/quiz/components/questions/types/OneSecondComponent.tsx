@@ -107,7 +107,7 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
               activeOpacity={0.8}
             >
               <Text style={[styles.songText, { color: textColor }]}>
-                {choice}
+                {typeof choice === 'string' ? choice : choice.text}
               </Text>
             </TouchableOpacity>
           );

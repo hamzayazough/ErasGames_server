@@ -111,7 +111,7 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
             activeOpacity={0.8}
           >
             <Text style={[styles.choiceText, getChoiceTextStyle(index)]}>
-              {choice}
+              {typeof choice === 'string' ? choice : choice.text}
             </Text>
           </TouchableOpacity>
         )) || (

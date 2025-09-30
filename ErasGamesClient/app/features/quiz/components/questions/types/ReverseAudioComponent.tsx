@@ -42,7 +42,7 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
 
       <View style={[styles.audioContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
         <Text style={[styles.instructionText, { color: theme.colors.textPrimary }]}>
-          🔄 Listen to the reversed audio clip
+          Listen to the reversed audio clip
         </Text>
         
         <TouchableOpacity
@@ -55,14 +55,6 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
             {isPlayingReversed ? '🔄 Playing...' : '▶️ Play Reversed Audio'}
           </Text>
         </TouchableOpacity>
-
-        {isPlayingReversed && (
-          <View style={styles.playingIndicator}>
-            <Text variant="caption" style={[styles.playingText, { color: theme.colors.primary }]}>
-              🎵 Audio playing in reverse...
-            </Text>
-          </View>
-        )}
       </View>
 
       <View style={styles.choicesSection}>

@@ -66,7 +66,7 @@ export const AlbumYearGuessComponent: React.FC<AlbumYearGuessComponentProps> = (
               activeOpacity={0.8}
             >
               <Text style={textStyle}>
-                {choice}
+                {typeof choice === 'string' ? choice : choice.text}
               </Text>
             </TouchableOpacity>
           );
