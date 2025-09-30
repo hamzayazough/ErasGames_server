@@ -26,6 +26,7 @@ export interface SeasonInfo {
 export interface TopPlayer {
   userId: string;
   handle: string;
+  name?: string;
   country?: string;
   totalPoints: number;
   rank: number;

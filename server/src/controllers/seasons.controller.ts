@@ -241,6 +241,7 @@ export class SeasonsController {
       players: leaderboard.topPlayers.map((p) => ({
         userId: p.userId,
         handle: p.handle,
+        name: p.name ?? undefined,
         country: p.country ?? undefined,
         totalPoints: p.totalPoints,
         rank: p.rank,

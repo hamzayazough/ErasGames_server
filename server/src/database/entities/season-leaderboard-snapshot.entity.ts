@@ -79,6 +79,7 @@ export class SeasonLeaderboardSnapshot {
 export interface TopPlayer {
   userId: string;
   handle: string;
+  name?: string | null;
   country?: string | null;
   totalPoints: number;
   rank: number;

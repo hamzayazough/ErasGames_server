@@ -347,7 +347,8 @@ export class SeasonService {
 
     const topPlayers: TopPlayer[] = topParticipations.map((p, index) => ({
       userId: p.user.id,
-      handle: p.user.handle || p.user.name || 'Anonymous',
+      handle: p.user.handle || 'Anonymous',
+      name: p.user.name,
       country: p.user.country,
       totalPoints: p.totalPoints,
       rank: index + 1,
