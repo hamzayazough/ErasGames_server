@@ -87,6 +87,9 @@ import { DailyQuizComposerModule } from './database/services/daily-quiz-composer
 import { AttemptScoringService } from './services/attempt-scoring/attempt-scoring.service';
 import { QuestionCorrectnessService } from './services/attempt-scoring/question-correctness.service';
 
+// Attempt Services
+import { AttemptService, AttemptAnswerService, UserService } from './services/attempt';
+
 // Import entities for TypeORM relationship resolution
 import { BaseEntityTimestamps } from './database/entities/base.entity';
 import { User } from './database/entities/user.entity';
@@ -208,6 +211,10 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     // Attempt Scoring Services
     AttemptScoringService,
     QuestionCorrectnessService,
+    // Attempt Services
+    AttemptService,
+    AttemptAnswerService,
+    UserService,
     // Season Services
     SeasonService,
     SeasonIntegrationService,
