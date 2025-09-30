@@ -35,7 +35,7 @@ export class UserService {
 
     // Find existing user
     let user = await this.userRepository.findOne({ where: { id: userId } });
-    
+
     if (!user) {
       this.logger.log(`Creating new user with Firebase UID: ${userId}`);
       user = this.userRepository.create({
@@ -58,7 +58,7 @@ export class UserService {
    */
   async getUserById(userId: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
-    
+
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }

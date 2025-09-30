@@ -88,7 +88,11 @@ import { AttemptScoringService } from './services/attempt-scoring/attempt-scorin
 import { QuestionCorrectnessService } from './services/attempt-scoring/question-correctness.service';
 
 // Attempt Services
-import { AttemptService, AttemptAnswerService, UserService } from './services/attempt';
+import {
+  AttemptService,
+  AttemptAnswerService,
+  UserService,
+} from './services/attempt';
 
 // Import entities for TypeORM relationship resolution
 import { BaseEntityTimestamps } from './database/entities/base.entity';

@@ -75,6 +75,7 @@ export function QuizAvailableState({
     <>
       {/* Main Start Quiz Button - Large Circular Design */}
       <View style={styles.centerButtonContainer}>
+        <Text style={[styles.todaysQuizText, { color: theme.colors.text }]}>Today's quiz is out!</Text>
         <Text style={[styles.startNowText, { color: theme.colors.text }]}>Start NOW</Text>
         <TouchableOpacity
           style={[styles.circularStartButton, {
@@ -179,6 +180,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 10,
     paddingVertical: 0,
+  },
+  todaysQuizText: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 1,
+    marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   startNowText: {
     fontSize: 26,

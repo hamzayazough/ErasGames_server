@@ -11,7 +11,11 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Answer } from '../database/entities/answers/answer.interface';
-import { AttemptService, AttemptAnswerService, UserService } from '../services/attempt';
+import {
+  AttemptService,
+  AttemptAnswerService,
+  UserService,
+} from '../services/attempt';
 import type { FirebaseUser } from '../services/attempt';
 
 // Extended Request interface with Firebase user
@@ -55,15 +59,15 @@ export class AttemptsController {
           HttpStatus.UNAUTHORIZED,
         );
       }
-      
+
       const user = await this.userService.findOrCreateUser(req.firebaseUser);
-      
+
       return await this.attemptService.getTodayAttempt(user.id);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
-      
+
       this.logger.error('Failed to get today attempt', error);
       throw new HttpException(
         'Failed to get attempt status',
@@ -98,9 +102,9 @@ export class AttemptsController {
           HttpStatus.UNAUTHORIZED,
         );
       }
-      
+
       const user = await this.userService.findOrCreateUser(req.firebaseUser);
-      
+
       return await this.attemptService.startAttempt(user.id, request.localDate);
     } catch (error) {
       if (error instanceof HttpException) {
@@ -134,7 +138,7 @@ export class AttemptsController {
     try {
       // Get and validate the attempt
       const attempt = await this.attemptService.getActiveAttempt(attemptId);
-      
+
       return await this.attemptAnswerService.submitAnswer(
         attemptId,
         attempt.dailyQuiz.id,
@@ -194,7 +198,10 @@ export class AttemptsController {
     }>;
   }> {
     try {
-      return await this.attemptService.finishAttempt(attemptId, request?.answers);
+      return await this.attemptService.finishAttempt(
+        attemptId,
+        request?.answers,
+      );
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

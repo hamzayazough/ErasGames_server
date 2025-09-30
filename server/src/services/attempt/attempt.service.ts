@@ -279,7 +279,10 @@ export class AttemptService {
   /**
    * Auto-finish expired attempt
    */
-  private async autoFinishExpiredAttempt(attempt: Attempt, now: Date): Promise<void> {
+  private async autoFinishExpiredAttempt(
+    attempt: Attempt,
+    now: Date,
+  ): Promise<void> {
     this.logger.warn(
       `⏰ Auto-finishing expired attempt ${attempt.id}. Deadline: ${attempt.deadline.toISOString()}, Current: ${now.toISOString()}`,
     );
@@ -327,7 +330,9 @@ export class AttemptService {
    */
   private validateQuizAccessibility(quiz: DailyQuiz): void {
     const now = new Date();
-    const oneHourAfterDrop = new Date(quiz.dropAtUTC.getTime() + 60 * 60 * 1000);
+    const oneHourAfterDrop = new Date(
+      quiz.dropAtUTC.getTime() + 60 * 60 * 1000,
+    );
 
     if (now < quiz.dropAtUTC) {
       this.logger.warn(
@@ -353,7 +358,10 @@ export class AttemptService {
   /**
    * Check for existing attempts
    */
-  private async checkExistingAttempts(userId: string, quizId: string): Promise<void> {
+  private async checkExistingAttempts(
+    userId: string,
+    quizId: string,
+  ): Promise<void> {
     const existingAttempt = await this.attemptRepository.findOne({
       where: {
         user: { id: userId } as User,
@@ -466,6 +474,9 @@ export class AttemptService {
       where: { attempt: { id: attempt.id } },
     });
 
-    return this.attemptScoringService.getFinishedAttemptResult(attempt, answers);
+    return this.attemptScoringService.getFinishedAttemptResult(
+      attempt,
+      answers,
+    );
   }
 }
