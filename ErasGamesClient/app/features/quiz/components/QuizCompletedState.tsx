@@ -51,12 +51,12 @@ export function QuizCompletedState({
       />
 
       {/* Practice Button */}
-      <View style={styles.buttonContainer}>
+      <View>
         <Button
-          title="Practice Demo Quizzes"
-          variant="outline"
+          title="Explore Our Practice Quizzes"
           onPress={() => navigation.navigate('QuizSelection')}
           style={styles.practiceButton}
+          textStyle={styles.practiceButtonText}
         />
       </View>
     </View>
@@ -121,5 +121,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     minWidth: 220,
     borderRadius: 25,
+  },
+  practiceButtonText: {
+    textAlign: 'center',
   },
 });
