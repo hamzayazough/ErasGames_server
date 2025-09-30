@@ -1,8 +1,9 @@
 import React from 'react';
-import {View, StyleSheet, TouchableOpacity, ActivityIndicator} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, ActivityIndicator, Platform} from 'react-native';
 import {Text} from '../../../ui/Text';
 import {useTheme} from '../../../core/theme';
-import {CircularCountdownTimer} from './CircularCountdownTimer';
+import {CountdownTimer, AnimatedActionButton} from '../../../shared/components';
+import { FONTS } from '../../../core/config/fonts';
 
 interface QuizAvailableStateProps {
   hasAttempt: boolean;
@@ -24,118 +25,115 @@ export function QuizAvailableState({
   const theme = useTheme();
 
   if (hasAttempt && !attemptCompleted) {
-    // Quiz In Progress State - Clean minimal design
+    // Quiz In Progress State - Dreamy theme
     return (
-      <View style={styles.container}>
-        {/* Quiz In Progress Message */}
-        <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
-          QUIZ IN PROGRESS!
-        </Text>
-        
-        {/* Quiz window countdown - simple and clean */}
-        <View style={styles.timerContainer}>
-          <CircularCountdownTimer 
-            timeLeft={quizWindowTimeLeft}
-            totalTime={3600} // 1 hour = 3600 seconds
-            size={120}
-          />
-        </View>
-
-        {/* Start/Continue Quiz Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
-            onPress={onStartQuiz}
-            disabled={isStartingQuiz}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.actionButtonText, { color: theme.colors.textOnPrimary }]}>
-              {isStartingQuiz ? "Starting..." : "Continue Quiz"}
-            </Text>
-          </TouchableOpacity>
-          
-          {isStartingQuiz && (
-            <ActivityIndicator 
-              size="small" 
-              color={theme.colors.primary} 
-              style={styles.loadingIndicator}
-            />
-          )}
-          
-          {/* How to Play text below button */}
-          {onHowToPlay && (
-            <TouchableOpacity onPress={onHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
-              <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
-                How do you play?
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  }
-
-  // Quiz Available State - Clean minimal design matching original theme
-    return (
-      <View style={styles.container}>
-        {/* Quiz Available Message */}
-        <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
-          QUIZ IS AVAILABLE NOW!
-        </Text>
-        
-        {/* Quiz window countdown - simple and clean */}
-        <View style={styles.timerContainer}>
-          <CircularCountdownTimer 
-            timeLeft={quizWindowTimeLeft}
-            totalTime={3600} // 1 hour = 3600 seconds
-            size={120}
-          />
-        </View>      {/* Start Quiz Button */}
-      <View style={styles.buttonContainer}>
+      <>
+      {/* Main Continue Quiz Button - Large Circular Design */}
+      <View style={styles.centerButtonContainer}>
+        <Text style={[styles.startNowText, { color: theme.colors.text }]}>Continue NOW</Text>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+          style={[styles.circularStartButton, {
+            backgroundColor: theme.currentMode === 'main' ? theme.colors.accent4 : theme.colors.primary,
+            shadowColor: theme.currentMode === 'main' ? theme.colors.accent4 : theme.colors.primary,
+          }]}
           onPress={onStartQuiz}
           disabled={isStartingQuiz}
           activeOpacity={0.8}
         >
-          <Text style={[styles.actionButtonText, { color: theme.colors.textOnPrimary }]}>
-            {isStartingQuiz ? "Starting..." : "Play Now"}
-          </Text>
+          {isStartingQuiz ? (
+            <ActivityIndicator
+              size="large"
+              color={theme.colors.textOnPrimary}
+            />
+          ) : (
+            <View style={[styles.triangleIcon, { 
+              borderLeftColor: theme.colors.textOnPrimary
+            }]} />
+          )}
         </TouchableOpacity>
-        
-        {isStartingQuiz && (
-          <ActivityIndicator 
-            size="small" 
-            color={theme.colors.primary} 
-            style={styles.loadingIndicator}
+      </View>        {/* Countdown Timer below button */}
+        <View style={styles.dreamyContainer}>
+          <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>QUIZ IN PROGRESS!</Text>
+          <CountdownTimer
+            timeLeft={quizWindowTimeLeft}
+            title="TIME LEFT TO FINISH"
+            showBackground={true}
+            size="medium"
           />
-        )}
-        
-        {/* How to Play text below button */}
+          {onHowToPlay && (
+            <TouchableOpacity onPress={onHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
+              <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>How to Play</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </>
+    );
+  }
+
+  // Quiz Available State - Dreamy pastel theme
+  return (
+    <>
+      {/* Main Start Quiz Button - Large Circular Design */}
+      <View style={styles.centerButtonContainer}>
+        <Text style={[styles.startNowText, { color: theme.colors.text }]}>Start NOW</Text>
+        <TouchableOpacity
+          style={[styles.circularStartButton, {
+            backgroundColor: theme.currentMode === 'main' ? theme.colors.accent4 : theme.colors.primary,
+            shadowColor: theme.currentMode === 'main' ? theme.colors.accent4 : theme.colors.primary,
+          }]}
+          onPress={onStartQuiz}
+          disabled={isStartingQuiz}
+          activeOpacity={0.8}
+        >
+          {isStartingQuiz ? (
+            <ActivityIndicator
+              size="large"
+              color={theme.colors.textOnPrimary}
+            />
+          ) : (
+            <View style={[styles.triangleIcon, { 
+              borderLeftColor: theme.currentMode === 'main' ? theme.colors.textOnPrimary : theme.colors.textOnPrimary
+            }]} />
+          )}
+        </TouchableOpacity>
+      </View>
+      
+      {/* Countdown Timer below button */}
+      <View style={styles.dreamyContainer}>
+        <CountdownTimer
+          timeLeft={quizWindowTimeLeft}
+          title="TIME LEFT"
+          showBackground={true}
+          size="medium"
+        />
         {onHowToPlay && (
           <TouchableOpacity onPress={onHowToPlay} activeOpacity={0.7} style={styles.howToPlayContainer}>
-            <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>
-              How do you play?
-            </Text>
+            <Text style={[styles.howToPlayText, { color: theme.colors.textSecondary }]}>How to Play</Text>
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  dreamyContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
-  },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 32,
+    margin: 16,
+    shadowColor: '#c77dff',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+    minWidth: 320,
+    maxWidth: 500,
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: -80, // Position similar to original design
+    marginTop: 32,
     alignItems: 'center',
   },
   actionButton: {
@@ -159,7 +157,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   howToPlayContainer: {
-    marginTop: 20,
+    marginTop: 24,
     alignSelf: 'center',
   },
   howToPlayText: {
@@ -175,5 +173,77 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     textTransform: 'uppercase',
+  },
+  centerButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 30,
+    paddingVertical: 0,
+  },
+  startNowText: {
+    fontSize: 26,
+    fontWeight: '900',
+    fontFamily: Platform.OS === 'ios' ? 'Arial Black' : 'sans-serif-black',
+    textAlign: 'center',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  circularStartButton: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.6,
+    shadowRadius: 18,
+    elevation: 10,
+    // Add subtle border for definition
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  triangleIcon: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 30,
+    borderRightWidth: 0,
+    borderBottomWidth: 20,
+    borderTopWidth: 20,
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderTopColor: 'transparent',
+    borderRadius: 8,
+    // Slightly offset to the right to center the visual weight
+    marginLeft: 8,
+  },
+  // Keep legacy styles for backward compatibility
+  startQuizButton: {
+    paddingHorizontal: 60,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: 'rgba(255, 105, 180, 0.6)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+    minWidth: 240,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  startQuizButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  centerLoadingIndicator: {
+    marginTop: 12,
   },
 });

@@ -5,3 +5,7 @@ export {
   CountdownTimer,
   default as DefaultCountdownTimer,
 } from './CountdownTimer';
+export {
+  AnimatedActionButton,
+  default as DefaultAnimatedActionButton,
+} from './AnimatedActionButton';

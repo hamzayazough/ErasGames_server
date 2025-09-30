@@ -3,7 +3,7 @@ import {View, StyleSheet} from 'react-native';
 import {Text} from '../../../ui/Text';
 import {Button} from '../../../ui/Button';
 import {useTheme} from '../../../core/theme';
-import {CircularCountdownTimer} from './CircularCountdownTimer';
+import {CountdownTimer} from '../../../shared/components';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 interface QuizCompletedStateProps {
@@ -28,72 +28,97 @@ export function QuizCompletedState({
   const theme = useTheme();
 
   return (
-    <View style={styles.container}>
-      {/* Simple completion message matching original clean design */}
-      <Text style={[styles.completedMessage, { color: theme.colors.textSecondary }]}>
-        Quiz completed! Your scored
-      </Text>
-      <Text style={[styles.completedMessage, { color: theme.colors.textSecondary }]}>
-        {score} points
+    <View style={styles.dreamyContainer}>
+      {/* Quiz completion celebration */}
+      <Text style={[styles.celebrationEmoji, { color: theme.colors.text }]}>
+        🎉
       </Text>
       
-
-      {/* Next Quiz Label */}
-      <Text style={[styles.nextQuizLabel, { color: theme.colors.textSecondary }]}>
-        TODAY QUIZ ENDS IN
+      <Text style={[styles.completedTitle, { color: theme.colors.text }]}>
+        QUIZ COMPLETED!
+      </Text>
+      
+      <Text style={[styles.scoreText, { color: theme.colors.textSecondary }]}>
+        Your Score: {score}%
+      </Text>
+      
+      <Text style={[styles.detailsText, { color: theme.colors.textSecondary }]}>
+        {correctAnswers} out of {totalQuestions} correct
+        {timeTaken && ` • ${timeTaken}`}
       </Text>
 
       {/* Countdown Timer for window end */}
-      <View style={styles.timerContainer}>
-        <CircularCountdownTimer 
-          timeLeft={nextDayTimeLeft}
-          totalTime={nextDayTotalTime}
-          size={120}
-        />
-      </View>
+      <CountdownTimer
+        timeLeft={nextDayTimeLeft}
+        title="QUIZ WINDOW ENDS IN"
+        showBackground={true}
+        size="medium"
+        containerStyle={styles.timerContainer}
+      />
 
       {/* Practice Button */}
-      <Button
-        title="Practice demo quizzes"
-        variant="outline"
-        onPress={() => navigation.navigate('QuizSelection')}
-        style={styles.practiceButton}
-      />
+      <View style={styles.buttonContainer}>
+        <Button
+          title="Practice Demo Quizzes"
+          variant="outline"
+          onPress={() => navigation.navigate('QuizSelection')}
+          style={styles.practiceButton}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  dreamyContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 32,
+    margin: 16,
+    shadowColor: '#c77dff',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+    minWidth: 320,
+    maxWidth: 500,
   },
-  completedMessage: {
-    fontSize: 20,
+  celebrationEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  completedTitle: {
+    fontSize: 28,
     fontWeight: '900',
+    letterSpacing: 4,
+    textAlign: 'center',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+  },
+  scoreText: {
+    fontSize: 24,
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 8,
   },
-  completedSubtext: {
+  detailsText: {
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 40,
-  },
-  nextQuizLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginBottom: 20,
-    textTransform: 'uppercase',
+    marginBottom: 32,
+    lineHeight: 22,
   },
   timerContainer: {
+    marginBottom: 32,
+  },
+  buttonContainer: {
     alignItems: 'center',
-    marginBottom: 30,
   },
   practiceButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    minWidth: 200,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    minWidth: 220,
+    borderRadius: 25,
   },
 });
