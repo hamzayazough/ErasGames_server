@@ -12,6 +12,7 @@ import GlobalHeader from '../../../shared/components/GlobalHeader';
 import {useLeaderboard} from '../hooks/useLeaderboard';
 import {SeasonBanner, MyStatsCard, PlayerCard} from '../components';
 import {TopPlayer, SeasonLeaderboard, SeasonTopPlayers} from '../../../core/api/seasons';
+import {AnimatedLogo} from '../../../shared/components/AnimatedLogo';
 
 export default function LeaderboardScreen() {
   const theme = useTheme();
@@ -78,16 +79,19 @@ export default function LeaderboardScreen() {
     </View>
   );
 
-  const renderLoadingState = () => (
-    <View style={styles.loadingState}>
-      <Text variant="body" color="secondary" center>
-        Loading leaderboard...
-      </Text>
-    </View>
-  );
-
   const players = getPlayers();
   const hasPlayers = players.length > 0;
+
+  // Loading screen similar to DailyDropScreen
+  if (isLoading) {
+    return (
+      <ThemedBackground style={styles.container}>
+        <View style={styles.centerContent}>
+          <AnimatedLogo size={200} />
+        </View>
+      </ThemedBackground>
+    );
+  }
 
   return (
     <ThemedBackground>
@@ -118,7 +122,7 @@ export default function LeaderboardScreen() {
         {myStats && <MyStatsCard stats={myStats} />}
 
         {/* Error State */}
-        {error && !isLoading && !hasPlayers && (
+        {error && !hasPlayers && (
           <View style={styles.errorContainer}>
             <Text variant="body" color="error" center>
               {error}
@@ -126,11 +130,10 @@ export default function LeaderboardScreen() {
           </View>
         )}
 
-        {/* Loading State */}
-        {isLoading && renderLoadingState()}
+
 
         {/* Leaderboard List */}
-        {!isLoading && hasPlayers && (
+        {hasPlayers && (
           <View style={styles.leaderboardContainer}>
             <View style={styles.leaderboardHeader}>
               <Text variant="h3" weight="bold">
@@ -154,7 +157,7 @@ export default function LeaderboardScreen() {
         )}
 
         {/* Empty State */}
-        {!isLoading && !hasPlayers && !error && renderEmptyState()}
+        {!hasPlayers && !error && renderEmptyState()}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
@@ -193,11 +196,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     marginBottom: 16,
   },
-  loadingState: {
+  centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
   },
   errorContainer: {
     padding: 20,
