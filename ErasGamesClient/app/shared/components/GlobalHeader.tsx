@@ -10,6 +10,8 @@ import {View} from '../../ui/View';
 import {Text} from '../../ui/Text';
 import {useTheme} from '../../core/theme';
 import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import type {RootStackParamList} from '../../navigation/types';
 
 // Simple icon components
 const LeaderboardIcon = ({color, size}: {color: string; size: number}) => (
@@ -78,6 +80,7 @@ interface GlobalHeaderProps {
   showBack?: boolean;
   showProfile?: boolean;
   showLeaderboard?: boolean;
+  isLeaderboardActive?: boolean;
   onProfilePress?: () => void;
   onLeaderboardPress?: () => void;
 }
@@ -87,11 +90,12 @@ export default function GlobalHeader({
   showBack = true,
   showProfile = true,
   showLeaderboard = true,
+  isLeaderboardActive = false,
   onProfilePress,
   onLeaderboardPress,
 }: GlobalHeaderProps) {
   const theme = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleBackPress = () => {
     if (navigation.canGoBack()) {
@@ -104,7 +108,7 @@ export default function GlobalHeader({
       onProfilePress();
     } else {
       // Default navigation to profile
-      navigation.navigate('Profile' as never);
+      navigation.navigate('Profile', {userId: undefined});
     }
   };
 
@@ -112,8 +116,7 @@ export default function GlobalHeader({
     if (onLeaderboardPress) {
       onLeaderboardPress();
     } else {
-      // Default navigation to leaderboard
-      navigation.navigate('Leaderboard' as never);
+      navigation.navigate('Leaderboard');
     }
   };
 
@@ -145,11 +148,22 @@ export default function GlobalHeader({
         <View style={styles.rightSection}>
           {showLeaderboard && (
             <TouchableOpacity
-              onPress={handleLeaderboardPress}
-              style={[styles.headerButton, {backgroundColor: theme.colors.accent4}]}
-              activeOpacity={0.8}
+              onPress={isLeaderboardActive ? undefined : handleLeaderboardPress}
+              style={[
+                styles.headerButton, 
+                {
+                  backgroundColor: isLeaderboardActive 
+                    ? theme.colors.primary 
+                    : theme.colors.accent4
+                }
+              ]}
+              activeOpacity={isLeaderboardActive ? 1 : 0.8}
+              disabled={isLeaderboardActive}
             >
-              <LeaderboardIcon color={theme.colors.text} size={20} />
+              <LeaderboardIcon 
+                color={isLeaderboardActive ? theme.colors.textOnPrimary : theme.colors.text} 
+                size={20} 
+              />
             </TouchableOpacity>
           )}
           

@@ -23,10 +23,12 @@ export default function QuizSelectionScreen({ navigation }: Props) {
         showProfile={true}
         showLeaderboard={true}
         onProfilePress={() => {
-          console.log('Profile pressed');
+          console.log('Profile pressed - navigating...');
+          navigation.navigate('Profile', {userId: undefined});
         }}
         onLeaderboardPress={() => {
-          console.log('Leaderboard pressed');
+          console.log('Leaderboard pressed - navigating...');
+          navigation.navigate('Leaderboard');
         }}
       />
 

@@ -37,6 +37,7 @@ export type RootStackParamList = {
   Profile: {userId?: string};
   Settings: undefined;
   QuizDetails: {quizId: string};
+  Leaderboard: undefined;
 };
 
 // Main Tab Navigator

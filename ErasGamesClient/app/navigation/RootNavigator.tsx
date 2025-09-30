@@ -23,6 +23,9 @@ import LoginScreen from '../features/auth/screens/LoginScreen';
 import RegisterScreen from '../features/auth/screens/RegisterScreen';
 // TODO: Create ForgotPasswordScreen if it doesn't exist
 
+// Import leaderboard screen
+import LeaderboardScreen from '../features/leaderboard/screens/LeaderboardScreen';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
@@ -105,6 +108,11 @@ export function RootNavigator() {
             <Stack.Screen 
               name="Results" 
               component={ResultsScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="Leaderboard" 
+              component={LeaderboardScreen}
               options={{headerShown: false}}
             />
           </>

@@ -302,7 +302,33 @@ CREATE OR REPLACE TRIGGER trigger_update_season_status
 -- INITIAL DATA
 -- ===============================================
 
--- Create the first season starting November 1st, 2025
+-- Create Pre-Season (Season 0) - September-October 2025
+INSERT INTO seasons (
+    name, display_name, season_number, start_date, end_date,
+    status, description
+) VALUES (
+    'Pre-Season',
+    'Pre-Season Warm-Up',
+    0,
+    '2025-09-30',
+    '2025-10-30',
+    CASE 
+        WHEN CURRENT_DATE < '2025-09-30' THEN 'upcoming'::season_status
+        WHEN CURRENT_DATE <= '2025-10-30' THEN 'active'::season_status
+        ELSE 'completed'::season_status
+    END,
+    'Pre-season warm-up period to test your Taylor Swift knowledge before the official seasons begin!'
+)
+ON CONFLICT (season_number) DO UPDATE SET
+    start_date = '2025-09-30',
+    end_date = '2025-10-30',
+    status = CASE 
+        WHEN CURRENT_DATE < '2025-09-30' THEN 'upcoming'::season_status
+        WHEN CURRENT_DATE <= '2025-10-30' THEN 'active'::season_status
+        ELSE 'completed'::season_status
+    END;
+
+-- Create the first official season starting November 1st, 2025
 INSERT INTO seasons (
     name, display_name, season_number, start_date, end_date,
     status, description

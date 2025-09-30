@@ -367,12 +367,10 @@ export default function DailyDropScreen({navigation}: Props) {
         title="DAILY DROP"
         showBack={false}
         onProfilePress={() => {
-          // Navigate to profile or handle profile action
-          console.log('Profile pressed');
+          navigation.navigate('Profile', {userId: undefined});
         }}
         onLeaderboardPress={() => {
-          // Navigate to leaderboard or handle leaderboard action
-          console.log('Leaderboard pressed');
+          navigation.navigate('Leaderboard');
         }}
       />
       <View style={styles.content}>

@@ -5,8 +5,6 @@ import {
   Query,
   BadRequestException,
   Req,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +17,8 @@ import { Season } from '../database/entities/season.entity';
 import { SeasonParticipation } from '../database/entities/season-participation.entity';
 import { SeasonStatus } from '../database/enums/season-status.enum';
 import { Attempt } from '../database/entities/attempt.entity';
+import { FirebaseUser } from '../decorators/firebase-user.decorator';
+import type { FirebaseUser as FirebaseUserType } from '../decorators/firebase-user.decorator';
 
 // Extended Request interface with Firebase user
 interface AuthenticatedRequest extends Request {
@@ -103,7 +103,7 @@ export class SeasonsController {
   @Get('current/info')
   async getCurrentSeasonInfo(): Promise<{
     hasSeason: boolean;
-    season?: Season;
+    season?: any; // Using any to allow progress field
     status: 'no_seasons' | 'upcoming' | 'active' | 'ended';
     message: string;
     daysUntilStart?: number;
@@ -149,7 +149,20 @@ export class SeasonsController {
 
     return {
       hasSeason: true,
-      season: currentSeason,
+      season: {
+        id: currentSeason.id,
+        name: currentSeason.name,
+        displayName: currentSeason.displayName,
+        seasonNumber: currentSeason.seasonNumber,
+        startDate: currentSeason.startDate,
+        endDate: currentSeason.endDate,
+        status: currentSeason.status,
+        description: currentSeason.description,
+        themeJSON: currentSeason.themeJSON,
+        createdAt: currentSeason.createdAt,
+        updatedAt: currentSeason.updatedAt,
+        progress: currentSeason.progress, // Add progress from getter
+      },
       status: 'active',
       message: `${currentSeason.displayName} is live!`,
       daysRemaining: currentSeason.daysRemaining ?? undefined,
@@ -243,7 +256,9 @@ export class SeasonsController {
    * Get user's current season stats (requires authentication)
    */
   @Get('current/my-stats')
-  async getCurrentSeasonMyStats(@Req() req: AuthenticatedRequest): Promise<{
+  async getCurrentSeasonMyStats(
+    @FirebaseUser() firebaseUser: FirebaseUserType,
+  ): Promise<{
     hasStats: boolean;
     stats?: {
       season: {
@@ -269,15 +284,6 @@ export class SeasonsController {
     };
     message: string;
   }> {
-    // Get authenticated user ID from Firebase middleware
-    const firebaseUser = req.firebaseUser;
-    if (!firebaseUser) {
-      throw new HttpException(
-        'Authentication required',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
     const userId = firebaseUser.uid;
     const currentSeason = await this.seasonService.getCurrentSeason();
 
@@ -371,17 +377,8 @@ export class SeasonsController {
    */
   @Get('current/participation')
   async getCurrentSeasonParticipation(
-    @Req() req: AuthenticatedRequest,
+    @FirebaseUser() firebaseUser: FirebaseUserType,
   ): Promise<SeasonParticipation | null> {
-    // Get authenticated user ID from Firebase middleware
-    const firebaseUser = req.firebaseUser;
-    if (!firebaseUser) {
-      throw new HttpException(
-        'Authentication required',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
     const userId = firebaseUser.uid;
     const currentSeason = await this.seasonService.getCurrentSeason();
     if (!currentSeason) {
