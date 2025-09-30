@@ -6,6 +6,7 @@ import { DailyQuizQuestion } from '../../database/entities/daily-quiz-question.e
 import { Attempt } from '../../database/entities/attempt.entity';
 import { QuestionCorrectnessService } from './question-correctness.service';
 import { Difficulty } from '../../database/enums/question.enums';
+import { SeasonIntegrationService } from '../season-integration.service';
 
 export interface ScoreCalculationResult {
   score: number;
@@ -40,6 +41,7 @@ export class AttemptScoringService {
     @InjectRepository(DailyQuizQuestion)
     private readonly dailyQuizQuestionRepository: Repository<DailyQuizQuestion>,
     private readonly questionCorrectnessService: QuestionCorrectnessService,
+    private readonly seasonIntegrationService: SeasonIntegrationService,
   ) {}
 
   /**
@@ -201,7 +203,7 @@ export class AttemptScoringService {
     const score = questionPoints + speedBonus + earlyBonus;
     const totalBonusPoints = speedBonus + earlyBonus; // For breakdown display
 
-    return {
+    const result = {
       score,
       breakdown: {
         base: questionPoints, // Base accuracy points
@@ -217,6 +219,21 @@ export class AttemptScoringService {
       finishTimeSec,
       questions: questionResults,
     };
+
+    // Record season progress with detailed performance data (async, don't wait)
+    this.recordSeasonProgress(
+      attempt,
+      result,
+      correctAnswersCount,
+      accuracyRatio,
+    ).catch((error) => {
+      this.logger.error(
+        `Failed to record season progress for attempt ${attempt.id}:`,
+        error,
+      );
+    });
+
+    return result;
   }
 
   /**
@@ -342,5 +359,82 @@ export class AttemptScoringService {
       finishTimeSec,
       questions: questionResults,
     };
+  }
+
+  /**
+   * Record season progress with detailed performance metrics
+   */
+  private async recordSeasonProgress(
+    attempt: Attempt,
+    result: ScoreCalculationResult,
+    correctAnswersCount: number,
+    accuracyRatio: number,
+  ): Promise<void> {
+    try {
+      // Extract user ID from attempt
+      const userId = attempt.user?.id;
+      if (!userId) {
+        this.logger.warn(
+          'No user ID found in attempt, skipping season progress recording',
+        );
+        return;
+      }
+
+      // Create enhanced performance data for season tracking
+      const performanceData = {
+        score: result.score,
+        accuracyPoints: result.accPoints,
+        correctAnswers: correctAnswersCount,
+        totalQuestions: result.questions.length,
+        accuracyRatio: Math.round(accuracyRatio * 100), // Percentage
+        speedBonus: result.breakdown.totalQuestionPoints,
+        unusedSeconds: result.breakdown.unusedSeconds,
+        finishTime: result.finishTimeSec,
+        isSpeedster: result.breakdown.unusedSeconds >= 30, // Finished with 30+ seconds left
+        isEarlyBird: result.breakdown.minutesEarly >= 30, // Started 30+ minutes early
+        isPerfectAccuracy: correctAnswersCount === result.questions.length,
+        difficultyBreakdown: this.calculateDifficultyBreakdown(
+          result.questions,
+        ),
+      };
+
+      this.logger.log(
+        `🏆 Enhanced season tracking for user ${userId}: ${JSON.stringify(performanceData)}`,
+      );
+
+      // Use the season integration service with enhanced data
+      await this.seasonIntegrationService.recordEnhancedSeasonProgress(
+        attempt,
+        userId,
+        performanceData,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to record enhanced season progress for attempt ${attempt.id}:`,
+        error,
+      );
+      // Don't throw - season tracking is supplementary
+    }
+  }
+
+  /**
+   * Calculate difficulty breakdown from question results
+   */
+  private calculateDifficultyBreakdown(
+    questions: Array<{ difficulty: string; isCorrect: boolean }>,
+  ): Record<string, { correct: number; total: number }> {
+    const breakdown: Record<string, { correct: number; total: number }> = {};
+
+    questions.forEach((q) => {
+      if (!breakdown[q.difficulty]) {
+        breakdown[q.difficulty] = { correct: 0, total: 0 };
+      }
+      breakdown[q.difficulty].total++;
+      if (q.isCorrect) {
+        breakdown[q.difficulty].correct++;
+      }
+    });
+
+    return breakdown;
   }
 }

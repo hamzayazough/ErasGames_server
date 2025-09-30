@@ -105,6 +105,14 @@ import { ProviderTransaction } from './database/entities/provider-transaction.en
 import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
 import { CompositionLogEntity } from './database/entities/composition-log.entity';
 import { UserDevice } from './database/entities/user-device.entity';
+import { Season } from './database/entities/season.entity';
+import { SeasonParticipation } from './database/entities/season-participation.entity';
+import { DailySeasonProgress } from './database/entities/daily-season-progress.entity';
+import { SeasonLeaderboardSnapshot } from './database/entities/season-leaderboard-snapshot.entity';
+import { SeasonService } from './database/services/season.service';
+import { SeasonIntegrationService } from './services/season-integration.service';
+import { SeasonsController } from './controllers/seasons.controller';
+import { AdminSeasonsController } from './admin/controllers/admin-seasons.controller';
 import { QuizSimulationModule } from './test/quiz-simulation.module';
 
 @Module({
@@ -144,6 +152,10 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
         DailyDropTZ,
         CompositionLogEntity,
         UserDevice,
+        Season,
+        SeasonParticipation,
+        DailySeasonProgress,
+        SeasonLeaderboardSnapshot,
       ],
     }),
 
@@ -156,6 +168,10 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
       Question, // Add Question repository for question creation services
       User, // Add User repository for attempts
       UserDevice, // Add UserDevice repository for notifications
+      Season, // Add Season repository for season management
+      SeasonParticipation, // Add SeasonParticipation repository
+      DailySeasonProgress, // Add DailySeasonProgress repository
+      SeasonLeaderboardSnapshot, // Add SeasonLeaderboardSnapshot repository
     ]),
   ],
   controllers: [
@@ -169,6 +185,8 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     TestController,
     AuthController,
     NotificationController,
+    SeasonsController,
+    AdminSeasonsController,
   ],
   providers: [
     AppService,
@@ -190,6 +208,9 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     // Attempt Scoring Services
     AttemptScoringService,
     QuestionCorrectnessService,
+    // Season Services
+    SeasonService,
+    SeasonIntegrationService,
   ],
 })
 export class AppModule implements NestModule {

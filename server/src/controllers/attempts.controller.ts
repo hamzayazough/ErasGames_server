@@ -165,7 +165,7 @@ export class AttemptsController {
         hasAttempt: true,
         attempt: {
           id: attempt.id,
-          status: attempt.status as 'active' | 'finished',
+          status: attempt.status as 'finished',
           startedAt: attempt.startAt.toISOString(),
           finishedAt: attempt.finishAt?.toISOString(),
           score: attempt.score,
