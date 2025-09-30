@@ -26,14 +26,6 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
-  // Debug logging
-  console.log('AiVisualComponent Debug:', {
-    mediaRefs: question.mediaRefs,
-    mediaRefsLength: question.mediaRefs?.length,
-    firstMediaRef: question.mediaRefs?.[0],
-    imageUrl: question.mediaRefs?.[0]?.url
-  });
-
   const imageUrl = question.mediaRefs?.[0]?.url;
   
   const handleImageLoad = () => {
@@ -128,15 +120,14 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
       {question.mediaRefs && question.mediaRefs.length > 0 && (
         <View style={styles.imageContainer}>
           {imageError ? (
-            <View style={[styles.aiImage, styles.errorContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-              <Text variant="caption" style={{ color: theme.colors.error, textAlign: 'center' }}>
-                ❌ Failed to load image
-              </Text>
-              <Text variant="caption" style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 4, fontSize: 10 }}>
-                Network error - Please check your connection
-              </Text>
+            <View style={styles.errorImageContainer}>
+              <Image
+                source={require('../../../../../assets/images/error-image.png')}
+                style={[styles.aiImage, { borderColor: theme.colors.border }]}
+                resizeMode="cover"
+              />
               <Pressable 
-                style={{ marginTop: 8, padding: 8, backgroundColor: theme.colors.primary + '20', borderRadius: 6 }}
+                style={[styles.retryButton, { backgroundColor: theme.colors.primary + '20' }]}
                 onPress={() => {
                   setImageError(false);
                   setImageLoading(true);
@@ -282,5 +273,16 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     paddingVertical: 36,
+  },
+  errorImageContainer: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  retryButton: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    padding: 8,
+    borderRadius: 6,
   },
 });

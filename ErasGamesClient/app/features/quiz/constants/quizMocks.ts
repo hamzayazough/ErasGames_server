@@ -233,8 +233,14 @@ export const advancedQuizMock: QuizMock = {
         task: 'Which era does this outfit belong to?',
       },
       mediaRefs: [
-        {type: 'image', url: 'https://example.com/outfit1.jpg'},
-        {type: 'image', url: 'https://example.com/outfit1_alt.jpg'},
+        {
+          type: 'image',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/user-avatars/fYK3DgbZvocOdHEjfU1XQtklpNw2/avatar.jpg',
+        },
+        {
+          type: 'image',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/user-avatars/fYK3DgbZvocOdHEjfU1XQtklpNw2/avatar.jpg',
+        },
       ],
       choices: ['Fearless Era', '1989 Era', 'folklore Era', 'Midnights Era'],
       hint: 'Think about which era featured the most country-style outfits and performances',

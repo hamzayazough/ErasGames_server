@@ -56,12 +56,6 @@ export const LongestSongComponent: React.FC<LongestSongComponentProps> = ({
       <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {question.prompt.task}
       </Text>
-      
-      <View style={[styles.instructionContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
-        <Text style={[styles.instructionText, { color: theme.colors.textPrimary }]}>
-          ⏱️ Compare song durations and pick the longest
-        </Text>
-      </View>
 
       <View style={styles.choicesContainer}>
         {(question.choices || []).map((choice, index) => (

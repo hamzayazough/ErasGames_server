@@ -75,9 +75,6 @@ export const PopularityMatchComponent: React.FC<PopularityMatchComponentProps> =
       </Text>
       
       <View style={[styles.instructionContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
-        <Text style={[styles.instructionText, { color: theme.colors.textPrimary }]}>
-          📊 Arrange from most to least popular
-        </Text>
         {question.prompt.asOf && (
           <Text style={[styles.asOfText, { color: theme.colors.accent4 }]}>
             (As of {question.prompt.asOf})

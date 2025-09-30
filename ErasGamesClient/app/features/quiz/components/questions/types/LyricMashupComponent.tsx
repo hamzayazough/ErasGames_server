@@ -107,12 +107,6 @@ export const LyricMashupComponent: React.FC<LyricMashupComponentProps> = ({
       <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {question.prompt.task}
       </Text>
-      
-      <View style={[styles.instructionContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
-        <Text style={[styles.instructionText, { color: theme.colors.textPrimary }]}>
-          🎤 Match each lyric snippet to its correct song
-        </Text>
-      </View>
 
       <View style={styles.matchingGrid}>
         <View style={styles.column}>

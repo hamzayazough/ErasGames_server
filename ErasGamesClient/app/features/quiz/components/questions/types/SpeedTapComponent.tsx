@@ -204,13 +204,6 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
             {timeLeft}s
           </Text>
         </View>
-        
-        <View style={styles.statusItem}>
-          <Text style={[styles.statusLabel, { color: theme.colors.accent1 }]}>🎯 TAPPED</Text>
-          <Text style={[styles.tapCount, { color: theme.colors.accent1 }]}>
-            {tappedItems.size}
-          </Text>
-        </View>
       </View>
 
       <View style={styles.gridContainer}>

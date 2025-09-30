@@ -62,14 +62,6 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
             {isPlaying ? '⏱️ Playing...' : '▶️ Play 1-Second Clip'}
           </Text>
         </TouchableOpacity>
-
-        {isPlaying && (
-          <View style={styles.playingIndicator}>
-            <Text variant="caption" style={[styles.playingText, { color: theme.colors.primary }]}>
-              🎵 Listen carefully...
-            </Text>
-          </View>
-        )}
       </View>
 
       <View style={styles.songOptions}>
