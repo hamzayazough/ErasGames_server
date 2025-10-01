@@ -81,6 +81,7 @@ interface GlobalHeaderProps {
   showProfile?: boolean;
   showLeaderboard?: boolean;
   isLeaderboardActive?: boolean;
+  isProfileActive?: boolean;
   onProfilePress?: () => void;
   onLeaderboardPress?: () => void;
 }
@@ -91,6 +92,7 @@ export default function GlobalHeader({
   showProfile = true,
   showLeaderboard = true,
   isLeaderboardActive = false,
+  isProfileActive = false,
   onProfilePress,
   onLeaderboardPress,
 }: GlobalHeaderProps) {
@@ -169,11 +171,23 @@ export default function GlobalHeader({
           
           {showProfile && (
             <TouchableOpacity
-              onPress={handleProfilePress}
-              style={[styles.headerButton, styles.profileButton, {backgroundColor: theme.colors.accent4}]}
-              activeOpacity={0.8}
+              onPress={isProfileActive ? undefined : handleProfilePress}
+              style={[
+                styles.headerButton, 
+                styles.profileButton, 
+                {
+                  backgroundColor: isProfileActive 
+                    ? theme.colors.primary 
+                    : theme.colors.accent4
+                }
+              ]}
+              activeOpacity={isProfileActive ? 1 : 0.8}
+              disabled={isProfileActive}
             >
-              <ProfileIcon color={theme.colors.text} size={20} />
+              <ProfileIcon 
+                color={isProfileActive ? theme.colors.textOnPrimary : theme.colors.text} 
+                size={20} 
+              />
             </TouchableOpacity>
           )}
         </View>

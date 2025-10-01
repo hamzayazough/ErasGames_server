@@ -276,9 +276,6 @@ const COUNTRY_CODES = [
 export default function ProfileScreen() {
   const theme = useTheme();
   
-  // Debug: Check if countries are loaded
-  console.log('COUNTRY_CODES length:', COUNTRY_CODES.length);
-  
   // State management
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -362,8 +359,6 @@ export default function ProfileScreen() {
                  country.name.toLowerCase().includes(query);
         });
     
-    console.log('Filtered countries count:', filtered.length);
-    console.log('First 3 countries:', filtered.slice(0, 3));
     return filtered;
   };
 
@@ -540,7 +535,8 @@ export default function ProfileScreen() {
     <ThemedBackground style={styles.container}>
       <GlobalHeader 
         showBack={true} 
-        showProfile={false}
+        showProfile={true}
+        isProfileActive={true}
         title="Profile"
       />
       
