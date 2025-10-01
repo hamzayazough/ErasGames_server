@@ -151,9 +151,8 @@ export default function RegisterScreen({navigation}: Props) {
             
             <Button
               title="Sign In to Your Account"
-              variant="outline"
               onPress={navigateToLogin}
-              textStyle={[styles.loginButtonText, {color: theme.colors.primary}]}
+              textStyle={[styles.loginButtonText]}
             />
           </View>
         </View>

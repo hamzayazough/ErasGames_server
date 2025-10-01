@@ -129,10 +129,9 @@ export default function LoginScreen({navigation}: Props) {
             </View>
             
             <Button
-              title="🌟 Create Your Account"
-              variant="outline"
+              title="Create Your Account"
               onPress={navigateToRegister}
-              textStyle={[styles.signupButtonText, {color: theme.colors.primary}]}
+              textStyle={[styles.signupButtonText]}
             />
           </View>
         </View>

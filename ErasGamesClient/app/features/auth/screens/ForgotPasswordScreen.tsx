@@ -115,10 +115,9 @@ export default function ForgotPasswordScreen({navigation}: Props) {
               
               {!emailSent ? (
                 <Button
-                  title={isLoading ? "🪄 Casting recovery spell..." : "🚀 Send Reset Link"}
+                  title={isLoading ? "Casting recovery spell..." : "Send Reset Link"}
                   onPress={handleResetPassword}
                   loading={isLoading}
-                  style={styles.resetButton}
                   textStyle={{color: '#FFFFFF'}}
                 />
               ) : (
@@ -145,10 +144,8 @@ export default function ForgotPasswordScreen({navigation}: Props) {
             </View>
             
             <Button
-              title="🎮 Back to Sign In"
-              variant="outline"
+              title="Back to Sign In"
               onPress={navigateToLogin}
-              style={[styles.backButton, {borderColor: theme.colors.primary}]}
             />
           </View>
 
