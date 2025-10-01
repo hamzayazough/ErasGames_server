@@ -37,10 +37,10 @@ export default function ForgotPasswordScreen({navigation}: Props) {
       await sendPasswordResetEmail(email.trim());
       setEmailSent(true);
       Alert.alert(
-        'Reset Email Sent! ✨',
-        'Check your email for the magical reset link. If you don\'t see it, check your spam folder!',
+        'Reset Email Sent',
+        'Check your email for the reset link. If you don\'t see it, check your spam folder.',
         [{
-          text: 'Got it!',
+          text: 'OK',
           onPress: () => navigation.navigate('Login')
         }]
       );
@@ -73,7 +73,7 @@ export default function ForgotPasswordScreen({navigation}: Props) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          {/* Magical Title Section */}
+          {/* Title Section */}
           <View style={styles.titleSection}>
             <Image
               source={require('../../../assets/images/main-erasgames-title.png')}
@@ -81,11 +81,8 @@ export default function ForgotPasswordScreen({navigation}: Props) {
               resizeMode="contain"
             />
             <View style={styles.welcomeContainer}>
-              <Text variant="heading2" align="center" style={[styles.welcomeText, {color: theme.colors.text}]}>
-                🔮 Forgot Your Spell? 🔮
-              </Text>
               <Text variant="body" align="center" style={[styles.subtitleText, {color: theme.colors.textSecondary}]}>
-                No worries! We'll help you cast a new one
+                Enter your email to reset your password
               </Text>
             </View>
           </View>
@@ -94,10 +91,10 @@ export default function ForgotPasswordScreen({navigation}: Props) {
           <Card style={[styles.resetCard, {backgroundColor: theme.colors.card}]}>
             <View style={styles.formHeader}>
               <Text variant="heading3" align="center" style={[styles.formTitle, {color: theme.colors.text}]}>
-                ✨ Spell Recovery Center
+                Reset Your Password
               </Text>
               <Text variant="body" align="center" style={[styles.formDescription, {color: theme.colors.textSecondary}]}>
-                Enter your email and we'll send you a magical link to reset your password
+                Enter your email and we'll send you a link to reset your password
               </Text>
             </View>
             
@@ -106,7 +103,7 @@ export default function ForgotPasswordScreen({navigation}: Props) {
                 label="Email Address"
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Enter your magical email"
+                placeholder="Enter your email"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={styles.input}
@@ -115,7 +112,7 @@ export default function ForgotPasswordScreen({navigation}: Props) {
               
               {!emailSent ? (
                 <Button
-                  title={isLoading ? "Casting recovery spell..." : "Send Reset Link"}
+                  title={isLoading ? "Sending..." : "Send Reset Link"}
                   onPress={handleResetPassword}
                   loading={isLoading}
                   textStyle={{color: '#FFFFFF'}}
@@ -123,7 +120,7 @@ export default function ForgotPasswordScreen({navigation}: Props) {
               ) : (
                 <View style={styles.successContainer}>
                   <Text variant="body" align="center" style={[styles.successText, {color: theme.colors.success}]}>
-                    ✅ Magic link sent to your email!
+                    ✓ Reset link sent to your email!
                   </Text>
                   <Text variant="caption" align="center" style={[styles.successSubtext, {color: theme.colors.textSecondary}]}>
                     Check your inbox and spam folder
@@ -138,7 +135,7 @@ export default function ForgotPasswordScreen({navigation}: Props) {
             <View style={styles.dividerContainer}>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
               <Text variant="caption" style={[styles.dividerText, {color: theme.colors.textSecondary}]}>
-                ⭐ Remember your spell? ⭐
+                Remember your password?
               </Text>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
             </View>
@@ -153,7 +150,7 @@ export default function ForgotPasswordScreen({navigation}: Props) {
           <Card style={[styles.tipsCard, {backgroundColor: 'rgba(255, 255, 255, 0.1)'}]}>
             <View style={styles.tipsContent}>
               <Text variant="body" align="center" style={[styles.tipsTitle, {color: theme.colors.text}]}>
-                💡 Helpful Tips
+                Helpful Tips
               </Text>
               <Text variant="caption" style={[styles.tipText, {color: theme.colors.textSecondary}]}>
                 • Check your spam/junk folder if you don't see the email
@@ -208,16 +205,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 8,
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
   },
   subtitleText: {
     fontSize: 16,
     fontStyle: 'italic',
-    textShadowColor: 'rgba(255, 255, 255, 0.6)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
   resetCard: {
     marginBottom: 30,
