@@ -63,6 +63,7 @@ import { DailyQuizController } from './controllers/daily-quiz.controller';
 import { AttemptsController } from './controllers/attempts.controller';
 import { TestController } from './admin/controllers/cdn-test.controller';
 import { AuthController } from './controllers/auth.controller';
+import { UserController } from './controllers/user.controller';
 import { NotificationController } from './controllers/notification.controller';
 
 // Services
@@ -91,8 +92,11 @@ import { QuestionCorrectnessService } from './services/attempt-scoring/question-
 import {
   AttemptService,
   AttemptAnswerService,
-  UserService,
+  UserService as AttemptUserService,
 } from './services/attempt';
+
+// User Management Service
+import { UserService as UserManagementService } from './services/user.service';
 
 // Import entities for TypeORM relationship resolution
 import { BaseEntityTimestamps } from './database/entities/base.entity';
@@ -191,6 +195,7 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     AttemptsController,
     TestController,
     AuthController,
+    UserController,
     NotificationController,
     SeasonsController,
     AdminSeasonsController,
@@ -218,7 +223,9 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     // Attempt Services
     AttemptService,
     AttemptAnswerService,
-    UserService,
+    AttemptUserService,
+    // User Management Service
+    UserManagementService,
     // Season Services
     SeasonService,
     SeasonIntegrationService,
@@ -234,6 +241,10 @@ export class AppModule implements NestModule {
         'daily/status',
         'seasons/current/my-stats',
         'seasons/current/participation',
+        'user/profile',
+        'user/name',
+        'user/notifications',
+        'user/account',
       );
   }
 }
