@@ -8,7 +8,9 @@ import {
   HttpStatus,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { UserService } from '../services/user.service';
 import {
   UserProfileDto,
@@ -21,10 +23,39 @@ import {
 } from '../dto/user.dto';
 import { FirebaseUser } from '../decorators/firebase-user.decorator';
 import type { FirebaseUser as FirebaseUserType } from '../decorators/firebase-user.decorator';
+import { FirebaseService } from '../services/firebase.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private firebaseService: FirebaseService,
+  ) {}
+
+  /**
+   * Helper method to optionally verify Firebase token
+   */
+  private async getOptionalFirebaseUser(
+    request: Request,
+  ): Promise<string | undefined> {
+    try {
+      const authHeader = request.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return undefined;
+      }
+
+      const token = authHeader.substring(7);
+      if (!token) {
+        return undefined;
+      }
+
+      const decodedToken = await this.firebaseService.verifyIdToken(token);
+      return decodedToken.uid;
+    } catch {
+      // If token verification fails, treat as anonymous
+      return undefined;
+    }
+  }
 
   /**
    * GET /user/profile - Get current user's profile information
@@ -74,8 +105,13 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async checkHandleAvailability(
     @Body() checkHandleDto: CheckHandleAvailabilityDto,
+    @Req() request: Request,
   ): Promise<HandleAvailabilityResponseDto> {
-    return await this.userService.checkHandleAvailability(checkHandleDto);
+    const currentUserId = await this.getOptionalFirebaseUser(request);
+    return await this.userService.checkHandleAvailability(
+      checkHandleDto,
+      currentUserId,
+    );
   }
 
   /**
@@ -85,9 +121,14 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async checkHandleAvailabilityQuery(
     @Query('handle') handle: string,
+    @Req() request: Request,
   ): Promise<HandleAvailabilityResponseDto> {
     const checkHandleDto: CheckHandleAvailabilityDto = { handle };
-    return await this.userService.checkHandleAvailability(checkHandleDto);
+    const currentUserId = await this.getOptionalFirebaseUser(request);
+    return await this.userService.checkHandleAvailability(
+      checkHandleDto,
+      currentUserId,
+    );
   }
 
   /**

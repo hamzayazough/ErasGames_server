@@ -56,7 +56,10 @@ export class UserService {
 
     // Check if handle is being updated and if it's available
     if (updateData.handle && updateData.handle !== user.handle) {
-      const isAvailable = await this.isHandleAvailable(updateData.handle);
+      const isAvailable = await this.isHandleAvailable(
+        updateData.handle,
+        userId,
+      );
       if (!isAvailable) {
         throw new ConflictException('Handle is already taken');
       }
@@ -115,9 +118,10 @@ export class UserService {
    */
   async checkHandleAvailability(
     checkHandleDto: CheckHandleAvailabilityDto,
+    currentUserId?: string,
   ): Promise<HandleAvailabilityResponseDto> {
     const { handle } = checkHandleDto;
-    const isAvailable = await this.isHandleAvailable(handle);
+    const isAvailable = await this.isHandleAvailable(handle, currentUserId);
 
     const response: HandleAvailabilityResponseDto = {
       available: isAvailable,
@@ -126,7 +130,10 @@ export class UserService {
 
     // If handle is not available, provide suggestions
     if (!isAvailable) {
-      response.suggestions = await this.generateHandleSuggestions(handle);
+      response.suggestions = await this.generateHandleSuggestions(
+        handle,
+        currentUserId,
+      );
     }
 
     return response;
@@ -186,22 +193,33 @@ export class UserService {
   }
 
   // Private helper methods
-  private async isHandleAvailable(handle: string): Promise<boolean> {
-    const existingUser = await this.userRepository.findOne({
-      where: { handle },
-    });
+  private async isHandleAvailable(
+    handle: string,
+    excludeUserId?: string,
+  ): Promise<boolean> {
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      .where('user.handle = :handle', { handle });
+
+    // Exclude current user if provided
+    if (excludeUserId) {
+      query.andWhere('user.id != :excludeUserId', { excludeUserId });
+    }
+
+    const existingUser = await query.getOne();
     return !existingUser;
   }
 
   private async generateHandleSuggestions(
     baseHandle: string,
+    excludeUserId?: string,
   ): Promise<string[]> {
     const suggestions: string[] = [];
     const maxSuggestions = 3;
 
     for (let i = 1; suggestions.length < maxSuggestions && i <= 100; i++) {
       const suggestion = `${baseHandle}${i}`;
-      if (await this.isHandleAvailable(suggestion)) {
+      if (await this.isHandleAvailable(suggestion, excludeUserId)) {
         suggestions.push(suggestion);
       }
     }
@@ -216,7 +234,7 @@ export class UserService {
 
       for (const variation of variations) {
         if (suggestions.length >= maxSuggestions) break;
-        if (await this.isHandleAvailable(variation)) {
+        if (await this.isHandleAvailable(variation, excludeUserId)) {
           suggestions.push(variation);
         }
       }

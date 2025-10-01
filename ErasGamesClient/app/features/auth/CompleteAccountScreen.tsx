@@ -414,7 +414,7 @@ export default function CompleteAccountScreen() {
     setHandleStatus({ checking: true, available: null, suggestions: [] });
     
     try {
-      const result = await userApiService.checkHandleAvailability(handle);
+      const result = await userApiService.checkHandleAvailability({ handle });
       setHandleStatus({
         checking: false,
         available: result.available,
@@ -435,6 +435,22 @@ export default function CompleteAccountScreen() {
 
     return () => clearTimeout(timer);
   }, [formData.handle]);
+
+  // Handle device location detection
+  const handleUseDeviceLocation = () => {
+    const deviceCountry = getDeviceCountryCode();
+    if (deviceCountry) {
+      setFormData(prev => ({ ...prev, country: deviceCountry }));
+      setShowCountryPicker(false);
+      setCountrySearchQuery('');
+    } else {
+      Alert.alert(
+        'Location Not Detected',
+        'Unable to detect your country from device settings. Please select manually.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
 
   // Country picker functions
   const getFilteredCountries = () => {
@@ -537,7 +553,7 @@ export default function CompleteAccountScreen() {
           {/* Display Name Field */}
           <View style={styles.fieldContainer}>
             <Text variant="body" weight="medium" color="text" style={styles.fieldLabel}>
-              Display Name *
+              Name *
             </Text>
             <Text variant="caption" color="textMuted" style={styles.fieldHelper}>
               Your name as it will appear to other players
@@ -562,7 +578,7 @@ export default function CompleteAccountScreen() {
           {/* Username/Handle Field */}
           <View style={styles.fieldContainer}>
             <Text variant="body" weight="medium" color="text" style={styles.fieldLabel}>
-              Username (@handle) *
+              Username *
             </Text>
             <Text variant="caption" color="textMuted" style={styles.fieldHelper}>
               Unique identifier for your account (3-20 characters)
@@ -728,6 +744,17 @@ export default function CompleteAccountScreen() {
                 autoFocus={true}
               />
             </View>
+
+            {/* Device Location Button */}
+            <TouchableOpacity
+              style={[styles.deviceLocationButton, { backgroundColor: theme.colors.accent2, borderColor: theme.colors.border }]}
+              onPress={handleUseDeviceLocation}
+            >
+              <Text style={[styles.deviceLocationIcon, { color: theme.colors.primary }]}>📍</Text>
+              <Text variant="body" weight="medium" style={{ color: theme.colors.text }}>
+                Use Device Location
+              </Text>
+            </TouchableOpacity>
 
             <FlatList
               data={getFilteredCountries()}
@@ -920,6 +947,20 @@ const styles = StyleSheet.create({
   searchInput: {
     padding: 12,
     fontSize: 16,
+  },
+  deviceLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  deviceLocationIcon: {
+    fontSize: 18,
+    marginRight: 12,
   },
   countryList: {
     flex: 1,
