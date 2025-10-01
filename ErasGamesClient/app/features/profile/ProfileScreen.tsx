@@ -18,6 +18,7 @@ import {
   CountryPickerModal,
   LogoutConfirmModal,
   LoadingState,
+  ThemeSelector,
 } from './components';
 
 export default function ProfileScreen() {
@@ -225,6 +226,8 @@ export default function ProfileScreen() {
           onCancel={handleCancel}
           onLogout={() => setShowLogoutModal(true)}
         />
+
+        <ThemeSelector />
 
         <BasicInformationForm
           editing={editing}

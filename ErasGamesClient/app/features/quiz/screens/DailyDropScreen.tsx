@@ -23,7 +23,7 @@ import {
 } from '../../../core/services/quiz-attempt.service';
 import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 import {QuizAvailableState, QuizCompletedState} from '../components';
-import {GlobalHeader, AnimatedLogo, ThemeSwitcher, CountdownTimer} from '../../../shared/components';
+import {GlobalHeader, AnimatedLogo, CountdownTimer} from '../../../shared/components';
 import { FONTS } from '../../../core/config/fonts';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -362,7 +362,6 @@ export default function DailyDropScreen({navigation}: Props) {
 
   return (
     <ThemedBackground style={styles.container}>
-      <ThemeSwitcher />
       <GlobalHeader 
         title="DAILY DROP"
         showBack={false}
