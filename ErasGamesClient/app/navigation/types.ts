@@ -12,6 +12,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  CompleteAccount: undefined;
 
   // Quiz Flow
   DailyDrop: undefined;

@@ -21,6 +21,7 @@ import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 // Import auth screens
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import RegisterScreen from '../features/auth/screens/RegisterScreen';
+import CompleteAccountScreen from '../features/auth/CompleteAccountScreen';
 // TODO: Create ForgotPasswordScreen if it doesn't exist
 
 // Import leaderboard screen
@@ -34,8 +35,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function RootNavigator() {
   const theme = useTheme();
   const colorScheme = useColorScheme();
-  const { isAuthenticated, isLoading } = useAuth();
-  const navigationRef = useRef<any>();
+  const { isAuthenticated, isLoading, navigationRef } = useAuth();
 
   useEffect(() => {
     // Setup notification opened handlers when navigation is ready
@@ -122,6 +122,11 @@ export function RootNavigator() {
               name="Profile" 
               component={ProfileScreen}
               options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="CompleteAccount" 
+              component={CompleteAccountScreen}
+              options={{headerShown: false, gestureEnabled: false}}
             />
           </>
         ) : (

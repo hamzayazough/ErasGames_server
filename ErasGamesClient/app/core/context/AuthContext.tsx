@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import firebaseService from '../services/firebaseService';
 import { authApiService } from '../api/auth';
 import { AuthenticatedUser } from '../api/config';
 import { FCMService } from '../services/FCMService';
+import { NavigationContainerRef } from '@react-navigation/native';
+import type { RootStackParamList } from '../../navigation/types';
 
 interface AuthContextType {
   user: FirebaseAuthTypes.User | null;
@@ -11,6 +13,8 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isServerAuthenticated: boolean;
+  needsAccountSetup: boolean;
+  navigationRef: React.RefObject<NavigationContainerRef<RootStackParamList>>;
   signIn: (email: string, password: string) => Promise<FirebaseAuthTypes.UserCredential>;
   signUp: (email: string, password: string) => Promise<FirebaseAuthTypes.UserCredential>;
   signOut: () => Promise<void>;
@@ -19,6 +23,7 @@ interface AuthContextType {
   deleteAccount: () => Promise<void>;
   authenticateWithServer: () => Promise<AuthenticatedUser>;
   refreshServerUserData: () => Promise<AuthenticatedUser>;
+  checkAndHandleAccountSetup: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +36,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [serverUser, setServerUser] = useState<AuthenticatedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsAccountSetup, setNeedsAccountSetup] = useState(false);
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  // Function to handle server authentication and account setup check
+  const handleServerAuthentication = async (): Promise<AuthenticatedUser> => {
+    try {
+      const { user: serverUserData, needsSetup } = await authApiService.authenticateAndCheckSetup();
+      
+      setServerUser(serverUserData);
+      setNeedsAccountSetup(needsSetup);
+      
+      // Navigate to CompleteAccount if setup is needed
+      if (needsSetup && navigationRef.current) {
+        // Small delay to ensure navigation is ready
+        setTimeout(() => {
+          navigationRef.current?.navigate('CompleteAccount');
+        }, 100);
+      }
+      
+      return serverUserData;
+    } catch (error) {
+      console.error('Failed to authenticate with server:', error);
+      throw error;
+    }
+  };
 
   // Setup push notifications for authenticated user
   const setupNotifications = async (userId: string) => {
@@ -66,10 +96,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(authUser);
       
       if (authUser) {
-        // User is logged in with Firebase, now authenticate with server
+        // User is logged in with Firebase, now authenticate with server and check setup
         try {
-          const serverUserData = await authApiService.authenticate();
-          setServerUser(serverUserData);
+          const serverUserData = await handleServerAuthentication();
           console.log('✅ Authenticated with server:', serverUserData.id);
           
           // Setup FCM notifications after successful authentication
@@ -144,13 +173,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const authenticateWithServer = async (): Promise<AuthenticatedUser> => {
-    try {
-      const serverUserData = await authApiService.authenticate();
-      setServerUser(serverUserData);
-      return serverUserData;
-    } catch (error) {
-      console.error('Failed to authenticate with server:', error);
-      throw error;
+    return handleServerAuthentication();
+  };
+
+  const checkAndHandleAccountSetup = async (): Promise<void> => {
+    if (serverUser) {
+      const needsSetup = !authApiService.isAccountComplete(serverUser);
+      setNeedsAccountSetup(needsSetup);
+      
+      if (needsSetup && navigationRef.current) {
+        navigationRef.current.navigate('CompleteAccount');
+      }
     }
   };
 
@@ -171,6 +204,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isAuthenticated: !!user,
     isServerAuthenticated: !!serverUser,
+    needsAccountSetup,
+    navigationRef,
     signIn,
     signUp,
     signOut,
@@ -179,6 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     deleteAccount,
     authenticateWithServer,
     refreshServerUserData,
+    checkAndHandleAccountSetup,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
