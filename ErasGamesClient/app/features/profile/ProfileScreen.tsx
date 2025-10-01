@@ -19,6 +19,7 @@ import { useTheme, ThemedBackground } from '../../core/theme';
 import GlobalHeader from '../../shared/components/GlobalHeader';
 import { AnimatedLogo } from '../../shared/components/AnimatedLogo';
 import { userApiService, UserProfile, UpdateUserProfileRequest } from '../../core/api/user';
+import { useAuth } from '../../core/context/AuthContext';
 
 // Country codes list with names for better UX
 const COUNTRY_CODES = [
@@ -275,6 +276,7 @@ const COUNTRY_CODES = [
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const { signOut } = useAuth();
   
   // State management
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -282,6 +284,7 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -406,6 +409,16 @@ export default function ProfileScreen() {
     setRefreshing(true);
     await loadUserProfile();
     setRefreshing(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setShowLogoutModal(false);
+      // Navigation will be handled automatically by AuthContext
+    } catch (error) {
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
+    }
   };
 
   const checkHandleAvailability = async (handle: string) => {
@@ -596,6 +609,21 @@ export default function ProfileScreen() {
             >
               <Text variant="body" weight="semibold" style={{ color: theme.colors.textOnPrimary }}>
                 {editing ? 'Cancel' : 'Edit'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.editButton, 
+                { 
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.error,
+                }
+              ]}
+              onPress={() => setShowLogoutModal(true)}
+            >
+              <Text variant="body" weight="semibold" style={{ color: theme.colors.error }}>
+                Log Off
               </Text>
             </TouchableOpacity>
           </View>
@@ -1001,6 +1029,45 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={showLogoutModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.logoutModalOverlay}>
+          <View style={[styles.logoutModalContainer, { backgroundColor: theme.colors.card }]}>
+            <Text variant="h3" weight="bold" color="text" style={styles.logoutModalTitle}>
+              Sign Out
+            </Text>
+            <Text variant="body" color="textSecondary" style={styles.logoutModalMessage}>
+              Are you sure you want to sign out? You'll need to log in again to access your account.
+            </Text>
+            
+            <View style={styles.logoutModalActions}>
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutModalCancelButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text variant="body" weight="medium" style={{ color: theme.colors.text }}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutModalConfirmButton, { backgroundColor: theme.colors.error }]}
+                onPress={handleLogout}
+              >
+                <Text variant="body" weight="medium" style={{ color: theme.colors.textOnPrimary }}>
+                  Sign Out
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedBackground>
   );
 }
@@ -1063,12 +1130,61 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
   },
   editButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
+  },
+  logoutModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  logoutModalContainer: {
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoutModalTitle: {
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  logoutModalMessage: {
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  logoutModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  logoutModalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  logoutModalCancelButton: {
+    borderWidth: 1,
+  },
+  logoutModalConfirmButton: {
+    // No additional styles needed
   },
   formContainer: {
     borderRadius: 16,
