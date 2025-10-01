@@ -73,9 +73,6 @@ export default function RegisterScreen({navigation}: Props) {
               resizeMode="contain"
             />
             <View style={styles.welcomeContainer}>
-              <Text variant="heading2" align="center" style={[styles.welcomeText, {color: theme.colors.text}]}>
-                ✨ Join the Magic! ✨
-              </Text>
               <Text variant="body" align="center" style={[styles.subtitleText, {color: theme.colors.textSecondary}]}>
                 Create your account and start the adventure
               </Text>
@@ -86,10 +83,7 @@ export default function RegisterScreen({navigation}: Props) {
           <Card style={[styles.registerCard, {backgroundColor: theme.colors.card}]}>
             <View style={styles.formHeader}>
               <Text variant="heading3" align="center" style={[styles.formTitle, {color: theme.colors.text}]}>
-                🎆 Create Your Adventure
-              </Text>
-              <Text variant="caption" align="center" style={[styles.formSubtitle, {color: theme.colors.textSecondary}]}>
-                Ready to become a quiz master?
+                Create Your Account
               </Text>
             </View>
             
@@ -98,7 +92,7 @@ export default function RegisterScreen({navigation}: Props) {
                 label="Email Address"
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Enter your magical email"
+                placeholder="Enter your email"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={styles.input}
@@ -108,7 +102,7 @@ export default function RegisterScreen({navigation}: Props) {
                 label="Password"
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Create your secret spell (6+ characters)"
+                placeholder="Create your password (6+ characters)"
                 secureTextEntry
                 style={styles.input}
               />
@@ -117,7 +111,7 @@ export default function RegisterScreen({navigation}: Props) {
                 label="Confirm Password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Repeat your secret spell"
+                placeholder="Repeat your password"
                 secureTextEntry
                 style={styles.input}
               />
@@ -137,11 +131,10 @@ export default function RegisterScreen({navigation}: Props) {
               </View>
               
               <Button
-                title={isLoading ? "✨ Creating magic..." : "🚀 Start My Adventure"}
+                title={isLoading ? "✨ Creating..." : "Create My Account"}
                 onPress={handleRegister}
                 loading={isLoading}
-                style={styles.registerButton}
-                textStyle={{color: '#FFFFFF'}}
+                textStyle={[styles.registerButtonText, {color: theme.colors.textOnPrimary}]}
               />
             </View>
           </Card>
@@ -151,16 +144,16 @@ export default function RegisterScreen({navigation}: Props) {
             <View style={styles.dividerContainer}>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
               <Text variant="caption" style={[styles.dividerText, {color: theme.colors.textSecondary}]}>
-                ⭐ Already a wizard? ⭐
+                ⭐ Already have an account? ⭐
               </Text>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
             </View>
             
             <Button
-              title="🎮 Sign In to Your Account"
+              title="Sign In to Your Account"
               variant="outline"
               onPress={navigateToLogin}
-              style={[styles.loginButton, {borderColor: theme.colors.primary}]}
+              textStyle={[styles.loginButtonText, {color: theme.colors.primary}]}
             />
           </View>
         </View>
@@ -271,6 +264,16 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  registerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   loginSection: {
     alignItems: 'center',
   },
@@ -295,6 +298,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 15,
     borderWidth: 2,
+    backgroundColor: 'transparent',
     // Add subtle glow
     shadowColor: '#FF69B4',
     shadowOffset: { width: 0, height: 2 },

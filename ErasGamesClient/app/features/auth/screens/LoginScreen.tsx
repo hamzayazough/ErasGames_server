@@ -60,7 +60,7 @@ export default function LoginScreen({navigation}: Props) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          {/* Magical Title Section */}
+          {/* Title Section */}
           <View style={styles.titleSection}>
             <Image
               source={require('../../../assets/images/main-erasgames-title.png')}
@@ -70,9 +70,6 @@ export default function LoginScreen({navigation}: Props) {
             <View style={styles.welcomeContainer}>
               <Text variant="heading2" align="center" style={[styles.welcomeText, {color: theme.colors.text}]}>
                 ✨ Welcome Back! ✨
-              </Text>
-              <Text variant="body" align="center" style={[styles.subtitleText, {color: theme.colors.textSecondary}]}>
-                Step into the magical world of quizzes
               </Text>
             </View>
           </View>
@@ -90,7 +87,7 @@ export default function LoginScreen({navigation}: Props) {
                 label="Email Address"
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Enter your magical email"
+                placeholder="Enter your email"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={styles.input}
@@ -100,21 +97,20 @@ export default function LoginScreen({navigation}: Props) {
                 label="Password"
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your secret spell"
+                placeholder="Enter your password"
                 secureTextEntry
                 style={styles.input}
               />
               
               <Button
-                title={isLoading ? "✨ Casting spell..." : "🚀 Enter the Game"}
+                title={isLoading ? "✨ Connecting..." : "Connect"}
                 onPress={handleLogin}
                 loading={isLoading}
-                style={styles.loginButton}
-                textStyle={{color: '#FFFFFF'}}
+                textStyle={[styles.loginButtonText, {color: theme.colors.textOnPrimary}]}
               />
               
               <Button
-                title="🔮 Forgot Your Spell?"
+                title="🔮 Forgot Your Password?"
                 variant="ghost"
                 onPress={navigateToForgotPassword}
                 style={styles.forgotButton}
@@ -127,16 +123,16 @@ export default function LoginScreen({navigation}: Props) {
             <View style={styles.dividerContainer}>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
               <Text variant="caption" style={[styles.dividerText, {color: theme.colors.textSecondary}]}>
-                ⭐ New to the magic? ⭐
+                ⭐ New to the app? ⭐
               </Text>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
             </View>
             
             <Button
-              title="🌟 Create Your Adventure"
+              title="🌟 Create Your Account"
               variant="outline"
               onPress={navigateToRegister}
-              style={[styles.signupButton, {borderColor: theme.colors.primary}]}
+              textStyle={[styles.signupButtonText, {color: theme.colors.primary}]}
             />
           </View>
         </View>
@@ -234,6 +230,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  signupButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   forgotButton: {
     marginBottom: 0,
