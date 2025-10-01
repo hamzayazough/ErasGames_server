@@ -244,7 +244,6 @@ export class AppModule implements NestModule {
         'user/profile',
         'user/name',
         'user/notifications',
-        'user/account',
       );
   }
 }

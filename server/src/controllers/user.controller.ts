@@ -3,7 +3,6 @@ import {
   Get,
   Put,
   Patch,
-  Delete,
   Body,
   HttpCode,
   HttpStatus,
@@ -115,16 +114,5 @@ export class UserController {
       firebaseUser.uid,
       updateDto,
     );
-  }
-
-  /**
-   * DELETE /user/account - Delete user account (soft delete)
-   */
-  @Delete('account')
-  @HttpCode(HttpStatus.OK)
-  async deleteUserAccount(
-    @FirebaseUser() firebaseUser: FirebaseUserType,
-  ): Promise<{ success: boolean; message: string }> {
-    return await this.userService.deleteUserAccount(firebaseUser.uid);
   }
 }

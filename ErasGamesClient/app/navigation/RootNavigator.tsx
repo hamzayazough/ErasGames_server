@@ -26,6 +26,9 @@ import RegisterScreen from '../features/auth/screens/RegisterScreen';
 // Import leaderboard screen
 import LeaderboardScreen from '../features/leaderboard/screens/LeaderboardScreen';
 
+// Import profile screen
+import ProfileScreen from '../features/profile';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
@@ -113,6 +116,11 @@ export function RootNavigator() {
             <Stack.Screen 
               name="Leaderboard" 
               component={LeaderboardScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="Profile" 
+              component={ProfileScreen}
               options={{headerShown: false}}
             />
           </>

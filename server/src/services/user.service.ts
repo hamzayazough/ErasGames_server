@@ -7,7 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
-import { UserStatus } from '../database/enums/user.enums';
 import {
   UserProfileDto,
   UpdateUserProfileDto,
@@ -186,37 +185,6 @@ export class UserService {
     };
   }
 
-  /**
-   * Delete user account (soft delete by changing status)
-   */
-  async deleteUserAccount(
-    userId: string,
-  ): Promise<{ success: boolean; message: string }> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Soft delete by changing status and anonymizing data
-    user.status = UserStatus.DELETED;
-    user.email = null;
-    user.name = 'Deleted User';
-    user.handle = null;
-    user.country = null;
-    user.stripeCustomerId = null;
-    user.updatedAt = new Date();
-
-    await this.userRepository.save(user);
-
-    return {
-      success: true,
-      message: 'Account successfully deleted',
-    };
-  }
-
   // Private helper methods
   private async isHandleAvailable(handle: string): Promise<boolean> {
     const existingUser = await this.userRepository.findOne({
@@ -282,7 +250,6 @@ export class UserService {
       country: user.country,
       tz: user.tz,
       pushEnabled: user.pushEnabled,
-      leaderboardOptOut: user.leaderboardOptOut,
       shareCountryOnLB: user.shareCountryOnLB,
       analyticsConsent: user.analyticsConsent,
       marketingConsent: user.marketingConsent,

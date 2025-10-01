@@ -15,7 +15,6 @@ export class UserProfileDto {
   country!: string | null;
   tz!: string;
   pushEnabled!: boolean;
-  leaderboardOptOut!: boolean;
   shareCountryOnLB!: boolean;
   analyticsConsent!: boolean;
   marketingConsent!: boolean;
@@ -53,10 +52,6 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @IsBoolean()
   pushEnabled?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  leaderboardOptOut?: boolean;
 
   @IsOptional()
   @IsBoolean()
