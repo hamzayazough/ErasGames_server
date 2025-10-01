@@ -9,3 +9,4 @@ export {
   AnimatedActionButton,
   default as DefaultAnimatedActionButton,
 } from './AnimatedActionButton';
+export {default as ErrorModal} from './ErrorModal';

@@ -58,7 +58,8 @@ export function RootNavigator() {
   };
 
   // Show loading screen while checking authentication state
-  if (isLoading) {
+  // But NOT during login/signup attempts to prevent modal state loss
+  if (isLoading && isAuthenticated !== false) {
     return (
       <ThemedBackground style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
@@ -71,6 +72,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       <Stack.Navigator
+        initialRouteName={isAuthenticated ? "DailyDrop" : "Login"}
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
@@ -130,16 +132,16 @@ export function RootNavigator() {
             />
           </>
         ) : (
-          // Authentication screens
+          // Authentication screens - Login should be the default screen
           <>
-            <Stack.Screen 
-              name="Register" 
-              component={RegisterScreen}
-              options={{headerShown: false}}
-            />
             <Stack.Screen 
               name="Login" 
               component={LoginScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="Register" 
+              component={RegisterScreen}
               options={{headerShown: false}}
             />
             <Stack.Screen 

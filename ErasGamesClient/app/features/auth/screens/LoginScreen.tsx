@@ -1,9 +1,10 @@
-import React, {useState} from 'react';
-import {StyleSheet, Alert, Image, ScrollView, Dimensions} from 'react-native';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
+import {StyleSheet, Image, ScrollView, Dimensions} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {View, Text, Button, Input, Card} from '../../../ui';
 import {useTheme, ThemedBackground} from '../../../core/theme';
 import {useAuth} from '../../../core/context/AuthContext';
+import {ErrorModal} from '../../../shared/components';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 const {width, height} = Dimensions.get('window');
@@ -16,11 +17,36 @@ export default function LoginScreen({navigation}: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   
-  const { signIn, isLoading } = useAuth();
+  // Use state but prevent resets during re-renders with a different approach
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  // Use a ref to track if we should ignore auth state changes
+  const shouldIgnoreAuthChanges = useRef(false);
+  
+
+  
+  const { signIn, isLoading, isAuthenticated } = useAuth();
+  
+
+  
+  // Helper functions to manage modal state
+  const showErrorModal = useCallback((message: string) => {
+    // Use setTimeout to delay the modal showing until after re-renders
+    setTimeout(() => {
+      setErrorMessage(message);
+      setErrorModalVisible(true);
+    }, 100);
+  }, []);
+
+  const hideErrorModal = useCallback(() => {
+    setErrorModalVisible(false);
+    setErrorMessage('');
+  }, []);
   
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showErrorModal('Please fill in all fields to continue your magical journey! ✨');
       return;
     }
     
@@ -28,21 +54,29 @@ export default function LoginScreen({navigation}: Props) {
       await signIn(email.trim(), password);
       // Navigation is handled automatically by the auth state change
     } catch (error: any) {
-      let errorMessage = 'Something went wrong';
+      let message = 'Something went wrong on our end. Please try again! 🎮';
       
       if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password';
+        message = 'We couldn\'t find an account with this email. Double-check your email or create a new account! 📧';
+      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        message = 'The password you entered doesn\'t match our records. Please try again! 🔐';
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address';
+        message = 'Please enter a valid email address to continue! 📧';
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later';
+        message = 'Too many failed attempts detected. Please wait a moment before trying again! ⏰';
+      } else if (error.code === 'auth/network-request-failed') {
+        message = 'Network connection issue. Please check your internet and try again! 📶';
       }
       
-      Alert.alert('Login Failed', errorMessage);
+      showErrorModal(message);
     }
   };
+  
+  const closeErrorModal = () => {
+    hideErrorModal();
+  };
+  
+
   
   const navigateToRegister = () => {
     navigation.navigate('Register');
@@ -136,6 +170,15 @@ export default function LoginScreen({navigation}: Props) {
           </View>
         </View>
       </ScrollView>
+      
+      {/* Error Modal */}
+      <ErrorModal
+        visible={errorModalVisible}
+        title="🎮 Login Trouble?"
+        message={errorMessage}
+        onClose={closeErrorModal}
+        closeButtonText="🚀 Let's Try Again"
+      />
     </ThemedBackground>
   );
 }

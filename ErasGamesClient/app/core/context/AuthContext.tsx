@@ -125,6 +125,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const result = await firebaseService.signIn(email, password);
       return result;
+    } catch (error) {
+      throw error; // Re-throw the error so it can be caught in the LoginScreen
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +137,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const result = await firebaseService.signUp(email, password);
       return result;
+    } catch (error) {
+      throw error; // Re-throw the error so it can be caught in components
     } finally {
       setIsLoading(false);
     }
