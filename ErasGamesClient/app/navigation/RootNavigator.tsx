@@ -21,8 +21,8 @@ import ResultsScreen from '../features/quiz/screens/ResultsScreen';
 // Import auth screens
 import LoginScreen from '../features/auth/screens/LoginScreen';
 import RegisterScreen from '../features/auth/screens/RegisterScreen';
+import ForgotPasswordScreen from '../features/auth/screens/ForgotPasswordScreen';
 import CompleteAccountScreen from '../features/auth/CompleteAccountScreen';
-// TODO: Create ForgotPasswordScreen if it doesn't exist
 
 // Import leaderboard screen
 import LeaderboardScreen from '../features/leaderboard/screens/LeaderboardScreen';
@@ -140,6 +140,11 @@ export function RootNavigator() {
             <Stack.Screen 
               name="Login" 
               component={LoginScreen}
+              options={{headerShown: false}}
+            />
+            <Stack.Screen 
+              name="ForgotPassword" 
+              component={ForgotPasswordScreen}
               options={{headerShown: false}}
             />
           </>

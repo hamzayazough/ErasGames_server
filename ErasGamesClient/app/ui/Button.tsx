@@ -160,7 +160,7 @@ export function Button({
                 fontSize: getTextSize(),
                 fontWeight: theme.text.weight.bold,
                 letterSpacing: 0.5,
-                textTransform: 'uppercase',
+                // Removed textTransform: 'uppercase' for better readability
               },
               textStyle,
             ]}

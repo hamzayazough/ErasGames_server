@@ -8,48 +8,56 @@ import type {RootStackScreenProps} from '../../../navigation/types';
 
 const {width, height} = Dimensions.get('window');
 
-type Props = RootStackScreenProps<'Register'>;
+type Props = RootStackScreenProps<'ForgotPassword'>;
 
-export default function RegisterScreen({navigation}: Props) {
+export default function ForgotPasswordScreen({navigation}: Props) {
   const {t} = useTranslation();
   const theme = useTheme();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   
-  const { signUp, isLoading } = useAuth();
+  const { sendPasswordResetEmail } = useAuth();
   
-  const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+  const handleResetPassword = async () => {
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
     
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-    
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
-      return;
-    }
-    
+    setIsLoading(true);
     try {
-      await signUp(email.trim(), password);
-      // Navigation is handled automatically by the auth state change
+      await sendPasswordResetEmail(email.trim());
+      setEmailSent(true);
+      Alert.alert(
+        'Reset Email Sent! ✨',
+        'Check your email for the magical reset link. If you don\'t see it, check your spam folder!',
+        [{
+          text: 'Got it!',
+          onPress: () => navigation.navigate('Login')
+        }]
+      );
     } catch (error: any) {
       let errorMessage = 'Something went wrong';
       
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'An account with this email already exists';
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email address';
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email address';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many requests. Please wait a moment and try again';
       }
       
-      Alert.alert('Registration Failed', errorMessage);
+      Alert.alert('Reset Failed', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -74,22 +82,22 @@ export default function RegisterScreen({navigation}: Props) {
             />
             <View style={styles.welcomeContainer}>
               <Text variant="heading2" align="center" style={[styles.welcomeText, {color: theme.colors.text}]}>
-                ✨ Join the Magic! ✨
+                🔮 Forgot Your Spell? 🔮
               </Text>
               <Text variant="body" align="center" style={[styles.subtitleText, {color: theme.colors.textSecondary}]}>
-                Create your account and start the adventure
+                No worries! We'll help you cast a new one
               </Text>
             </View>
           </View>
 
-          {/* Registration Form Card */}
-          <Card style={[styles.registerCard, {backgroundColor: theme.colors.card}]}>
+          {/* Reset Form Card */}
+          <Card style={[styles.resetCard, {backgroundColor: theme.colors.card}]}>
             <View style={styles.formHeader}>
               <Text variant="heading3" align="center" style={[styles.formTitle, {color: theme.colors.text}]}>
-                🎆 Create Your Adventure
+                ✨ Spell Recovery Center
               </Text>
-              <Text variant="caption" align="center" style={[styles.formSubtitle, {color: theme.colors.textSecondary}]}>
-                Ready to become a quiz master?
+              <Text variant="body" align="center" style={[styles.formDescription, {color: theme.colors.textSecondary}]}>
+                Enter your email and we'll send you a magical link to reset your password
               </Text>
             </View>
             
@@ -102,67 +110,65 @@ export default function RegisterScreen({navigation}: Props) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={styles.input}
+                editable={!emailSent}
               />
               
-              <Input
-                label="Password"
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Create your secret spell (6+ characters)"
-                secureTextEntry
-                style={styles.input}
-              />
-              
-              <Input
-                label="Confirm Password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Repeat your secret spell"
-                secureTextEntry
-                style={styles.input}
-              />
-              
-              {/* Password strength indicator */}
-              <View style={styles.passwordHints}>
-                <Text variant="caption" style={[styles.hintText, {
-                  color: password.length >= 6 ? theme.colors.success : theme.colors.textMuted
-                }]}>
-                  • At least 6 characters {password.length >= 6 ? '✓' : ''}
-                </Text>
-                <Text variant="caption" style={[styles.hintText, {
-                  color: password && confirmPassword && password === confirmPassword ? theme.colors.success : theme.colors.textMuted
-                }]}>
-                  • Passwords match {password && confirmPassword && password === confirmPassword ? '✓' : ''}
-                </Text>
-              </View>
-              
-              <Button
-                title={isLoading ? "✨ Creating magic..." : "🚀 Start My Adventure"}
-                onPress={handleRegister}
-                loading={isLoading}
-                style={styles.registerButton}
-                textStyle={{color: '#FFFFFF'}}
-              />
+              {!emailSent ? (
+                <Button
+                  title={isLoading ? "🪄 Casting recovery spell..." : "🚀 Send Reset Link"}
+                  onPress={handleResetPassword}
+                  loading={isLoading}
+                  style={styles.resetButton}
+                  textStyle={{color: '#FFFFFF'}}
+                />
+              ) : (
+                <View style={styles.successContainer}>
+                  <Text variant="body" align="center" style={[styles.successText, {color: theme.colors.success}]}>
+                    ✅ Magic link sent to your email!
+                  </Text>
+                  <Text variant="caption" align="center" style={[styles.successSubtext, {color: theme.colors.textSecondary}]}>
+                    Check your inbox and spam folder
+                  </Text>
+                </View>
+              )}
             </View>
           </Card>
           
-          {/* Login Section */}
-          <View style={styles.loginSection}>
+          {/* Back to Login Section */}
+          <View style={styles.backSection}>
             <View style={styles.dividerContainer}>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
               <Text variant="caption" style={[styles.dividerText, {color: theme.colors.textSecondary}]}>
-                ⭐ Already a wizard? ⭐
+                ⭐ Remember your spell? ⭐
               </Text>
               <View style={[styles.divider, {borderColor: theme.colors.borderLight}]} />
             </View>
             
             <Button
-              title="🎮 Sign In to Your Account"
+              title="🎮 Back to Sign In"
               variant="outline"
               onPress={navigateToLogin}
-              style={[styles.loginButton, {borderColor: theme.colors.primary}]}
+              style={[styles.backButton, {borderColor: theme.colors.primary}]}
             />
           </View>
+
+          {/* Helpful Tips */}
+          <Card style={[styles.tipsCard, {backgroundColor: 'rgba(255, 255, 255, 0.1)'}]}>
+            <View style={styles.tipsContent}>
+              <Text variant="body" align="center" style={[styles.tipsTitle, {color: theme.colors.text}]}>
+                💡 Helpful Tips
+              </Text>
+              <Text variant="caption" style={[styles.tipText, {color: theme.colors.textSecondary}]}>
+                • Check your spam/junk folder if you don't see the email
+              </Text>
+              <Text variant="caption" style={[styles.tipText, {color: theme.colors.textSecondary}]}>
+                • The reset link expires in 24 hours for security
+              </Text>
+              <Text variant="caption" style={[styles.tipText, {color: theme.colors.textSecondary}]}>
+                • Make sure the email address is correct
+              </Text>
+            </View>
+          </Card>
         </View>
       </ScrollView>
     </ThemedBackground>
@@ -216,7 +222,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
-  registerCard: {
+  resetCard: {
     marginBottom: 30,
     borderRadius: 20,
     padding: 0,
@@ -240,27 +246,19 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  formSubtitle: {
+  formDescription: {
     fontSize: 14,
-    fontStyle: 'italic',
+    lineHeight: 20,
   },
   formContent: {
     padding: 24,
   },
   input: {
-    marginBottom: 16,
-  },
-  passwordHints: {
     marginBottom: 20,
-    paddingLeft: 10,
   },
-  hintText: {
-    fontSize: 12,
-    marginBottom: 2,
-  },
-  registerButton: {
+  resetButton: {
     marginTop: 10,
     borderRadius: 15,
     height: 50,
@@ -271,8 +269,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  loginSection: {
+  successContainer: {
     alignItems: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(152, 251, 152, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(152, 251, 152, 0.3)',
+  },
+  successText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  successSubtext: {
+    fontSize: 14,
+  },
+  backSection: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -290,7 +305,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  loginButton: {
+  backButton: {
     width: '100%',
     height: 50,
     borderRadius: 15,
@@ -301,5 +316,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
+  },
+  tipsCard: {
+    borderRadius: 15,
+    padding: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  tipsContent: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  tipText: {
+    fontSize: 12,
+    marginBottom: 4,
+    lineHeight: 16,
   },
 });

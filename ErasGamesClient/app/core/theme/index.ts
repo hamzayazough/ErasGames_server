@@ -126,7 +126,7 @@ const mainTheme = {
     'Pastel, dreamy, whimsical design with a touch of fairytale magic. Features soft gradients from lavender to soft pink to pastel blue, with sparkles and magical elements.',
   colors: {
     // Main gradient colors: lavender → soft pink → pastel blue
-    primary: '#da65c6ff', // Vivid pink for main action buttons
+    primary: '#DA65C6', // Vivid pink for main action buttons (fixed alpha)
     primaryLight: '#FFB6C1', // Light pink for hover states
     primaryDark: '#E91E63', // Darker pink for pressed states
 
@@ -170,7 +170,7 @@ const mainTheme = {
     placeholder: '#C8A2C8', // Light orchid
 
     // Button variants
-    buttonPrimary: '#FF69B4', // Vivid pink
+    buttonPrimary: '#DA65C6', // Vivid pink
     buttonSecondary: '#E6E6FA', // Lavender
     buttonOutline: 'transparent',
 
