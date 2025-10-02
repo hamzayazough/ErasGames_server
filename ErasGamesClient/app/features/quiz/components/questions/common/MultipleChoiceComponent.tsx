@@ -80,22 +80,35 @@ export const MultipleChoiceComponent: React.FC<MultipleChoiceProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
+    gap: 16,
+    marginTop: 20,
   },
   choice: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    borderWidth: 3,
     minHeight: 60,
     justifyContent: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
   selectedChoice: {
-    borderWidth: 2,
+    borderWidth: 3,
+    shadowColor: 'rgba(0, 0, 0, 0.25)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
   },
   choiceText: {
     fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
     flexWrap: 'wrap',
+    letterSpacing: 0.5,
   },
 });

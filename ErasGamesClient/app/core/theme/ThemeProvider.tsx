@@ -1,38 +1,65 @@
-import React, {createContext, useContext, useMemo} from 'react';
-import {useColorScheme} from 'react-native';
-import {useAppStore} from '../state/appStore';
-import {themes, Theme, ThemeMode, EraName} from './index';
+import React, {createContext, useContext, useMemo, useState} from 'react';
+import {themes, Theme, ThemeMode} from './index';
 
-const ThemeContext = createContext<Theme>(themes.lover);
+interface ThemeContextValue extends Theme {
+  // New properties for enhanced theme system
+  currentMode: ThemeMode;
+  switchTheme: (mode: ThemeMode) => void;
+  assets: {
+    backgroundImage: any;
+    titleImage: any;
+  };
+  // Keep the theme object for destructuring
+  theme: Theme;
+}
+
+const ThemeContext = createContext<ThemeContextValue>({
+  ...themes.main,
+  theme: themes.main,
+  currentMode: 'main',
+  switchTheme: () => {},
+  assets: {
+    backgroundImage: null,
+    titleImage: null,
+  },
+});
 
 export const useTheme = () => useContext(ThemeContext);
 
 interface ThemeProviderProps {
   children: React.ReactNode;
+  defaultTheme?: ThemeMode;
 }
 
-export function ThemeProvider({children}: ThemeProviderProps) {
-  const systemColorScheme = useColorScheme();
-  const themePref = useAppStore(state => state.theme);
-  const currentEra = useAppStore(state => state.currentEra);
-  
-  const themeMode: ThemeMode = useMemo(() => {
-    // If an era is selected, use that theme
-    if (currentEra && currentEra in themes) {
-      return currentEra as ThemeMode;
-    }
+export function ThemeProvider({children, defaultTheme = 'main'}: ThemeProviderProps) {
+  const [currentMode, setCurrentMode] = useState<ThemeMode>(defaultTheme);
+
+  const themeValue = useMemo(() => {
+    const theme = themes[currentMode];
     
-    // Otherwise use theme preference
-    if (themePref === 'system') {
-      return systemColorScheme === 'dark' ? 'midnights' : 'lover'; // Use era themes instead of light/dark
-    }
-    return themePref || 'lover'; // Default to lover theme
-  }, [themePref, systemColorScheme, currentEra]);
-  
-  const theme = useMemo(() => themes[themeMode], [themeMode]);
+    // Define theme-specific assets
+    const assets = {
+      backgroundImage: currentMode === 'main' 
+        ? require('../../assets/images/main-erasgames-background.png')
+        : null, // Retro theme uses solid colors, no background image
+      titleImage: currentMode === 'main'
+        ? require('../../assets/images/main-erasgames-title.png')
+        : require('../../assets/images/erasgames-title.png'),
+    };
+
+    return {
+      // Spread the theme properties directly for backward compatibility
+      ...theme,
+      // Also provide as nested object for new usage
+      theme,
+      currentMode,
+      switchTheme: setCurrentMode,
+      assets,
+    };
+  }, [currentMode]);
   
   return (
-    <ThemeContext.Provider value={theme}>
+    <ThemeContext.Provider value={themeValue}>
       {children}
     </ThemeContext.Provider>
   );

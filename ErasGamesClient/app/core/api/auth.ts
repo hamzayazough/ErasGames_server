@@ -29,14 +29,38 @@ export class AuthApiService {
       const response = await httpService.post<AuthenticatedUser>(
         '/auth/authenticate',
       );
-
-      console.log('✅ User authenticated with server:', response.id);
       return response;
     } catch (error) {
       console.error('❌ Authentication failed:', error);
       httpService.setAuthToken(null); // Clear token on failure
       throw error;
     }
+  }
+
+  /**
+   * Check if user account is complete (has required fields)
+   * Returns true if user has name, handle, and country
+   */
+  isAccountComplete(user: AuthenticatedUser): boolean {
+    const hasName = !!user.name?.trim();
+    const hasHandle = !!user.handle?.trim();
+    const hasCountry = !!user.country?.trim();
+    const isComplete = hasName && hasHandle && hasCountry;
+    return isComplete;
+  }
+
+  /**
+   * Authenticate and check if account setup is complete
+   * Returns { user, needsSetup } to indicate if CompleteAccount screen is needed
+   */
+  async authenticateAndCheckSetup(): Promise<{
+    user: AuthenticatedUser;
+    needsSetup: boolean;
+  }> {
+    const user = await this.authenticate();
+    const needsSetup = !this.isAccountComplete(user);
+
+    return {user, needsSetup};
   }
 
   /**
@@ -52,7 +76,6 @@ export class AuthApiService {
    */
   logout() {
     httpService.setAuthToken(null);
-    console.log('🚪 Logged out - auth token cleared');
   }
 
   /**

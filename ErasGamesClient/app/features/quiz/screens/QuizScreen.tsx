@@ -1,33 +1,75 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
+import {StyleSheet, ScrollView, StatusBar, Alert, ActivityIndicator, Dimensions, Animated} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
-import {useTheme} from '../../../core/theme/ThemeProvider';
+import {useTheme, ThemedBackground} from '../../../core/theme';
+import GlobalHeader from '../../../shared/components/GlobalHeader';
 import type {RootStackScreenProps} from '../../../navigation/types';
 import { QuestionRenderer } from '../components/questions/QuestionRenderer';
 import { AnswerHandler, QuestionAnswer } from '../utils/AnswerHandler';
 import { AnyQuestion } from '../../../shared/interfaces/questions/any-question.type';
-import { basicQuizMock, dailyQuizMock } from '../constants/quizMocks';
+import { basicQuizMock } from '../constants/quizMocks';
+import { 
+  QuizAttemptService, 
+  QuizAttempt, 
+  QuizSubmission 
+} from '../../../core/services/quiz-attempt.service';
+import { DailyQuizService, QuizTemplate } from '../../../core/api/daily-quiz';
 
 type Props = RootStackScreenProps<'Quiz'>;
 
 export default function QuizScreen({navigation, route}: Props) {
   const theme = useTheme();
   
-  // Get the selected quiz from navigation params, fallback to daily quiz
-  const selectedQuiz = route.params?.selectedQuiz || dailyQuizMock;
-  const mockQuestions = selectedQuiz.questions;
-  
+  // State management
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(() => 
-    AnswerHandler.getDefaultAnswer(mockQuestions[0])
-  );
+  const [selectedAnswer, setSelectedAnswer] = useState<QuestionAnswer | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<{[key: string]: QuestionAnswer}>({});
-  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // Fixed 5 minutes = 300 seconds
-  const [quizStarted, setQuizStarted] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(1 * 60); // 1 minute = 60 seconds
+  const [quizStarted, setQuizStarted] = useState(!!route.params?.quizAttempt); // Start immediately if quiz data is passed
+  const [quizAttempt, setQuizAttempt] = useState<QuizAttempt | null>(route.params?.quizAttempt || null);
+  const [isStartingQuiz, setIsStartingQuiz] = useState(false);
+  const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
+  const [quizResult, setQuizResult] = useState<QuizSubmission | null>(null);
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
+  const [quizTemplate, setQuizTemplate] = useState<QuizTemplate | null>(route.params?.quizTemplate || null);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
   const isMountedRef = useRef(true);
 
-  const currentQuestion = mockQuestions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === mockQuestions.length - 1;
+  // Get selected quiz for metadata (title, description, etc.)
+  const selectedQuiz = route.params?.selectedQuiz || {
+    id: 'daily-quiz',
+    title: "Today's Daily Quiz",
+    description: '6 questions (3 easy, 2 medium, 1 hard) • 1 minute time limit',
+    difficulty: 'mixed' as const,
+    estimatedTime: 1,
+    questions: []
+  };
+  
+  // Use real quiz template if available, fallback to mock for development
+  const questions = quizTemplate?.questions || selectedQuiz.questions;
+  const currentQuestion = questions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+
+  // Set default answer when questions change
+  useEffect(() => {
+    if (currentQuestion && !selectedAnswer) {
+      setSelectedAnswer(AnswerHandler.getDefaultAnswer(currentQuestion));
+    }
+  }, [currentQuestion, selectedAnswer]);
+
+  // Initialize quiz when data is passed via navigation
+  useEffect(() => {
+    if (route.params?.quizAttempt && route.params?.quizTemplate) {
+      const attempt = route.params.quizAttempt;
+      const template = route.params.quizTemplate;
+      
+      setQuizAttempt(attempt);
+      setQuizTemplate(template);
+      setTimeRemaining(QuizAttemptService.getTimeRemaining(attempt.deadline));
+      setQuizStarted(true);
+      setQuestionStartTime(Date.now());
+    }
+  }, [route.params?.quizAttempt, route.params?.quizTemplate]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -36,33 +78,32 @@ export default function QuizScreen({navigation, route}: Props) {
     };
   }, []);
 
-  // Timer countdown - only runs when quiz is started
+  // Timer countdown - calculates remaining time from deadline
   useEffect(() => {
-    if (!quizStarted) return;
+    if (!quizStarted || !quizAttempt || quizSubmitted) return;
     
     const interval = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          // Time's up! Auto-submit quiz safely
-          if (isMountedRef.current) {
-            setTimeout(() => {
-              if (isMountedRef.current) {
-                Alert.alert(
-                  'Time\'s Up! ⏰',
-                  'Your 5-minute quiz time has expired. Submitting your answers...',
-                  [{text: 'OK', onPress: handleQuizSubmit}]
-                );
-              }
-            }, 100);
-          }
-          return 0;
+      try {
+        const remaining = QuizAttemptService.getTimeRemaining(quizAttempt.deadline);
+        setTimeRemaining(remaining);
+        
+        if (remaining === 0 && isMountedRef.current && !quizSubmitted) {
+          // Time's up! Auto-submit quiz immediately
+          setTimeout(() => {
+            if (isMountedRef.current && !quizSubmitted) {
+              handleQuizSubmit();
+            }
+          }, 100);
         }
-        return prev - 1;
-      });
+      } catch (error) {
+        console.error('Error updating quiz timer:', error);
+        // Fallback to local countdown
+        setTimeRemaining(prev => Math.max(0, prev - 1));
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [quizStarted, navigation]);
+  }, [quizStarted, quizAttempt, quizSubmitted]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -74,40 +115,169 @@ export default function QuizScreen({navigation, route}: Props) {
     setSelectedAnswer(answer);
   };
 
-  const handleStartQuiz = () => {
-    setQuizStarted(true);
-  };
-
-  const handleQuizSubmit = () => {
-    // Submit all collected answers to server
-    const finalAnswers = {
-      ...answeredQuestions,
-      ...(selectedAnswer ? { [currentQuestion.id]: selectedAnswer } : {})
-    };
+  // Submit answer for current question when moving to next
+  const submitCurrentAnswer = async () => {
+    if (!quizAttempt || !selectedAnswer) return;
     
-    console.log('Submitting quiz answers:', finalAnswers);
-    // TODO: Send answers to server API
+    const timeSpent = Date.now() - questionStartTime;
     
-    if (isMountedRef.current) {
-      Alert.alert(
-        'Quiz Submitted! 🎉',
-        'Your answers have been submitted successfully.',
-        [{text: 'OK', onPress: () => {
-          if (isMountedRef.current) {
-            navigation.goBack();
-          }
-        }}]
+    try {
+      await QuizAttemptService.submitAnswer(
+        quizAttempt.attemptId,
+        currentQuestion.id,
+        selectedAnswer,
+        timeSpent
       );
-    } else {
-      // If component is unmounted, just navigate back
-      navigation.goBack();
+    } catch (error) {
+      console.error('❌ Failed to submit answer for question:', currentQuestion.id, error);
+      // Continue anyway - we'll retry at the end
     }
   };
 
-  const handleSubmitAnswer = () => {
+  const handleStartQuiz = async () => {
+    try {
+      setIsStartingQuiz(true);
+      
+      // First check if user already has an attempt for today
+      const attemptStatus = await QuizAttemptService.getTodayAttemptStatus();
+      
+      if (attemptStatus.hasAttempt) {
+        if (attemptStatus.attempt?.status === 'finished') {
+          // Show completed quiz message
+          Alert.alert(
+            'Quiz Already Completed',
+            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0}%! Come back tomorrow for a new quiz.`,
+            [{text: 'OK'}]
+          );
+        } else {
+          // Show active attempt message
+          Alert.alert(
+            'Quiz In Progress',
+            'You have an active quiz attempt. Please finish it first or wait for it to expire.',
+            [{text: 'OK'}]
+          );
+        }
+        return;
+      }
+      
+      // Start quiz attempt on server
+      const attempt = await QuizAttemptService.startAttempt();
+      
+      // Fetch the quiz template from CDN
+      const templateResponse = await fetch(attempt.templateUrl);
+      if (!templateResponse.ok) {
+        throw new Error(`Failed to fetch quiz template: ${templateResponse.status}`);
+      }
+      const rawTemplate = await templateResponse.json();
+      
+      // Transform CDN template format to match expected question structure
+      const transformedTemplate = {
+        ...rawTemplate,
+        questions: rawTemplate.questions.map((q: any) => ({
+          id: q.qid, // Map qid to id
+          questionType: q.type, // Map type to questionType
+          difficulty: q.payload.difficulty || 'medium',
+          themes: q.payload.themes || [],
+          subjects: q.payload.subjects || [], // Add subjects field
+          prompt: q.payload.prompt,
+          choices: q.payload.choices,
+          correct: q.payload.correct, // Include correct answers if available
+          mediaRefs: q.payload.mediaRefs, // Include media references if available
+          scoringHints: q.payload.scoringHints, // Include scoring hints if available
+          // Copy any other payload properties to the root level
+          ...q.payload
+        }))
+      };
+      
+      // Store quiz template and attempt data
+      setQuizTemplate(transformedTemplate);
+      setQuizAttempt(attempt);
+      setTimeRemaining(QuizAttemptService.getTimeRemaining(attempt.deadline));
+      setQuizStarted(true);
+      setQuestionStartTime(Date.now());
+      
+    } catch (error) {
+      console.error('❌ QUIZ START FAILED:', error);
+      Alert.alert(
+        'Error Starting Quiz',
+        'Failed to start the quiz. Please check your connection and try again.',
+        [{text: 'OK'}]
+      );
+    } finally {
+      setIsStartingQuiz(false);
+    }
+  };
+
+  const handleQuizSubmit = async () => {
+    if (!quizAttempt || isSubmittingQuiz) return;
+    
+    console.log('📝 USER CLICKED SUBMIT QUIZ - Collecting all answers for bulk submission...');
+    
+    try {
+      setIsSubmittingQuiz(true);
+      
+      // Include current answer if we have one
+      const finalAnswers = {...answeredQuestions};
+      if (selectedAnswer && currentQuestion) {
+        finalAnswers[currentQuestion.id] = selectedAnswer;
+      }
+      
+      // Convert to server format for bulk submission
+      const bulkAnswers = Object.entries(finalAnswers).map(([questionId, answer]) => ({
+        questionId,
+        answer,
+      }));
+      
+      console.log('📦 Submitting answers in bulk:', bulkAnswers.length, 'answers');
+      console.log('🔄 Calling QuizAttemptService.finishAttempt() with bulk answers...');
+      
+      // Finish the attempt with bulk answer submission and get final score
+      const result = await QuizAttemptService.finishAttempt(quizAttempt.attemptId, bulkAnswers);
+      
+      console.log('✅ QUIZ SUBMISSION SUCCESSFUL!');
+      console.log('🎯 Final Score:', result.score);
+      console.log('📊 Score Breakdown:', result.breakdown);
+      console.log('⏱️ Finish Time:', result.finishTimeSec, 'seconds');
+      console.log('🎯 Accuracy Points:', result.accPoints);
+      
+      setQuizResult(result);
+      setQuizSubmitted(true); // Stop the timer
+      
+      if (isMountedRef.current) {
+        // Create QuizSubmission object for results screen
+        const quizSubmission = {
+          finalScore: result.score,
+          scoreBreakdown: result.breakdown,
+          finishTimeSeconds: result.finishTimeSec,
+          accuracyPoints: result.accPoints,
+          questions: result.questions
+        };
+        
+        // Navigate to results screen
+        navigation.navigate('QuizResults', {
+          quizResult: quizSubmission
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      Alert.alert(
+        'Submission Error',
+        'Failed to submit your quiz. Please try again.',
+        [
+          {text: 'Retry', onPress: handleQuizSubmit},
+          {text: 'Cancel', onPress: () => navigation.goBack()}
+        ]
+      );
+    } finally {
+      setIsSubmittingQuiz(false);
+    }
+  };
+
+  const handleSubmitAnswer = async () => {
     if (!selectedAnswer) return;
 
-    // Save the current answer
+    // Save the current answer locally (no individual server submission)
+    console.log('💾 Saving answer locally for question:', currentQuestion.id);
     setAnsweredQuestions(prev => ({
       ...prev,
       [currentQuestion.id]: selectedAnswer
@@ -119,7 +289,8 @@ export default function QuizScreen({navigation, route}: Props) {
     } else {
       // Move to next question immediately
       setCurrentQuestionIndex(prev => prev + 1);
-      setSelectedAnswer(AnswerHandler.getDefaultAnswer(mockQuestions[currentQuestionIndex + 1]));
+      setSelectedAnswer(AnswerHandler.getDefaultAnswer(questions[currentQuestionIndex + 1]));
+      setQuestionStartTime(Date.now()); // Reset timer for new question
     }
   };
 
@@ -133,162 +304,173 @@ export default function QuizScreen({navigation, route}: Props) {
   };
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+    <ThemedBackground style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      
+      {/* Global Header */}
+      <GlobalHeader 
+        showBack={true}
+        showProfile={true}
+        showLeaderboard={true}
+      />
       
       {!quizStarted ? (
-        // Quiz Start Screen
+        // Enhanced Quiz Start Screen with Retro Styling
         <View style={styles.startScreen}>
-          <Card style={[styles.startCard, {backgroundColor: theme.colors.card}]}>
-            <Text variant="heading2" style={[styles.startTitle, {color: theme.colors.text}]}>
-              📅 Today's Quiz
-            </Text>
-            
-            <View style={styles.quizDetails}>
-              <Text variant="body" style={[styles.quizDescription, {color: theme.colors.textSecondary}]}>
-                {selectedQuiz.description}
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
+            <View style={[styles.gameLogoContainer, {backgroundColor: 'transparent'}]}>
+              <Text style={[styles.gameTitle, {color: theme.colors.primary}]}>
+                DAILY QUIZ
               </Text>
-              
-              <View style={styles.quizStats}>
-                <View style={styles.statItem}>
-                  <Text variant="heading3" style={[styles.statNumber, {color: theme.colors.primary}]}>
-                    6
-                  </Text>
-                  <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                    Questions
-                  </Text>
-                </View>
-                
-                <View style={styles.statItem}>
-                  <Text variant="heading3" style={[styles.statNumber, {color: theme.colors.primary}]}>
-                    5:00
-                  </Text>
-                  <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                    Time Limit
-                  </Text>
-                </View>
-                
-                <View style={styles.statItem}>
-                  <Text variant="heading3" style={[styles.statNumber, {color: theme.colors.primary}]}>
-                    {selectedQuiz.difficulty}
-                  </Text>
-                  <Text variant="caption" style={[styles.statLabel, {color: theme.colors.textSecondary}]}>
-                    Difficulty
-                  </Text>
-                </View>
-              </View>
-              
-              <Text variant="body" style={[styles.startInstructions, {color: theme.colors.text}]}>
-                ⚠️ Once you start, the 5-minute timer will begin. You cannot pause or restart the quiz.
+              <View style={[styles.titleUnderline, {backgroundColor: theme.colors.accent1}]} />
+            </View>
+            
+            <Text style={[styles.heroSubtitle, {color: theme.colors.textSecondary}]}>
+              Test your knowledge against the clock!
+            </Text>
+          </View>
+
+          {/* Stats Cards */}
+          <View style={styles.statsGrid}>
+            <View style={[styles.statCard, {backgroundColor: theme.colors.primary}]}>
+              <Text style={[styles.statNumber, {color: theme.colors.textOnPrimary}]}>
+                6
+              </Text>
+              <Text style={[styles.statLabel, {color: theme.colors.textOnPrimary}]}>
+                QUESTIONS
               </Text>
             </View>
             
+            <View style={[styles.statCard, {backgroundColor: theme.colors.accent1}]}>
+              <Text style={[styles.statNumber, {color: theme.colors.accent4}]}>
+                1:00
+              </Text>
+              <Text style={[styles.statLabel, {color: theme.colors.accent4}]}>
+                TIMER
+              </Text>
+            </View>
+            
+            <View style={[styles.statCard, {backgroundColor: theme.colors.accent4}]}>
+              <Text style={[styles.statNumber, {color: theme.colors.accent1}]}>
+                MIX
+              </Text>
+              <Text style={[styles.statLabel, {color: theme.colors.accent1}]}>
+                DIFFICULTY
+              </Text>
+            </View>
+          </View>
+
+          {/* Instructions Card */}
+          <View style={[styles.instructionsCard, {backgroundColor: 'rgba(244, 229, 177, 0.15)', borderColor: theme.colors.accent1}]}>
+            <View style={styles.warningHeader}>
+              <Text style={[styles.warningIcon, {color: theme.colors.primary}]}>⚠️</Text>
+              <Text style={[styles.warningTitle, {color: theme.colors.accent1}]}>IMPORTANT</Text>
+            </View>
+            <Text style={[styles.warningText, {color: theme.colors.textSecondary}]}>
+              Once you start, the timer begins immediately. You cannot pause or restart the quiz. Make sure you're ready!
+            </Text>
+          </View>
+
+          {/* Start Button */}
+          <View style={styles.startButtonContainer}>
             <Button
-              title="🚀 Start Quiz"
+              title={isStartingQuiz ? "STARTING..." : "🚀 START QUIZ"}
               onPress={handleStartQuiz}
-              style={[styles.startButton, {backgroundColor: theme.colors.primary}]}
+              disabled={isStartingQuiz}
+              style={[styles.retroStartButton, {backgroundColor: theme.colors.primary}]}
             />
-          </Card>
+            
+            {isStartingQuiz && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.accent1} />
+                <Text style={[styles.loadingText, {color: theme.colors.textSecondary}]}>
+                  Preparing your quiz...
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       ) : (
         <>
-        {/* Header with timer and progress */}
-        <View style={[styles.header, {backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border}]}>
-          <View style={styles.headerTop}>
-            <View style={styles.quizInfo}>
-              <Text variant="caption" style={[styles.quizTitle, {color: theme.colors.primary}]}>
-                {selectedQuiz.title}
+        {/* Enhanced Quiz Header */}
+        <View style={[styles.quizHeader, {backgroundColor: 'rgba(244, 229, 177, 0.1)', borderBottomColor: theme.colors.accent1}]}>
+          <View style={styles.quizHeaderTop}>
+            {/* Timer with enhanced styling - centered */}
+            <View style={[styles.enhancedTimer, {backgroundColor: theme.colors.primary}]}>
+              <Text style={[styles.timerLabel, {color: theme.colors.textOnPrimary}]}>
+                TIME
               </Text>
-              <Text variant="caption" style={[styles.progressText, {color: theme.colors.textSecondary}]}>
-                Question {currentQuestionIndex + 1} of {mockQuestions.length}
-              </Text>
-          </View>
-          
-          <View style={[styles.timerContainer, {backgroundColor: theme.colors.error}]}>
-            <Text variant="body" style={[styles.timerText, {color: theme.colors.textOnPrimary}]}>
-              ⏱️ {formatTime(timeRemaining)}
-            </Text>
-          </View>
-        </View>
-        
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressBar, {backgroundColor: theme.colors.surface || theme.colors.card}]}>
-            <View 
-              style={[
-                styles.progressFill, 
-                {
-                  backgroundColor: theme.colors.primary,
-                  width: `${((currentQuestionIndex + 1) / mockQuestions.length) * 100}%`
-                }
-              ]} 
-            />
-          </View>
-        </View>
-      </View>
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Question Card */}
-        <Card style={[styles.questionCard, {backgroundColor: theme.colors.card}]}>
-          <View style={styles.questionContent}>
-            {/* Difficulty badge */}
-            <View style={[styles.difficultyBadge, {backgroundColor: getDifficultyColor(currentQuestion.difficulty)}]}>
-              <Text variant="caption" style={[styles.difficultyText, {color: theme.colors.textOnPrimary}]}>
-                {currentQuestion.difficulty.toUpperCase()}
+              <Text style={[styles.timerValue, {color: theme.colors.textOnPrimary}]}>
+                {formatTime(timeRemaining)}
               </Text>
             </View>
-            
-            {/* Question metadata */}
-            <View style={styles.questionMeta}>
-              <View style={styles.metaRow}>
-                <Text variant="caption" style={[styles.metaLabel, {color: theme.colors.textSecondary}]}>
-                  Type:
+          </View>
+        </View>
+      
+        <ScrollView style={styles.quizScrollView} showsVerticalScrollIndicator={false}>
+          {/* Enhanced Question Card */}
+          <View style={[styles.enhancedQuestionCard, {backgroundColor: 'rgba(255, 255, 255, 0.95)', borderColor: theme.colors.accent1}]}>
+            {/* Question Header */}
+            <View style={styles.questionHeader}>
+              <View style={[styles.enhancedDifficultyBadge, {backgroundColor: getDifficultyColor(currentQuestion.difficulty)}]}>
+                <Text style={[styles.difficultyBadgeText, {color: theme.colors.textOnPrimary}]}>
+                  {currentQuestion.difficulty.toUpperCase()}
                 </Text>
-                <Text variant="caption" style={[styles.metaValue, {color: theme.colors.text}]}>
+              </View>
+              
+              <View style={styles.questionTypeContainer}>
+                <Text style={[styles.questionTypeValue, {color: theme.colors.accent4}]}>
                   {currentQuestion.questionType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </Text>
               </View>
-              <View style={styles.metaRow}>
-                <Text variant="caption" style={[styles.metaLabel, {color: theme.colors.textSecondary}]}>
-                  Themes:
-                </Text>
-                <View style={styles.themesList}>
-                  {currentQuestion.themes.map((questionTheme, index) => (
-                    <View key={index} style={[styles.themeTag, {backgroundColor: theme.colors.surface || theme.colors.card}]}>
-                      <Text variant="caption" style={[styles.themeText, {color: theme.colors.text}]}>
-                        {questionTheme}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
             </View>
             
-            {/* Question Renderer - Handles all 19 question types */}
-            <QuestionRenderer
-              question={currentQuestion}
-              selectedAnswer={selectedAnswer}
-              onAnswerChange={handleAnswerChange}
-              disabled={false}
-              showCorrect={false}
-              correctAnswer={undefined}
-              showHint={false}
-              onAutoSubmit={handleSubmitAnswer}
-            />
+            {/* Question Content */}
+            <View style={styles.questionContentSection}>
+              <QuestionRenderer
+                question={currentQuestion}
+                selectedAnswer={selectedAnswer}
+                onAnswerChange={handleAnswerChange}
+                disabled={false}
+                showCorrect={false}
+                correctAnswer={undefined}
+                showHint={false}
+                onAutoSubmit={handleSubmitAnswer}
+              />
+            </View>
           </View>
-        </Card>
 
-        {/* Action buttons */}
-        <View style={styles.actionButtons}>
-          <Button
-            title={isLastQuestion ? "🏆 Submit Quiz" : "➡️ Next Question"}
-            onPress={handleSubmitAnswer}
-            style={[styles.submitButton, {backgroundColor: theme.colors.primary}]}
-          />
-        </View>
-      </ScrollView>
-      </>
+          {/* Enhanced Action Button */}
+          <View style={styles.actionSection}>
+            <Button
+              title={
+                isSubmittingQuiz 
+                  ? "SUBMITTING..." 
+                  : isLastQuestion 
+                  ? "SUBMIT QUIZ" 
+                  : "NEXT QUESTION"
+              }
+              onPress={handleSubmitAnswer}
+              disabled={isSubmittingQuiz}
+              style={[styles.enhancedActionButton, {backgroundColor: theme.colors.primary}]}
+            />
+            
+            {isSubmittingQuiz && (
+              <View style={styles.submittingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.accent1} />
+                <Text style={[styles.submittingText, {color: theme.colors.textSecondary}]}>
+                  Processing your answers...
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+        </>
       )}
-    </View>
+    </ThemedBackground>
   );
 }
 
@@ -296,189 +478,320 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: 50,
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  quizInfo: {
+  
+  // START SCREEN STYLES
+  startScreen: {
     flex: 1,
-    marginRight: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    justifyContent: 'space-between',
   },
-  quizTitle: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    marginBottom: 2,
-    letterSpacing: 0.5,
+  heroSection: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  gameLogoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  gameTitle: {
+    fontSize: 42,
+    fontWeight: '900',
+    letterSpacing: 4,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
     textTransform: 'uppercase',
   },
-  progressContainer: {
-    marginTop: 4,
+  titleUnderline: {
+    width: 120,
+    height: 4,
+    marginTop: 8,
+    borderRadius: 2,
   },
-  progressText: {
-    fontSize: 12,
+  heroSubtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    opacity: 0.9,
+  },
+  
+  // STATS GRID
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginVertical: 30,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    shadowColor: 'rgba(0, 0, 0, 0.3)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1,
     marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  
+  // INSTRUCTIONS CARD
+  instructionsCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginVertical: 20,
+  },
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  warningIcon: {
+    fontSize: 20,
+  },
+  warningTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  warningText: {
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '500',
   },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
+  
+  // START BUTTON
+  startButtonContainer: {
+    alignItems: 'center',
+    gap: 16,
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
+  retroStartButton: {
+    paddingVertical: 18,
+    paddingHorizontal: 60,
+    borderRadius: 30,
+    minWidth: 280,
+    shadowColor: 'rgba(0, 0, 0, 0.4)',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
   },
-  timerContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+  loadingContainer: {
+    alignItems: 'center',
+    gap: 12,
   },
-  timerText: {
-    fontWeight: 'bold',
+  loadingText: {
     fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  scrollView: {
+  
+  // QUIZ SCREEN STYLES
+  quizHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 2,
+  },
+  quizHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  quizInfoSection: {
     flex: 1,
   },
-  questionCard: {
-    marginHorizontal: 24,
-    marginTop: 24,
-    borderRadius: 16,
+  quizTitleText: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 4,
   },
-  questionContent: {
-    padding: 24,
+  questionProgress: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  difficultyBadge: {
-    alignSelf: 'flex-start',
+  
+  // ENHANCED TIMER
+  enhancedTimer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    minWidth: 80,
+    shadowColor: 'rgba(0, 0, 0, 0.3)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  timerLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  timerValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  
+  // PROGRESS SECTION
+  progressSection: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  enhancedProgressBar: {
+    width: '100%',
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  enhancedProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  
+  // QUIZ CONTENT
+  quizScrollView: {
+    flex: 1,
+  },
+  enhancedQuestionCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 2,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  
+  // QUESTION HEADER
+  questionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(244, 229, 177, 0.3)',
+  },
+  enhancedDifficultyBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  difficultyBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  questionTypeContainer: {
+    alignItems: 'flex-end',
+  },
+  questionTypeLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  questionTypeValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  
+  // THEMES SECTION
+  themesSection: {
+    marginBottom: 24,
+  },
+  themesLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  themesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  enhancedThemeTag: {
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    marginBottom: 16,
   },
-  difficultyText: {
+  enhancedThemeText: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
-  questionMeta: {
-    marginBottom: 20,
-    gap: 8,
+  
+  // QUESTION CONTENT
+  questionContentSection: {
+    marginTop: 8,
   },
-  metaRow: {
-    flexDirection: 'row',
+  
+  // ACTION SECTION
+  actionSection: {
+    marginHorizontal: 20,
+    marginTop: 24,
     alignItems: 'center',
-    gap: 8,
-  },
-  metaLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    minWidth: 50,
-  },
-  metaValue: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  themesList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    flex: 1,
-  },
-  themeTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  themeText: {
-    fontSize: 10,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
-  hintContainer: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 12,
-  },
-  hintLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  hintText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  startScreen: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  startCard: {
-    padding: 32,
-    alignItems: 'center',
-    gap: 24,
-  },
-  startTitle: {
-    textAlign: 'center',
-    fontWeight: '700',
-  },
-  quizDetails: {
-    width: '100%',
-    gap: 20,
-  },
-  quizDescription: {
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  quizStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  statNumber: {
-    fontWeight: '700',
-  },
-  statLabel: {
-    textTransform: 'uppercase',
-    fontSize: 11,
-  },
-  startInstructions: {
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 20,
-  },
-  startButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    minWidth: 200,
-  },
-  actionButtons: {
-    marginHorizontal: 24,
-    marginTop: 32,
     gap: 16,
   },
-  submitButton: {
+  enhancedActionButton: {
     paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 25,
+    minWidth: 280,
+    shadowColor: 'rgba(0, 0, 0, 0.4)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  powerupButtons: {
-    flexDirection: 'row',
+  submittingContainer: {
+    alignItems: 'center',
     gap: 12,
   },
-  powerupButton: {
-    flex: 1,
+  submittingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  bottomPadding: {
+  
+  bottomSpacer: {
     height: 40,
   },
 });

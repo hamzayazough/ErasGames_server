@@ -1,5 +1,10 @@
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {QuizMock} from '../features/quiz/constants/quizMocks';
+import type {
+  QuizAttempt,
+  QuizSubmission,
+} from '../core/services/quiz-attempt.service';
+import type {QuizTemplate} from '../core/api/daily-quiz';
 
 // Root Stack Navigator
 export type RootStackParamList = {
@@ -7,12 +12,23 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  CompleteAccount: undefined;
 
   // Quiz Flow
   DailyDrop: undefined;
   StartQuiz: undefined;
   QuizSelection: undefined;
-  Quiz: {selectedQuiz?: QuizMock};
+  Quiz: {
+    selectedQuiz?: QuizMock;
+    quizAttempt?: QuizAttempt;
+    quizTemplate?: QuizTemplate;
+  };
+  TestQuiz: {
+    selectedQuiz: QuizMock;
+  };
+  QuizResults: {
+    quizResult: QuizSubmission;
+  };
   Results: undefined;
 
   // Main App Stack (future)
@@ -22,6 +38,7 @@ export type RootStackParamList = {
   Profile: {userId?: string};
   Settings: undefined;
   QuizDetails: {quizId: string};
+  Leaderboard: undefined;
 };
 
 // Main Tab Navigator

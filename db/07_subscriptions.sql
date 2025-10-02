@@ -50,7 +50,7 @@ CREATE TYPE billing_event_type AS ENUM (
 
 CREATE TABLE IF NOT EXISTS subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+    user_id VARCHAR(128) NOT NULL,
     
     -- Core subscription info
     plan subscription_plan NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS billing_events (
     
     -- Links (may be null during processing)
     subscription_id UUID REFERENCES subscriptions(id),
-    user_id UUID REFERENCES users(id),
+    user_id VARCHAR(128) REFERENCES users(id),
     
     -- Processing metadata
     processing_notes JSONB,

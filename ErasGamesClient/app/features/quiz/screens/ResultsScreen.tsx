@@ -1,7 +1,7 @@
 import React from 'react';
 import {StyleSheet, ScrollView, StatusBar, Share, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
-import {useTheme} from '../../../core/theme/ThemeProvider';
+import {useTheme, ThemedBackground} from '../../../core/theme';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 type Props = RootStackScreenProps<'Results'>;
@@ -36,8 +36,8 @@ const mockResults: ScoreBreakdown = {
     points: 83
   },
   speed: {
-    timeUsed: 456, // 7:36
-    timeLimit: 600, // 10:00
+    timeUsed: 45, // 0:45
+    timeLimit: 60, // 1:00
     points: 24
   },
   earlyBonus: {
@@ -98,7 +98,7 @@ Think you can beat me? 🏆 #ErasQuiz #SwiftieChallenge`;
   };
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+    <ThemedBackground style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -294,7 +294,7 @@ Think you can beat me? 🏆 #ErasQuiz #SwiftieChallenge`;
         {/* Bottom padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </ThemedBackground>
   );
 }
 

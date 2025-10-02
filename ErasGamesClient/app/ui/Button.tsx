@@ -74,19 +74,34 @@ export function Button({
         return {
           paddingHorizontal: theme.spacing(3),
           paddingVertical: theme.spacing(1.5),
-          borderRadius: theme.radius.sm,
+          borderRadius: theme.radius.lg,
+          shadowColor: 'rgba(0, 0, 0, 0.2)',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 4,
         };
       case 'md':
         return {
           paddingHorizontal: theme.spacing(4),
           paddingVertical: theme.spacing(2.5),
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.lg,
+          shadowColor: 'rgba(0, 0, 0, 0.25)',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.25,
+          shadowRadius: 6,
+          elevation: 6,
         };
       case 'lg':
         return {
           paddingHorizontal: theme.spacing(6),
           paddingVertical: theme.spacing(3.5),
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.xl,
+          shadowColor: 'rgba(0, 0, 0, 0.3)',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
         };
       default:
         return {};
@@ -143,7 +158,9 @@ export function Button({
               {
                 color: getTextColor(),
                 fontSize: getTextSize(),
-                fontWeight: theme.text.weight.medium,
+                fontWeight: theme.text.weight.bold,
+                letterSpacing: 0.5,
+                // Removed textTransform: 'uppercase' for better readability
               },
               textStyle,
             ]}

@@ -11,7 +11,6 @@ config();
 
 // Environment-aware database configuration
 const isProduction = process.env.NODE_ENV === 'production';
-const isDevelopment = process.env.NODE_ENV === 'development';
 
 const createDatabaseConfig = () => {
   const baseConfig = {
@@ -44,7 +43,7 @@ const createDatabaseConfig = () => {
     extra: { max: 5, connectionTimeoutMillis: 10000 },
     retryAttempts: 3,
     retryDelay: 2000,
-    logging: isDevelopment,
+    logging: false,
   };
 };
 
@@ -64,9 +63,12 @@ import { DailyQuizController } from './controllers/daily-quiz.controller';
 import { AttemptsController } from './controllers/attempts.controller';
 import { TestController } from './admin/controllers/cdn-test.controller';
 import { AuthController } from './controllers/auth.controller';
+import { UserController } from './controllers/user.controller';
+import { NotificationController } from './controllers/notification.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
+import { NotificationService } from './services/notification.service';
 import { FirebaseService } from './services/firebase.service';
 import { AuthService } from './services/auth.service';
 import { FirebaseAuthMiddleware } from './middleware/firebase-auth.middleware';
@@ -81,6 +83,20 @@ import { VisualAestheticQuestionService } from './database/services/question-cre
 
 // Daily Quiz Composer Module
 import { DailyQuizComposerModule } from './database/services/daily-quiz-composer';
+
+// Attempt Scoring Services
+import { AttemptScoringService } from './services/attempt-scoring/attempt-scoring.service';
+import { QuestionCorrectnessService } from './services/attempt-scoring/question-correctness.service';
+
+// Attempt Services
+import {
+  AttemptService,
+  AttemptAnswerService,
+  UserService as AttemptUserService,
+} from './services/attempt';
+
+// User Management Service
+import { UserService as UserManagementService } from './services/user.service';
 
 // Import entities for TypeORM relationship resolution
 import { BaseEntityTimestamps } from './database/entities/base.entity';
@@ -99,6 +115,16 @@ import { BillingEvent } from './database/entities/billing-event.entity';
 import { ProviderTransaction } from './database/entities/provider-transaction.entity';
 import { DailyDropTZ } from './database/entities/daily-drop-tz.entity';
 import { CompositionLogEntity } from './database/entities/composition-log.entity';
+import { UserDevice } from './database/entities/user-device.entity';
+import { Season } from './database/entities/season.entity';
+import { SeasonParticipation } from './database/entities/season-participation.entity';
+import { DailySeasonProgress } from './database/entities/daily-season-progress.entity';
+import { SeasonLeaderboardSnapshot } from './database/entities/season-leaderboard-snapshot.entity';
+import { SeasonService } from './database/services/season.service';
+import { SeasonIntegrationService } from './services/season-integration.service';
+import { SeasonsController } from './controllers/seasons.controller';
+import { AdminSeasonsController } from './admin/controllers/admin-seasons.controller';
+import { QuizSimulationModule } from './test/quiz-simulation.module';
 
 @Module({
   imports: [
@@ -112,6 +138,9 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
 
     // Daily Quiz Composer module
     DailyQuizComposerModule,
+
+    // Quiz Simulation module (for testing)
+    QuizSimulationModule,
 
     // TypeORM configuration with environment-aware settings
     TypeOrmModule.forRoot({
@@ -133,6 +162,11 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
         ProviderTransaction,
         DailyDropTZ,
         CompositionLogEntity,
+        UserDevice,
+        Season,
+        SeasonParticipation,
+        DailySeasonProgress,
+        SeasonLeaderboardSnapshot,
       ],
     }),
 
@@ -144,6 +178,11 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
       DailyQuizQuestion,
       Question, // Add Question repository for question creation services
       User, // Add User repository for attempts
+      UserDevice, // Add UserDevice repository for notifications
+      Season, // Add Season repository for season management
+      SeasonParticipation, // Add SeasonParticipation repository
+      DailySeasonProgress, // Add DailySeasonProgress repository
+      SeasonLeaderboardSnapshot, // Add SeasonLeaderboardSnapshot repository
     ]),
   ],
   controllers: [
@@ -156,6 +195,10 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     AttemptsController,
     TestController,
     AuthController,
+    UserController,
+    NotificationController,
+    SeasonsController,
+    AdminSeasonsController,
   ],
   providers: [
     AppService,
@@ -169,13 +212,38 @@ import { CompositionLogEntity } from './database/entities/composition-log.entity
     VisualAestheticQuestionService,
     // Job Processing Services
     DailyQuizJobProcessor,
+    // Notification Services
+    NotificationService,
     // Authentication Services
     FirebaseService,
     AuthService,
+    // Attempt Scoring Services
+    AttemptScoringService,
+    QuestionCorrectnessService,
+    // Attempt Services
+    AttemptService,
+    AttemptAnswerService,
+    AttemptUserService,
+    // User Management Service
+    UserManagementService,
+    // Season Services
+    SeasonService,
+    SeasonIntegrationService,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(FirebaseAuthMiddleware).forRoutes('auth/authenticate');
+    consumer
+      .apply(FirebaseAuthMiddleware)
+      .forRoutes(
+        'auth/authenticate',
+        'attempts',
+        'daily/status',
+        'seasons/current/my-stats',
+        'seasons/current/participation',
+        'user/profile',
+        'user/name',
+        'user/notifications',
+      );
   }
 }

@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {StyleSheet, ScrollView, StatusBar, Alert} from 'react-native';
 import {View, Text, Button, Card} from '../../../ui';
-import {useTheme} from '../../../core/theme/ThemeProvider';
+import {useTheme, ThemedBackground} from '../../../core/theme';
 import type {RootStackScreenProps} from '../../../navigation/types';
 
 type Props = RootStackScreenProps<'StartQuiz'>;
@@ -45,7 +45,7 @@ export default function StartQuizScreen({navigation}: Props) {
   };
 
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background}]}>
+    <ThemedBackground style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -131,10 +131,10 @@ export default function StartQuizScreen({navigation}: Props) {
                 <Text style={[styles.detailEmoji, {color: theme.colors.accent3}]}>⏱️</Text>
                 <View style={styles.detailTextContainer}>
                   <Text variant="body" style={[styles.detailText, {color: theme.colors.text}]}>
-                    <Text style={[styles.detailLabel, {color: theme.colors.primary}]}>Time Limit:</Text> 10 minutes
+                    <Text style={[styles.detailLabel, {color: theme.colors.primary}]}>Time Limit:</Text> 1 minute
                   </Text>
                   <Text variant="caption" style={[styles.detailSubtext, {color: theme.colors.textSecondary}]}>
-                    +2 min Basic • +4 min Premium
+                    Quick & intense challenge!
                   </Text>
                 </View>
               </View>
@@ -205,7 +205,7 @@ export default function StartQuizScreen({navigation}: Props) {
         {/* Bottom padding */}
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </View>
+    </ThemedBackground>
   );
 }
 

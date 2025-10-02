@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS billing_events (
     
     -- Links (may be null during processing)
     subscription_id UUID REFERENCES subscriptions(id),
-    user_id UUID REFERENCES users(id),
+    user_id VARCHAR(128) REFERENCES users(id),
     
     -- Processing metadata
     processing_notes JSONB,

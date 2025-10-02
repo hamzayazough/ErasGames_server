@@ -26,14 +26,6 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
-  // Debug logging
-  console.log('AiVisualComponent Debug:', {
-    mediaRefs: question.mediaRefs,
-    mediaRefsLength: question.mediaRefs?.length,
-    firstMediaRef: question.mediaRefs?.[0],
-    imageUrl: question.mediaRefs?.[0]?.url
-  });
-
   const imageUrl = question.mediaRefs?.[0]?.url;
   
   const handleImageLoad = () => {
@@ -128,15 +120,14 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
       {question.mediaRefs && question.mediaRefs.length > 0 && (
         <View style={styles.imageContainer}>
           {imageError ? (
-            <View style={[styles.aiImage, styles.errorContainer, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}>
-              <Text variant="caption" style={{ color: theme.colors.error, textAlign: 'center' }}>
-                ❌ Failed to load image
-              </Text>
-              <Text variant="caption" style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 4, fontSize: 10 }}>
-                Network error - Please check your connection
-              </Text>
+            <View style={styles.errorImageContainer}>
+              <Image
+                source={require('../../../../../assets/images/error-image.png')}
+                style={[styles.aiImage, { borderColor: theme.colors.border }]}
+                resizeMode="cover"
+              />
               <Pressable 
-                style={{ marginTop: 8, padding: 8, backgroundColor: theme.colors.primary + '20', borderRadius: 6 }}
+                style={[styles.retryButton, { backgroundColor: theme.colors.primary + '20' }]}
                 onPress={() => {
                   setImageError(false);
                   setImageLoading(true);
@@ -215,22 +206,31 @@ export const AiVisualComponent: React.FC<AiVisualComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 20,
-    paddingHorizontal: 16,
+    gap: 24,
+    paddingHorizontal: 0,
   },
   questionText: {
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 32,
+    fontWeight: '700',
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
   imageContainer: {
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 20,
   },
   aiImage: {
     width: imageWidth,
     height: imageWidth,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(244, 229, 177, 0.4)',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -239,32 +239,50 @@ const styles = StyleSheet.create({
   errorContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
   },
   choicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     width: '100%',
+    gap: 12,
   },
   choiceButton: {
-    width: '48%', // Fixed percentage width for exactly 2 per row
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    width: '48%',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 36,
-    marginBottom: 12, // Add bottom margin instead of gap
+    minHeight: 52,
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
   choiceText: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 20,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   noChoicesContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 36,
+  },
+  errorImageContainer: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  retryButton: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    padding: 8,
+    borderRadius: 6,
   },
 });

@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS attempt CASCADE;
 -- Create new partitioned table with TypeORM-compatible column names
 CREATE TABLE attempt (
     id UUID DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
+    user_id VARCHAR(128) NOT NULL,
     daily_quiz_id UUID NOT NULL,
     start_at TIMESTAMPTZ NOT NULL,
     deadline TIMESTAMPTZ NOT NULL,

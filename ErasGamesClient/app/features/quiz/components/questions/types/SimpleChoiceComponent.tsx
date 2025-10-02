@@ -1,9 +1,8 @@
 import React from 'react';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { MultipleChoiceComponent } from '../common/MultipleChoiceComponent';
 import { View, Text } from '../../../../../ui';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 
 // Generic component for simple multiple choice questions
 interface SimpleChoiceComponentProps extends QuestionComponentProps {
@@ -30,31 +29,65 @@ export const SimpleChoiceComponent: React.FC<SimpleChoiceComponentProps> = ({
     onAnswerChange({ choiceIndex: index });
   };
 
+  const getChoiceStyle = (index: number) => {
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+    const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer?.choiceIndex;
+    
+    if (isCorrect) {
+      return [styles.choiceButton, { backgroundColor: theme.colors.success }];
+    } else if (isWrong) {
+      return [styles.choiceButton, { backgroundColor: theme.colors.error }];
+    } else if (isSelected) {
+      return [styles.choiceButton, { backgroundColor: theme.colors.primary }];
+    } else {
+      return [styles.choiceButton, { backgroundColor: theme.colors.accent1 }];
+    }
+  };
+
+  const getTextColor = (index: number) => {
+    const isSelected = selectedAnswer?.choiceIndex === index;
+    const isCorrect = showCorrect && index === correctAnswer?.choiceIndex;
+    const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer?.choiceIndex;
+    
+    if (isCorrect || isWrong || isSelected) {
+      return theme.colors.textOnPrimary;
+    }
+    return theme.colors.accent4;
+  };
+
   return (
     <View style={styles.container}>
-      <Text variant="heading3" style={[styles.questionText, { color: theme.colors.text }]}>
+      <Text style={[styles.simpleQuestionText, { color: theme.colors.textPrimary }]}>
         {questionText}
       </Text>
       
       {subtitle && (
-        <View style={[styles.subtitleContainer, { backgroundColor: theme.colors.surface }]}>
+        <View style={[styles.subtitleContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
           {icon && (
             <Text style={styles.icon}>{icon}</Text>
           )}
-          <Text variant="body" style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.subtitle, { color: theme.colors.textPrimary }]}>
             {subtitle}
           </Text>
         </View>
       )}
 
-      <MultipleChoiceComponent
-        choices={question.choices || []}
-        selectedIndex={selectedAnswer?.choiceIndex ?? null}
-        onSelect={handleChoiceSelect}
-        disabled={disabled}
-        showCorrect={showCorrect}
-        correctIndex={correctAnswer?.choiceIndex}
-      />
+      <View style={styles.choicesContainer}>
+        {(question.choices || []).map((choice, index) => (
+          <TouchableOpacity
+            key={index}
+            style={getChoiceStyle(index)}
+            onPress={() => handleChoiceSelect(index)}
+            disabled={disabled}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.choiceText, { color: getTextColor(index) }]}>
+              {typeof choice === 'string' ? choice : choice.text}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 };
@@ -63,25 +96,52 @@ const styles = StyleSheet.create({
   container: {
     gap: 20,
   },
-  questionText: {
+  simpleQuestionText: {
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 22,
+    opacity: 0.8,
   },
   subtitleContainer: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 3,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 16,
-    marginRight: 8,
+    fontSize: 20,
+    marginRight: 12,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  choicesContainer: {
+    gap: 16,
+    marginTop: 8,
+  },
+  choiceButton: {
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  choiceText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

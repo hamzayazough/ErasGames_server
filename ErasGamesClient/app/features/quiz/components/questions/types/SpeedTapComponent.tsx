@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { SpeedTapQuestion } from '../../../../../shared/interfaces/questions/speed-tap.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { Text } from '../../../../../ui/Text';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from '../../../../../ui';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
 
 interface SpeedTapComponentProps extends Omit<QuestionComponentProps, 'question'> {
@@ -69,7 +69,7 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
 
   // Separate effect for submitting answer when finished
   useEffect(() => {
-    if (isFinished && events.length > 0) {
+    if (isFinished && !disabled) {
       const clientSummary = {
         taps: events.length,
         correct: Array.from(tappedItems).filter(item => 
@@ -79,16 +79,25 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
           !question.correct?.targets.includes(item)
         ).length,
       };
-      onAnswerChange({
+      
+      const finalAnswer = {
         roundSeconds: question.prompt.roundSeconds,
         events,
         clientSummary,
-      });
+      };
       
-      // Auto-submit when timer ends
-      onAutoSubmit?.();
+      onAnswerChange(finalAnswer);
+      
+      // Auto-submit when timer ends - use setTimeout to avoid infinite loops
+      const submitTimer = setTimeout(() => {
+        if (onAutoSubmit) {
+          onAutoSubmit();
+        }
+      }, 500);
+      
+      return () => clearTimeout(submitTimer);
     }
-  }, [isFinished, events, tappedItems, onAnswerChange, question.correct?.targets, question.prompt.roundSeconds, onAutoSubmit]);
+  }, [isFinished]); // Only depend on isFinished to avoid infinite loops
 
   const handleItemTap = (item: string) => {
     if (!isActive || disabled) return;
@@ -130,15 +139,15 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
       } else if (isTapped && !isCorrect) {
         return [styles.gridItem, { backgroundColor: theme.colors.error, borderColor: theme.colors.error }];
       } else if (!isTapped && isCorrect) {
-        return [styles.gridItem, { backgroundColor: theme.colors.warning + '40', borderColor: theme.colors.warning }];
+        return [styles.gridItem, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.warning }];
       }
     }
     
     if (isTapped) {
-      return [styles.gridItem, styles.tappedItem, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }];
+      return [styles.gridItem, styles.tappedItem, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.accent1 }];
     }
     
-    return [styles.gridItem, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }];
+    return [styles.gridItem, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }];
   };
 
   const getItemTextStyle = (item: string) => {
@@ -146,16 +155,20 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
     const isCorrect = question.correct?.targets.includes(item);
     
     if (showCorrect && isFinished) {
-      if ((isTapped && isCorrect) || (isTapped && !isCorrect)) {
-        return { color: 'white', fontWeight: 'bold' };
+      if (isTapped && isCorrect) {
+        return { color: '#FFFFFF', fontWeight: '700' }; // White text on green
+      } else if (isTapped && !isCorrect) {
+        return { color: '#FFFFFF', fontWeight: '700' }; // White text on red
+      } else if (!isTapped && isCorrect) {
+        return { color: theme.colors.warning, fontWeight: '700' }; // Warning color for missed correct items
       }
     }
     
     if (isTapped) {
-      return { color: theme.colors.textOnPrimary, fontWeight: 'bold' };
+      return { color: theme.colors.accent4, fontWeight: '700' };
     }
     
-    return { color: theme.colors.text };
+    return { color: theme.colors.textPrimary };
   };
 
   const getScoreSummary = () => {
@@ -174,63 +187,66 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text variant="h3" style={[styles.questionText, { color: theme.colors.text }]}>
-        {question.prompt.task}
-      </Text>
-
-      <Text variant="body" style={[styles.ruleText, { color: theme.colors.textSecondary }]}>
-        Rule: {question.prompt.targetRule}
-      </Text>
-
-      <View style={[styles.statusContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="h2" style={[styles.timer, { color: isActive ? theme.colors.primary : theme.colors.textSecondary }]}>
-          {timeLeft}s
+      {/* Question Title Card */}
+      <View style={[styles.titleCard, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.accent1 }]}>
+        <Text style={[styles.questionTitle, { color: theme.colors.accent4 }]}>
+          {question.prompt.task}
         </Text>
-        
-        <Text variant="body" style={[styles.tapCount, { color: theme.colors.text }]}>
-          Tapped: {tappedItems.size}
+        <Text style={[styles.ruleText, { color: theme.colors.accent4, opacity: 0.8 }]}>
+          Rule: {question.prompt.targetRule}
         </Text>
+      </View>
+
+      <View style={[styles.statusContainer, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
+        <View style={styles.statusItem}>
+          <Text style={[styles.statusLabel, { color: theme.colors.accent1 }]}>⏱️ TIME</Text>
+          <Text style={[styles.timer, { color: theme.colors.accent1 }]}>
+            {timeLeft}s
+          </Text>
+        </View>
       </View>
 
       <View style={styles.gridContainer}>
         {question.prompt.grid.map((item, index) => (
-          <Pressable
+          <TouchableOpacity
             key={index}
             style={getItemStyle(item)}
             onPress={() => handleItemTap(item)}
             disabled={!isActive || disabled}
+            activeOpacity={0.8}
           >
-            <Text variant="body" style={[styles.itemText, getItemTextStyle(item)]}>
+            <Text style={[styles.itemText, getItemTextStyle(item)]}>
               {item}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         ))}
       </View>
 
       {isActive && !disabled && (
-        <Pressable 
+        <TouchableOpacity 
           style={[styles.submitButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleManualSubmit}
+          activeOpacity={0.8}
         >
-          <Text variant="body" weight="semibold" style={[styles.submitButtonText, { color: theme.colors.textOnPrimary }]}>
+          <Text style={[styles.submitButtonText, { color: theme.colors.textOnPrimary }]}>
             Submit Answer
           </Text>
-        </Pressable>
+        </TouchableOpacity>
       )}
 
       {isFinished && showCorrect && (
-        <View style={[styles.resultsContainer, { backgroundColor: theme.colors.surface }]}>
-          <Text variant="h3" style={[styles.resultsTitle, { color: theme.colors.text }]}>
+        <View style={[styles.resultsContainer, { backgroundColor: theme.colors.accent1, borderColor: theme.colors.accent1 }]}>
+          <Text style={[styles.resultsTitle, { color: theme.colors.accent4 }]}>
             Results:
           </Text>
           <View style={styles.resultsRow}>
-            <Text variant="body" style={{ color: theme.colors.success }}>
+            <Text style={[styles.resultText, { color: theme.colors.success }]}>
               ✅ Correct: {getScoreSummary().correctTaps}
             </Text>
-            <Text variant="body" style={{ color: theme.colors.error }}>
+            <Text style={[styles.resultText, { color: theme.colors.error }]}>
               ❌ Wrong: {getScoreSummary().wrongTaps}
             </Text>
-            <Text variant="body" style={{ color: theme.colors.warning }}>
+            <Text style={[styles.resultText, { color: theme.colors.warning }]}>
               ⚠️ Missed: {getScoreSummary().missedTargets}
             </Text>
           </View>
@@ -250,92 +266,156 @@ export const SpeedTapComponent: React.FC<SpeedTapComponentProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
+    gap: 20,
   },
-  questionText: {
-    fontWeight: '600',
+  titleCard: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  questionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     textAlign: 'center',
-    lineHeight: 28,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   ruleText: {
     textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
     fontStyle: 'italic',
-    marginBottom: 8,
+    letterSpacing: 0.3,
   },
   statusContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  statusItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   timer: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   tapCount: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
     justifyContent: 'center',
-    marginTop: 8,
+    paddingVertical: 8,
   },
   gridItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 2,
-    minWidth: 100,
+    minWidth: 110,
+    minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+    marginVertical: 4,
   },
   tappedItem: {
-    transform: [{ scale: 0.95 }],
+    transform: [{ scale: 0.96 }],
   },
   itemText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '700',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   resultsContainer: {
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 16,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
   resultsTitle: {
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '700',
+    marginBottom: 16,
     textAlign: 'center',
+    fontSize: 16,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   resultsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    gap: 8,
+    gap: 16,
+  },
+  resultText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
   hintContainer: {
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 193, 7, 0.3)',
   },
   hintText: {
     textAlign: 'center',
-    fontStyle: 'italic',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   submitButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 20,
+    minWidth: 200,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });
