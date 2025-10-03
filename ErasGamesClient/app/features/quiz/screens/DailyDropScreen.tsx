@@ -407,7 +407,7 @@ export default function DailyDropScreen({navigation}: Props) {
         ) : (
           <CountdownTimer 
             timeLeft={localTimeLeft}
-            title="NEXT QUIZ IN"
+            title="DAILY QUIZ IN"
             showBackground={true}
             size="medium"
             containerStyle={styles.countdownWrapper}

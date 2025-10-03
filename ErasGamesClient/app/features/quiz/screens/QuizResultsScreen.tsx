@@ -38,27 +38,16 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   
   // Animation values
   const [scoreAnimation] = useState(new Animated.Value(0));
+  const [countingAnimation] = useState(new Animated.Value(0));
+  const [pulseAnimation] = useState(new Animated.Value(1));
   const [showDetails, setShowDetails] = useState(false);
+  const [displayScore, setDisplayScore] = useState(0);
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
-  const getRank = (score: number) => {
-    if (score >= 4000) return { title: 'LEGENDARY', emoji: '👑', color: '#FFD700' };
-    if (score >= 3000) return { title: 'EXPERT', emoji: '🏆', color: '#4CAF50' };
-    if (score >= 2000) return { title: 'SKILLED', emoji: '⭐', color: theme.colors.primary };
-    if (score >= 1000) return { title: 'LEARNING', emoji: '📈', color: '#FF9800' };
-    return { title: 'ROOKIE', emoji: '🌱', color: '#9E9E9E' };
-  };
-
-
-
-
-
-    
     if (finalScore >= 3000) {
       achievements.push({
         id: 'highscore',
@@ -69,17 +58,46 @@ export default function QuizResultsScreen({navigation, route}: Props) {
       });
     }
   useEffect(() => {
-    // Animate score reveal
-    Animated.timing(scoreAnimation, {
-      toValue: 1,
-      duration: 1500,
-      useNativeDriver: false,
-    }).start(() => {
-      setTimeout(() => setShowDetails(true), 300);
-    });
-  }, []);
+    // Start the score counting animation with a slight delay
+    setTimeout(() => {
+      // Scale animation for the score container
+      Animated.timing(scoreAnimation, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: false,
+      }).start();
 
-  const rank = getRank(finalScore);
+      // Counting animation from 0 to final score
+      Animated.timing(countingAnimation, {
+        toValue: finalScore,
+        duration: 2000,
+        useNativeDriver: false,
+      }).start(() => {
+        // Pulse effect when counting is complete
+        Animated.sequence([
+          Animated.timing(pulseAnimation, {
+            toValue: 1.1,
+            duration: 200,
+            useNativeDriver: false,
+          }),
+          Animated.timing(pulseAnimation, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: false,
+          }),
+        ]).start(() => {
+          setTimeout(() => setShowDetails(true), 300);
+        });
+      });
+
+      // Update display score in real time
+      const listener = countingAnimation.addListener(({ value }) => {
+        setDisplayScore(Math.floor(value));
+      });
+
+      return () => countingAnimation.removeListener(listener);
+    }, 500);
+  }, []);
 
   return (
     <ThemedBackground style={styles.container}>
@@ -105,23 +123,36 @@ export default function QuizResultsScreen({navigation, route}: Props) {
           </View>
           
           <Animated.View style={[styles.scoreDisplay, {
-            transform: [{
-              scale: scoreAnimation.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0.5, 1.1, 1],
-              })
-            }]
+            transform: [
+              {
+                scale: scoreAnimation.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0.3, 1.1, 1],
+                })
+              }
+            ],
+            opacity: scoreAnimation.interpolate({
+              inputRange: [0, 0.3, 1],
+              outputRange: [0, 0.5, 1],
+            })
           }]}>
-            <Text style={[styles.finalScore, { color: theme.colors.primary }]}>
-              {Math.floor(finalScore * scoreAnimation._value).toLocaleString()}
-            </Text>
+            <Animated.View style={{
+              transform: [{ scale: pulseAnimation }]
+            }}>
+              <Text style={[styles.finalScore, { color: theme.colors.primary }]}>
+                {displayScore.toLocaleString()}
+              </Text>
+              {displayScore > 0 && (
+                <Animated.View style={[styles.scoreGlow, {
+                  opacity: pulseAnimation.interpolate({
+                    inputRange: [1, 1.1],
+                    outputRange: [0, 0.3],
+                  })
+                }]} />
+              )}
+            </Animated.View>
           </Animated.View>
-          
-          <View style={[styles.rankBadge, { backgroundColor: rank.color }]}>
-            <Text style={[styles.rankBadgeText, { color: '#FFFFFF' }]}>
-              {rank.title}
-            </Text>
-          </View>
+        
         </View>
 
         {/* Performance Breakdown */}
@@ -193,7 +224,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
             activeOpacity={0.8}
           >
             <Text style={[styles.buttonText, { color: theme.colors.accent1 }]}>
-              🏠 BACK TO DAILY DROP
+              BACK HOME
             </Text>
           </TouchableOpacity>
           
@@ -203,7 +234,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
             activeOpacity={0.8}
           >
             <Text style={[styles.buttonText, { color: theme.colors.accent4 }]}>
-              🏆 VIEW LEADERBOARD
+              LEADERBOARD
             </Text>
           </TouchableOpacity>
         </View>
@@ -267,12 +298,27 @@ const styles = StyleSheet.create({
   scoreDisplay: {
     alignItems: 'center',
     marginBottom: 20,
+    position: 'relative',
   },
   finalScore: {
     fontSize: 56,
     fontWeight: '900',
     textAlign: 'center',
     letterSpacing: -1,
+  },
+  scoreGlow: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    borderRadius: 30,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 20,
+    elevation: 10,
   },
   rankBadge: {
     paddingHorizontal: 20,
