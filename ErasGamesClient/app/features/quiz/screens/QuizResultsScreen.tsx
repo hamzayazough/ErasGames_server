@@ -48,18 +48,6 @@ export default function QuizResultsScreen({navigation, route}: Props) {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
-
-
-    if (finalScore >= 3000) {
-      achievements.push({
-        id: 'highscore',
-        title: 'High Achiever',
-        icon: '�',
-        description: 'Scored over 3000 points',
-        unlocked: true
-      });
-    }
   useEffect(() => {
     // Start the score counting animation with a slight delay
     setTimeout(() => {
@@ -220,7 +208,12 @@ export default function QuizResultsScreen({navigation, route}: Props) {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => navigation.navigate('DailyDrop')}
+            onPress={() => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'DailyDrop' }],
+              });
+            }}
             activeOpacity={0.8}
           >
             <Text style={[styles.buttonText, { color: theme.colors.accent1 }]}>
