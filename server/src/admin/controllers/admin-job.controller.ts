@@ -6,13 +6,16 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { AdminGuard } from '../../guards/admin.guard';
 import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.service';
 
 /**
  * Admin controller for managing daily quiz background jobs
  */
 @Controller('admin/jobs')
+@UseGuards(AdminGuard)
 export class AdminJobController {
   private readonly logger = new Logger(AdminJobController.name);
 

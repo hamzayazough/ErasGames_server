@@ -1,7 +1,9 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Logger, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../../guards/admin.guard';
 import { CdnService } from '../../database/services/daily-quiz-composer/cdn.service';
 
 @Controller('test')
+@UseGuards(AdminGuard)
 export class TestController {
   private readonly logger = new Logger(TestController.name);
 

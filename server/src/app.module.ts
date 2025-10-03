@@ -72,6 +72,7 @@ import { NotificationService } from './services/notification.service';
 import { FirebaseService } from './services/firebase.service';
 import { AuthService } from './services/auth.service';
 import { FirebaseAuthMiddleware } from './middleware/firebase-auth.middleware';
+import { AdminGuard } from './guards/admin.guard';
 
 // Question Creation Services
 import { QuestionCreationService } from './database/services/question-creation/question-creation.service';
@@ -217,6 +218,7 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     // Authentication Services
     FirebaseService,
     AuthService,
+    AdminGuard,
     // Attempt Scoring Services
     AttemptScoringService,
     QuestionCorrectnessService,

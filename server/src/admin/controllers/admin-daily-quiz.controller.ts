@@ -7,7 +7,9 @@ import {
   HttpException,
   Logger,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AdminGuard } from '../../guards/admin.guard';
 import {
   DailyQuizComposerService,
   ComposerConfig,
@@ -25,6 +27,7 @@ import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.s
  * - System health validation
  */
 @Controller('admin/daily-quiz')
+@UseGuards(AdminGuard)
 export class AdminDailyQuizController {
   private readonly logger = new Logger(AdminDailyQuizController.name);
 
