@@ -392,7 +392,6 @@ export default function DailyDropScreen({navigation}: Props) {
               timeTaken={status?.attempt?.timeTaken ? `${status.attempt.timeTaken}s` : undefined}
               nextDayTimeLeft={nextDayTimeLeft}
               nextDayTotalTime={nextDayTotalTime}
-              navigation={navigation}
             />
           ) : (
             <QuizAvailableState
@@ -414,21 +413,31 @@ export default function DailyDropScreen({navigation}: Props) {
           />
         )}
 
-        {/* How to Play - Bottom text - only show when quiz is not available */}
-        {!isAvailable && (
-          <TouchableOpacity 
-            onPress={handleHowToPlay} 
-            activeOpacity={0.8} 
-            style={[styles.howToPlayButton, { 
-              backgroundColor: theme.colors.accent4,
-              borderColor: theme.colors.border 
-            }]}
-          >
-            <Text style={[styles.howToPlayButtonText, { color: theme.colors.text }]}>
-              HOW TO PLAY
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Practice Button - Always Available */}
+        <View style={styles.bottomButtonsContainer}>
+          <Button
+            title="Explore Our Practice Quizzes"
+            onPress={() => navigation.navigate('QuizSelection')}
+            style={[styles.practiceButton, { backgroundColor: theme.colors.primary }]}
+            textStyle={[styles.practiceButtonText, { color: theme.colors.accent1 }]}
+          />
+          
+          {/* How to Play - only show when quiz is not available */}
+          {!isAvailable && (
+            <TouchableOpacity 
+              onPress={handleHowToPlay} 
+              activeOpacity={0.8} 
+              style={[styles.howToPlayButton, { 
+                backgroundColor: theme.colors.accent4,
+                borderColor: theme.colors.border 
+              }]}
+            >
+              <Text style={[styles.howToPlayButtonText, { color: theme.colors.text }]}>
+                HOW TO PLAY
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </ThemedBackground>
   );
@@ -478,13 +487,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
-  howToPlayButton: {
+  bottomButtonsContainer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 20,
     alignSelf: 'center',
-    paddingHorizontal: 32,
+    alignItems: 'center',
+    gap: 12,
+  },
+  practiceButton: {
     paddingVertical: 16,
-    borderRadius: 30,
+    paddingHorizontal: 32,
+    minWidth: 280,
+    borderRadius: 25,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  practiceButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  howToPlayButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 25,
     borderWidth: 1,
     shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },
