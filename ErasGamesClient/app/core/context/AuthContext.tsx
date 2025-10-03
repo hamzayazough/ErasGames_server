@@ -67,20 +67,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔔 Setting up push notifications...');
       
-      // Request permission and get FCM token
-      const fcmToken = await FCMService.requestPermissionAndGetToken();
+      // Use the smart initialization that avoids duplicate registrations
+      const success = await FCMService.initializeForUser(userId);
       
-      if (fcmToken) {
-        // Register token with server
-        await FCMService.registerTokenWithServer(fcmToken, userId);
-        
-        // Setup message handlers
-        FCMService.setupForegroundMessageHandler();
-        FCMService.setupTokenRefreshHandler(userId);
-        
+      if (success) {
         console.log('✅ Push notifications setup complete');
       } else {
-        console.log('❌ Failed to get FCM token');
+        console.log('❌ Push notifications setup failed');
       }
     } catch (error) {
       console.error('Error setting up notifications:', error);
@@ -111,6 +104,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // User is logged out
         setServerUser(null);
         authApiService.logout();
+        // Clear FCM registration data
+        await FCMService.clearRegistrationData();
       }
       
       setIsLoading(false);
@@ -151,6 +146,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear server user data and auth token
       setServerUser(null);
       authApiService.logout();
+      // Clear FCM registration data so token gets re-registered on next login
+      await FCMService.clearRegistrationData();
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +168,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear server user data and auth token
       setServerUser(null);
       authApiService.logout();
+      // Clear FCM registration data
+      await FCMService.clearRegistrationData();
     } finally {
       setIsLoading(false);
     }
