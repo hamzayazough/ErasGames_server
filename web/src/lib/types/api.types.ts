@@ -1,0 +1,138 @@
+// lib/types/api.types.ts
+
+// Common types
+export interface User {
+  id: string;
+  email?: string;
+  name?: string;
+  handle?: string;
+  role: string;
+  status: string;
+}
+
+export interface Question {
+  id: string;
+  questionType: string;
+  difficulty: string;
+  themes: string[];
+  subjects: string[];
+  prompt: any;
+  choices: any[];
+  mediaRefs?: any[];
+  isApproved: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Season {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  totalQuizzes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyQuiz {
+  id: string;
+  dropAtUTC: string;
+  mode: string;
+  templateCdnUrl?: string;
+  createdAt: string;
+  questions: Question[];
+}
+
+// Admin Daily Quiz types
+export interface ComposerConfig {
+  maxExposure?: number;
+  themeWeights?: Record<string, number>;
+  difficultyDistribution?: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+}
+
+export interface ComposeDailyQuizRequest {
+  dropAtUTC: string;
+  mode?: string;
+  config?: Partial<ComposerConfig>;
+}
+
+export interface ComposeDailyQuizResponse {
+  quizId: string;
+  questionCount: number;
+  template: {
+    version: string;
+    cdnUrl?: string;
+    size: number;
+  };
+  composition: {
+    relaxationLevel: number;
+    themeDistribution: Record<string, number>;
+    difficultyActual: Record<string, number>;
+    warnings: string[];
+    performanceMs: number;
+  };
+}
+
+export interface QuestionAvailability {
+  totalQuestions: number;
+  byDifficulty: Record<string, number>;
+  byTheme: Record<string, number>;
+  byType: Record<string, number>;
+}
+
+// Job types
+export interface JobStatus {
+  dailyComposition: {
+    isRunning: boolean;
+    nextRun?: string;
+    lastRun?: string;
+    status: string;
+  };
+  templateWarmup: {
+    isRunning: boolean;
+    lastRun?: string;
+    status: string;
+  };
+}
+
+// Season types
+export interface CreateSeasonDto {
+  name: string;
+  startDate: string;
+  endDate: string;
+  totalQuizzes: number;
+}
+
+export interface SeasonStats {
+  season: Season;
+  totalParticipants: number;
+  totalQuizzesDelivered: number;
+  averageParticipationRate: number;
+  topScore: number;
+}
+
+// Question creation types
+export interface QuestionCreationDto {
+  questionType: string;
+  difficulty: string;
+  themes: string[];
+  subjects: string[];
+  prompt: any;
+  choices?: any[];
+  mediaRefs?: any[];
+  correct?: any;
+}
+
+export interface QuestionStats {
+  total: number;
+  approved: number;
+  pending: number;
+  byType: Record<string, number>;
+  byDifficulty: Record<string, number>;
+}
