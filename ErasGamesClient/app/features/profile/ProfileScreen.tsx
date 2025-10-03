@@ -9,6 +9,7 @@ import {
 import { View, Text } from '../../ui';
 import { useTheme, ThemedBackground } from '../../core/theme';
 import GlobalHeader from '../../shared/components/GlobalHeader';
+import { AnimatedLogo } from '../../shared/components/AnimatedLogo';
 import { userApiService, UserProfile, UpdateUserProfileRequest } from '../../core/api/user';
 import { useAuth } from '../../core/context/AuthContext';
 import {
@@ -191,7 +192,13 @@ export default function ProfileScreen() {
 
   // Render loading state
   if (loading) {
-    return <LoadingState message="Loading profile..." />;
+    return (
+      <ThemedBackground style={styles.container}>
+        <View style={styles.centerContent}>
+          <AnimatedLogo size={200} />
+        </View>
+      </ThemedBackground>
+    );
   }
 
   // Render error state
@@ -350,6 +357,11 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contentContainer: {
     paddingBottom: 20,
