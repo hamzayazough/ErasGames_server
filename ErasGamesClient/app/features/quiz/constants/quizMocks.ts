@@ -102,7 +102,12 @@ export const dailyQuizMock: QuizMock = {
       prompt: {
         task: 'Identify the song from this 1-second audio clip',
       },
-      mediaRefs: [{type: 'audio', url: 'https://example.com/one-second.mp3'}],
+      mediaRefs: [
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/cinematic-hit-3-317170.mp3',
+        },
+      ],
       choices: [
         'We Are Never Getting Back Together',
         'I Knew You Were Trouble',
@@ -278,10 +283,22 @@ export const advancedQuizMock: QuizMock = {
         description: 'Upbeat pop song with synthesizers',
       },
       mediaRefs: [
-        {type: 'audio', url: 'https://example.com/clip1.mp3'},
-        {type: 'audio', url: 'https://example.com/clip2.mp3'},
-        {type: 'audio', url: 'https://example.com/clip3.mp3'},
-        {type: 'audio', url: 'https://example.com/clip4.mp3'},
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+        },
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+        },
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+        },
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+        },
       ],
       choices: [
         {id: 'choice1', text: 'Clip 1'},
@@ -312,7 +329,12 @@ export const advancedQuizMock: QuizMock = {
       prompt: {
         task: 'Identify the song from this reversed audio clip',
       },
-      mediaRefs: [{type: 'audio', url: 'https://example.com/reversed.mp3'}],
+      mediaRefs: [
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+        },
+      ],
       choices: ['Love Story', 'You Belong With Me', 'Shake It Off', '22'],
     },
     {
@@ -447,7 +469,12 @@ export const interactiveQuizMock: QuizMock = {
       prompt: {
         task: 'Identify the song from this 1-second audio clip',
       },
-      mediaRefs: [{type: 'audio', url: 'https://example.com/one-second.mp3'}],
+      mediaRefs: [
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+        },
+      ],
       choices: [
         'We Are Never Getting Back Together',
         'I Knew You Were Trouble',
