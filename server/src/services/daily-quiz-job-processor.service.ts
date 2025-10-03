@@ -268,25 +268,47 @@ export class DailyQuizJobProcessor {
     );
 
     try {
-      // Check if template is ready
-      if (!quiz.templateCdnUrl) {
-        this.logger.error(`Quiz found but template not ready for ${quiz.id}`);
+      // Fetch fresh quiz data from database to ensure we have the latest templateCdnUrl
+      const freshQuiz = await this.dailyQuizRepository.findOne({
+        where: { id: quiz.id },
+      });
+
+      if (!freshQuiz) {
+        this.logger.error(
+          `Quiz ${quiz.id} not found in database during notification`,
+        );
+        return;
+      }
+
+      // Check if template is ready using fresh data
+      if (!freshQuiz.templateCdnUrl) {
+        this.logger.error(
+          `Quiz found but template not ready for ${freshQuiz.id}`,
+        );
+        return;
+      }
+
+      // Check if notification was already sent
+      if (freshQuiz.notificationSent) {
+        this.logger.log(
+          `Notification already sent for quiz ${freshQuiz.id}, skipping`,
+        );
         return;
       }
 
       // Send push notifications to all users
       await this.notificationService.sendDailyQuizNotification(
-        quiz.id,
-        quiz.dropAtUTC,
+        freshQuiz.id,
+        freshQuiz.dropAtUTC,
       );
 
       // Mark notification as sent to avoid duplicate sends
-      await this.dailyQuizRepository.update(quiz.id, {
+      await this.dailyQuizRepository.update(freshQuiz.id, {
         notificationSent: true,
       });
 
       this.logger.log(
-        `🚀 Quiz notification sent successfully for quiz ${quiz.id} at ${quiz.dropAtUTC.toISOString()}`,
+        `🚀 Quiz notification sent successfully for quiz ${freshQuiz.id} at ${freshQuiz.dropAtUTC.toISOString()}`,
       );
     } catch (error) {
       this.logger.error(
