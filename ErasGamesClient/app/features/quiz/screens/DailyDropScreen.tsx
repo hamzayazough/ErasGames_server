@@ -418,8 +418,8 @@ export default function DailyDropScreen({navigation}: Props) {
           <Button
             title="Explore Our Practice Quizzes"
             onPress={() => navigation.navigate('QuizSelection')}
-            style={[styles.practiceButton, { backgroundColor: theme.colors.primary }]}
-            textStyle={[styles.practiceButtonText, { color: theme.colors.accent1 }]}
+            style={[styles.practiceButton, { backgroundColor: theme.colors.accent4 }]}
+            textStyle={[styles.practiceButtonText, { color: theme.colors.text }]}
           />
           
           {/* How to Play - only show when quiz is not available */}
