@@ -133,18 +133,18 @@ export class DailyQuizTestController {
           version,
           dropTime,
           timeUntilDrop: isToday
-            ? 'IMMEDIATELY AVAILABLE'
+            ? 'AVAILABLE IN 3 MINUTES'
             : 'tomorrow at usual time',
         };
       };
 
-      // Calculate drop times - Set to NOW for immediate availability
+      // Calculate drop times - Set to 3 minutes from now
       const todayDropTime = new Date();
-      todayDropTime.setSeconds(todayDropTime.getSeconds() - 30); // 30 seconds ago to ensure it's immediately available
+      todayDropTime.setMinutes(todayDropTime.getMinutes() + 3); // 3 minutes from now
 
       this.logger.log(`🕐 Current time: ${new Date().toISOString()}`);
       this.logger.log(
-        `🕒 Setting today's drop time to: ${todayDropTime.toISOString()} (IMMEDIATELY AVAILABLE)`,
+        `🕒 Setting today's drop time to: ${todayDropTime.toISOString()} (IN 3 MINUTES)`,
       );
 
       const tomorrowDropTime = new Date();
