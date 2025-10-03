@@ -63,7 +63,7 @@ export const MoodMatchComponent: React.FC<MoodMatchComponentProps> = ({
     if (isCorrect || isWrong || isSelected) {
       return [styles.choiceText, { color: theme.colors.textOnPrimary }];
     } else {
-      return [styles.choiceText, { color: theme.colors.accent4 }];
+      return [styles.choiceText, { color: theme.colors.textSecondary }];
     }
   };
 

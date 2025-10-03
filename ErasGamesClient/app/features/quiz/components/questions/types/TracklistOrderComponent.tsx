@@ -61,7 +61,7 @@ export const TracklistOrderComponent: React.FC<TracklistOrderComponentProps> = (
     if (showCorrect && correctAnswer?.orderedTracks) {
       return theme.colors.textOnPrimary;
     }
-    return theme.colors.accent4;
+    return theme.colors.textSecondary;
   };
 
   return (
@@ -77,10 +77,10 @@ export const TracklistOrderComponent: React.FC<TracklistOrderComponentProps> = (
         </View>
         
         <View style={styles.albumTextContainer}>
-          <Text style={[styles.albumLabel, { color: theme.colors.accent4 }]}>
+          <Text style={[styles.albumLabel, { color: theme.colors.textSecondary }]}>
             ALBUM
           </Text>
-          <Text style={[styles.albumName, { color: theme.colors.accent4 }]}>
+          <Text style={[styles.albumName, { color: theme.colors.textSecondary }]}>
             {question.prompt.album}
           </Text>
         </View>

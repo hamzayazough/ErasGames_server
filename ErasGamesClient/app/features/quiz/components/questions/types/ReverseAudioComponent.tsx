@@ -69,7 +69,7 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
             const isWrong = showCorrect && isSelected && index !== correctAnswer?.choiceIndex;
             
             let buttonStyle = [styles.choiceContainer];
-            let textColor = theme.colors.accent4;
+            let textColor = theme.colors.textSecondary;
             
             if (isCorrect) {
               buttonStyle.push({ backgroundColor: theme.colors.success });

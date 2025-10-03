@@ -90,7 +90,7 @@ export const OutfitEraComponent: React.FC<OutfitEraComponentProps> = ({
     if (isCorrect || isWrong || isSelected) {
       return { color: theme.colors.textOnPrimary };
     }
-    return { color: theme.colors.accent4 };
+    return { color: theme.colors.textSecondary };
   };
 
   const handleImageError = useCallback((url: string) => {

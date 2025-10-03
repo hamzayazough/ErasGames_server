@@ -48,6 +48,9 @@ export default function QuizResultsScreen({navigation, route}: Props) {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+
+
     if (finalScore >= 3000) {
       achievements.push({
         id: 'highscore',
@@ -108,9 +111,6 @@ export default function QuizResultsScreen({navigation, route}: Props) {
         <View style={styles.header}>
           <Text style={[styles.gameCompleteText, { color: theme.colors.accent1 }]}>
             QUIZ COMPLETE
-          </Text>
-          <Text style={[styles.rankTitle, { color: rank.color }]}>
-            {rank.emoji} {rank.title}
           </Text>
         </View>
 
