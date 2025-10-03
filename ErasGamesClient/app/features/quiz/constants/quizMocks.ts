@@ -496,7 +496,6 @@ export const challengeQuizMock: QuizMock = {
 };
 
 export const allQuizMocks: QuizMock[] = [
-  dailyQuizMock,
   basicQuizMock,
   advancedQuizMock,
   interactiveQuizMock,
