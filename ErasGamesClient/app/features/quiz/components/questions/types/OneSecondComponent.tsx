@@ -47,7 +47,7 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
           <Text style={[styles.timerText, { color: theme.colors.primary }]}>
             1.0s
           </Text>
-          <Text style={[styles.timerLabel, { color: theme.colors.accent4 }]}>
+          <Text style={[styles.timerLabel, { color: theme.colors.textSecondary }]}>
             duration
           </Text>
         </View>
@@ -75,7 +75,7 @@ export const OneSecondComponent: React.FC<OneSecondComponentProps> = ({
           const isWrong = showCorrect && index === selectedAnswer?.choiceIndex && index !== correctAnswer;
           
           let buttonStyle = [styles.songOption];
-          let textColor = theme.colors.accent4;
+          let textColor = theme.colors.textSecondary;
           
           if (isCorrect) {
             buttonStyle.push({ backgroundColor: theme.colors.success });
