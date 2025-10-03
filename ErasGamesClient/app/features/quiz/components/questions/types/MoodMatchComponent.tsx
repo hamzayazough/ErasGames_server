@@ -19,15 +19,6 @@ export const MoodMatchComponent: React.FC<MoodMatchComponentProps> = ({
 }) => {
   const theme = useTheme();
 
-  // Debug logging
-  console.log('MoodMatchComponent Debug:', {
-    question,
-    questionType: question.questionType,
-    prompt: question.prompt,
-    choices: question.choices,
-    choicesLength: question.choices?.length,
-    correctAnswer
-  });
 
   const handleChoiceSelect = (index: number) => {
     if (!disabled) {

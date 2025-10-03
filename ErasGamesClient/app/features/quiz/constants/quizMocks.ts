@@ -285,19 +285,19 @@ export const advancedQuizMock: QuizMock = {
       mediaRefs: [
         {
           type: 'audio',
-          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
         },
         {
           type: 'audio',
-          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
         },
         {
           type: 'audio',
-          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
         },
         {
           type: 'audio',
-          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
         },
       ],
       choices: [
@@ -332,7 +332,7 @@ export const advancedQuizMock: QuizMock = {
       mediaRefs: [
         {
           type: 'audio',
-          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
         },
       ],
       choices: ['Love Story', 'You Belong With Me', 'Shake It Off', '22'],
@@ -472,7 +472,7 @@ export const interactiveQuizMock: QuizMock = {
       mediaRefs: [
         {
           type: 'audio',
-          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/flickering-neon-316717.mp3',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
         },
       ],
       choices: [
