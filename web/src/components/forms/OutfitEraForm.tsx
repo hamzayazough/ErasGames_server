@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { OutfitEraQuestion } from '@/lib/types/interfaces/questions/outfit-era.interface';
-import { Card } from '@/components/ui/Card';
-import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
+import { Difficulty } from '@/lib/types/enums/question.enums';
 import MediaUpload from '@/components/ui/MediaUpload';
 
 interface OutfitEraFormProps {
@@ -13,21 +9,21 @@ interface OutfitEraFormProps {
 }
 
 export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormProps) {
-  const [task, setTask] = useState('');
-  const [mediaRefs, setMediaRefs] = useState<{ url: string; alt: string }[]>([]);
+  const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.EASY);
+  const [task, setTask] = useState('Which era does this outfit belong to?');
+  const [mediaRefs, setMediaRefs] = useState<Array<{ type: 'image'; url: string }>>([]);
   const [choices, setChoices] = useState<string[]>(['', '', '', '']);
   const [correctIndex, setCorrectIndex] = useState<number>(0);
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [themes, setThemes] = useState<string[]>([]);
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [themes, setThemes] = useState<string[]>(['fashion', 'eras']);
+  const [subjects, setSubjects] = useState<string[]>(['eras']);
 
   const addMediaRef = () => {
-    setMediaRefs([...mediaRefs, { url: '', alt: '' }]);
+    setMediaRefs([...mediaRefs, { type: 'image', url: '' }]);
   };
 
-  const updateMediaRef = (index: number, field: 'url' | 'alt', value: string) => {
+  const updateMediaRef = (index: number, url: string) => {
     const newMediaRefs = [...mediaRefs];
-    newMediaRefs[index] = { ...newMediaRefs[index], [field]: value };
+    newMediaRefs[index] = { type: 'image', url };
     setMediaRefs(newMediaRefs);
   };
 
@@ -88,7 +84,7 @@ export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormP
   };
 
   const handleImageUpload = (mediaIndex: number) => (uploadData: { url: string; filename: string; size: number }) => {
-    updateMediaRef(mediaIndex, 'url', uploadData.url);
+    updateMediaRef(mediaIndex, uploadData.url);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -110,10 +106,11 @@ export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormP
       return;
     }
 
-    // Create the question object with string choices
+    // Create the question object matching the mock data structure
     const question: OutfitEraQuestion = {
-      id: crypto.randomUUID(),
+      id: '',
       questionType: 'outfit-era',
+      difficulty,
       prompt: {
         task: task.trim()
       },
@@ -122,9 +119,8 @@ export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormP
       correct: {
         index: correctIndex
       },
-      difficulty,
-      subjects: subjects.filter(s => s.trim()).length > 0 ? subjects.filter(s => s.trim()) : undefined,
       themes: themes.filter(t => t.trim()).length > 0 ? themes.filter(t => t.trim()) : undefined,
+      subjects: subjects.filter(s => s.trim()).length > 0 ? subjects.filter(s => s.trim()) : undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -134,44 +130,58 @@ export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormP
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="p-6">
-        <Text variant="h3" className="mb-4">Create Outfit Era Question</Text>
+      <div className="p-6 bg-white border rounded-lg">
+        <h2 className="text-2xl font-bold mb-6">Create Outfit Era Question</h2>
         
+        {/* Difficulty */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Difficulty</label>
+          <select
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+            className="w-full p-2 border rounded"
+          >
+            <option value={Difficulty.EASY}>Easy</option>
+            <option value={Difficulty.MEDIUM}>Medium</option>
+            <option value={Difficulty.HARD}>Hard</option>
+          </select>
+        </div>
+
         {/* Task */}
-        <div className="space-y-2">
-          <Label htmlFor="task">Task *</Label>
-          <Input
+        <div className="mb-4">
+          <label htmlFor="task" className="block text-sm font-medium mb-2">Task *</label>
+          <input
+            type="text"
             id="task"
-            placeholder="e.g., Which outfit represents the 1920s flapper era?"
+            placeholder="e.g., Which era does this outfit belong to?"
             value={task}
             onChange={(e) => setTask(e.target.value)}
+            className="w-full p-2 border rounded"
             required
           />
         </div>
 
         {/* Media References */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Media References *</Label>
-            <Button type="button" onClick={addMediaRef} variant="outline" size="sm">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium">Media References *</label>
+            <button type="button" onClick={addMediaRef} className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
               Add Media
-            </Button>
+            </button>
           </div>
           
           {mediaRefs.map((media, index) => (
-            <Card key={index} className="p-4 border border-gray-200">
+            <div key={index} className="p-4 border border-gray-200 rounded mb-2">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Text variant="body" className="font-medium">Media {index + 1}</Text>
-                  <Button 
+                  <span className="font-medium">Media {index + 1}</span>
+                  <button 
                     type="button" 
                     onClick={() => removeMediaRef(index)}
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 text-sm"
                   >
                     Remove
-                  </Button>
+                  </button>
                 </div>
                 
                 <MediaUpload
@@ -183,35 +193,26 @@ export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormP
                 
                 {media.url && (
                   <div>
-                    <Label>Current URL:</Label>
-                    <Text variant="body" className="text-sm text-gray-600 break-all">{media.url}</Text>
+                    <label className="block text-sm font-medium">Current URL:</label>
+                    <p className="text-sm text-gray-600 break-all">{media.url}</p>
                   </div>
                 )}
-                
-                <div>
-                  <Label>Alt Text</Label>
-                  <Input
-                    placeholder="Descriptive text for the image"
-                    value={media.alt}
-                    onChange={(e) => updateMediaRef(index, 'alt', e.target.value)}
-                  />
-                </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
 
         {/* Choices */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Answer Choices *</Label>
-            <Button type="button" onClick={addChoice} variant="outline" size="sm">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium">Answer Choices *</label>
+            <button type="button" onClick={addChoice} className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
               Add Choice
-            </Button>
+            </button>
           </div>
           
           {choices.map((choice, index) => (
-            <div key={index} className="flex items-center gap-3">
+            <div key={index} className="flex items-center gap-3 mb-2">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <input
                   type="radio"
@@ -220,113 +221,97 @@ export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormP
                   onChange={() => setCorrectIndex(index)}
                   className="flex-shrink-0"
                 />
-                <Label className="text-sm flex-shrink-0">Choice {index + 1}:</Label>
-                <Input
+                <span className="text-sm flex-shrink-0 w-8">{index + 1}.</span>
+                <input
+                  type="text"
                   placeholder={`Enter choice ${index + 1}`}
                   value={choice}
                   onChange={(e) => updateChoice(index, e.target.value)}
                   required
-                  className="flex-1"
+                  className="flex-1 p-2 border rounded"
                 />
               </div>
               {choices.length > 2 && (
-                <Button 
+                <button 
                   type="button" 
                   onClick={() => removeChoice(index)}
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0 text-red-600 hover:text-red-700"
+                  className="flex-shrink-0 text-red-600 hover:text-red-700 px-2"
                 >
                   Remove
-                </Button>
+                </button>
               )}
             </div>
           ))}
-        </div>
-
-        {/* Difficulty */}
-        <div className="space-y-2">
-          <Label>Difficulty</Label>
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-            className="w-full p-2 border border-gray-300 rounded-md"
-          >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+          <p className="text-sm text-gray-600 mt-2">Select the correct answer (current: choice {correctIndex + 1})</p>
         </div>
 
         {/* Subjects */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Subjects (Optional)</Label>
-            <Button type="button" onClick={addSubject} variant="outline" size="sm">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium">Subjects</label>
+            <button type="button" onClick={addSubject} className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
               Add Subject
-            </Button>
+            </button>
           </div>
           
           {subjects.map((subject, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <Input
+            <div key={index} className="flex items-center gap-3 mb-2">
+              <input
+                type="text"
                 placeholder={`Subject ${index + 1}`}
                 value={subject}
                 onChange={(e) => updateSubject(index, e.target.value)}
-                className="flex-1"
+                className="flex-1 p-2 border rounded"
               />
-              <Button 
+              <button 
                 type="button" 
                 onClick={() => removeSubject(index)}
-                variant="outline"
-                size="sm"
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 hover:text-red-700 px-2"
               >
                 Remove
-              </Button>
+              </button>
             </div>
           ))}
         </div>
 
         {/* Themes */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Themes (Optional)</Label>
-            <Button type="button" onClick={addTheme} variant="outline" size="sm">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium">Themes</label>
+            <button type="button" onClick={addTheme} className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
               Add Theme
-            </Button>
+            </button>
           </div>
           
           {themes.map((theme, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <Input
+            <div key={index} className="flex items-center gap-3 mb-2">
+              <input
+                type="text"
                 placeholder={`Theme ${index + 1}`}
                 value={theme}
                 onChange={(e) => updateTheme(index, e.target.value)}
-                className="flex-1"
+                className="flex-1 p-2 border rounded"
               />
-              <Button 
+              <button 
                 type="button" 
                 onClick={() => removeTheme(index)}
-                variant="outline"
-                size="sm"
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 hover:text-red-700 px-2"
               >
                 Remove
-              </Button>
+              </button>
             </div>
           ))}
         </div>
-      </Card>
+      </div>
 
       <div className="flex justify-end">
-        <Button 
+        <button 
           type="submit" 
           disabled={isSubmitting}
-          className="px-8"
+          className="px-8 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
         >
           {isSubmitting ? 'Creating...' : 'Create Question'}
-        </Button>
+        </button>
       </div>
     </form>
   );
