@@ -10,6 +10,19 @@ interface AlbumYearGuessRendererProps {
 }
 
 export function AlbumYearGuessRenderer({ question }: AlbumYearGuessRendererProps) {
+  // Find the correct answer text
+  const getCorrectAnswer = () => {
+    if (!question.correct) return null;
+    
+    const correctChoice = question.choices[question.correct.index];
+    if (typeof correctChoice === 'string') {
+      return correctChoice;
+    }
+    return correctChoice.text;
+  };
+
+  const correctAnswer = getCorrectAnswer();
+
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -34,6 +47,15 @@ export function AlbumYearGuessRenderer({ question }: AlbumYearGuessRendererProps
             console.log('Selected:', choice);
           }}
         />
+
+        {/* Show Correct Answer */}
+        {correctAnswer && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <Text variant="body" className="text-green-800">
+              <span className="font-semibold">Correct Answer:</span> {correctAnswer}
+            </Text>
+          </div>
+        )}
 
         {/* Subjects/Themes Display */}
         {(question.subjects || question.themes) && (

@@ -17,7 +17,6 @@ interface FormData {
   task: string;
   choices: string[];
   correctAnswer: number;
-  hint?: string;
 }
 
 export default function AlbumYearGuessForm({ onSubmit, isSubmitting }: AlbumYearGuessFormProps) {
@@ -28,8 +27,7 @@ export default function AlbumYearGuessForm({ onSubmit, isSubmitting }: AlbumYear
     album: '',
     task: '',
     choices: ['', '', '', ''],
-    correctAnswer: 0,
-    hint: ''
+    correctAnswer: 0
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -82,9 +80,8 @@ export default function AlbumYearGuessForm({ onSubmit, isSubmitting }: AlbumYear
         text
       })),
       correct: {
-        choiceIndex: formData.correctAnswer
-      },
-      hint: formData.hint || undefined
+        index: formData.correctAnswer
+      }
     };
 
     onSubmit(questionData);
@@ -267,19 +264,7 @@ export default function AlbumYearGuessForm({ onSubmit, isSubmitting }: AlbumYear
         {errors.choices && <p className="mt-1 text-sm text-red-600">{errors.choices}</p>}
       </div>
 
-      {/* Hint (Optional) */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Hint (Optional)
-        </label>
-        <textarea
-          value={formData.hint}
-          onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
-          rows={3}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Optional hint to help players..."
-        />
-      </div>
+
 
       {/* Submit Button */}
       <div className="flex justify-end space-x-4 pt-6 border-t">

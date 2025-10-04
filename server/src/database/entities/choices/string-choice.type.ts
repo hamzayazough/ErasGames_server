@@ -1,4 +1,4 @@
 /**
  * Basic string choice (e.g. song title, year, mood).
  */
-export type StringChoice = string;
+export type StringChoice = string | { id: string; text: string };
