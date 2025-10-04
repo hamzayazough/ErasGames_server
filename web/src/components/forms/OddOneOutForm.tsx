@@ -17,7 +17,6 @@ interface FormData {
   setRule: string;
   choices: string[];
   correctAnswer: number;
-  hint?: string;
 }
 
 export default function OddOneOutForm({ onSubmit, isSubmitting }: OddOneOutFormProps) {
@@ -25,11 +24,10 @@ export default function OddOneOutForm({ onSubmit, isSubmitting }: OddOneOutFormP
     difficulty: Difficulty.MEDIUM,
     themes: [],
     subjects: [],
-    task: '',
+    task: "Which item doesn't belong with the others?",
     setRule: '',
     choices: ['', '', '', ''],
-    correctAnswer: 0,
-    hint: ''
+    correctAnswer: 0
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -78,13 +76,12 @@ export default function OddOneOutForm({ onSubmit, isSubmitting }: OddOneOutFormP
         setRule: formData.setRule
       },
       choices: formData.choices.map((text, index) => ({
-        id: `choice${index + 1}`,
+        id: `${index + 1}`,
         text
       })),
       correct: {
-        choiceIndex: formData.correctAnswer
-      },
-      hint: formData.hint || undefined
+        index: formData.correctAnswer
+      }
     };
 
     onSubmit(questionData);
@@ -96,25 +93,11 @@ export default function OddOneOutForm({ onSubmit, isSubmitting }: OddOneOutFormP
     setFormData({ ...formData, choices: newChoices });
   };
 
-  const addSubject = () => {
-    // Auto-generate subject based on the type of items being compared
-    if (formData.choices.some(choice => choice.trim())) {
-      const subject = 'albums'; // Default, but could be made smarter
-      if (!formData.subjects.includes(subject)) {
-        setFormData({
-          ...formData,
-          subjects: [...formData.subjects, subject]
-        });
-      }
-    }
-  };
-
-  const addCustomSubject = () => {
-    const customSubject = prompt('Enter a custom subject:');
-    if (customSubject && customSubject.trim() && !formData.subjects.includes(customSubject.trim())) {
+  const addSubject = (subjectType: string) => {
+    if (!formData.subjects.includes(subjectType)) {
       setFormData({
         ...formData,
-        subjects: [...formData.subjects, customSubject.trim()]
+        subjects: [...formData.subjects, subjectType]
       });
     }
   };
@@ -234,35 +217,62 @@ export default function OddOneOutForm({ onSubmit, isSubmitting }: OddOneOutFormP
               </button>
             </div>
           ))}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               type="button"
-              onClick={addSubject}
+              onClick={() => addSubject('albums')}
               className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
             >
-              Add Albums Subject
+              Albums
             </button>
             <button
               type="button"
-              onClick={addCustomSubject}
+              onClick={() => addSubject('songs')}
               className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
             >
-              Add Custom Subject
+              Songs
             </button>
+            <button
+              type="button"
+              onClick={() => addSubject('eras')}
+              className="px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600"
+            >
+              Eras
+            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Custom subject"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const subject = e.currentTarget.value.trim();
+                    if (subject) {
+                      addSubject(subject);
+                      e.currentTarget.value = '';
+                    }
+                  }
+                }}
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                  const subject = input.value.trim();
+                  if (subject) {
+                    addSubject(subject);
+                    input.value = '';
+                  }
+                }}
+                className="px-2 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+              >
+                Add
+              </button>
+            </div>
           </div>
         </div>
         {errors.subjects && <p className="text-red-500 text-sm mt-1">{errors.subjects}</p>}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Hint (Optional)</label>
-        <input
-          type="text"
-          value={formData.hint}
-          onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
-          placeholder="Optional hint for the question"
-          className="w-full p-2 border rounded"
-        />
       </div>
 
       <button
