@@ -14,10 +14,10 @@ export class MediaUploadService {
     const secretAccessKey = this.configService.get<string>(
       'AWS_SECRET_ACCESS_KEY',
     );
-    const bucketName = this.configService.get<string>('AWS_S3_BUCKET');
+    const bucketName = this.configService.get<string>('AWS_S3_ASSETS_BUCKET');
 
     if (!region || !accessKeyId || !secretAccessKey || !bucketName) {
-      throw new Error('Missing required AWS configuration');
+      throw new Error('Missing required AWS configuration for assets bucket');
     }
 
     this.s3Client = new S3Client({
@@ -44,7 +44,7 @@ export class MediaUploadService {
       Key: uniqueKey,
       Body: file,
       ContentType: contentType,
-      ACL: 'public-read',
+      // No ACL needed - bucket policy handles public access
     });
 
     try {
