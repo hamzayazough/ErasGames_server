@@ -15,8 +15,6 @@ interface FormData {
   subjects: string[];
   task: string;
   items: string[];
-  correctOrder: string[];
-  hint?: string;
 }
 
 export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOrderFormProps) {
@@ -24,10 +22,8 @@ export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOr
     difficulty: Difficulty.HARD,
     themes: [],
     subjects: [],
-    task: '',
-    items: [''],
-    correctOrder: [],
-    hint: ''
+    task: 'Arrange these albums in chronological release order',
+    items: ['', '', '', '']
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -47,9 +43,7 @@ export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOr
       newErrors.items = 'At least 3 items are required and all must be filled';
     }
 
-    if (formData.correctOrder.length !== formData.items.filter(item => item.trim()).length) {
-      newErrors.correctOrder = 'Please set the correct chronological order for all items';
-    }
+
 
     if (formData.subjects.length === 0) {
       newErrors.subjects = 'At least one subject is required';
@@ -74,11 +68,7 @@ export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOr
       prompt: {
         task: formData.task,
         items: formData.items.filter(item => item.trim())
-      },
-      correct: {
-        values: formData.correctOrder
-      },
-      hint: formData.hint || undefined
+      }
     };
 
     onSubmit(questionData);
@@ -88,18 +78,6 @@ export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOr
     const newItems = [...formData.items];
     newItems[index] = value;
     setFormData({ ...formData, items: newItems });
-    
-    // Update correct order if item was changed
-    if (formData.correctOrder.includes(formData.items[index])) {
-      const newOrder = [...formData.correctOrder];
-      const orderIndex = newOrder.indexOf(formData.items[index]);
-      if (value.trim()) {
-        newOrder[orderIndex] = value;
-      } else {
-        newOrder.splice(orderIndex, 1);
-      }
-      setFormData(prev => ({ ...prev, correctOrder: newOrder }));
-    }
   };
 
   const addItem = () => {
@@ -107,54 +85,17 @@ export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOr
   };
 
   const removeItem = (index: number) => {
-    const itemToRemove = formData.items[index];
     const newItems = formData.items.filter((_, i) => i !== index);
-    const newOrder = formData.correctOrder.filter(item => item !== itemToRemove);
-    setFormData({ ...formData, items: newItems, correctOrder: newOrder });
+    setFormData({ ...formData, items: newItems });
   };
 
-  const setCorrectOrder = () => {
-    const validItems = formData.items.filter(item => item.trim());
-    if (validItems.length < 2) {
-      alert('Please add at least 2 items before setting the order');
-      return;
-    }
 
-    const orderString = prompt(
-      `Enter the correct chronological order (earliest to latest) as numbers separated by commas.\nItems:\n${validItems.map((item, i) => `${i + 1}. ${item}`).join('\n')}\n\nExample: 2,1,3,4`
-    );
 
-    if (orderString) {
-      try {
-        const orderIndexes = orderString.split(',').map(s => parseInt(s.trim()) - 1);
-        if (orderIndexes.every(i => i >= 0 && i < validItems.length)) {
-          const newOrder = orderIndexes.map(i => validItems[i]);
-          setFormData({ ...formData, correctOrder: newOrder });
-        } else {
-          alert('Invalid order. Please use numbers from 1 to ' + validItems.length);
-        }
-      } catch {
-        alert('Invalid format. Please use numbers separated by commas (e.g., 2,1,3,4)');
-      }
-    }
-  };
-
-  const addSubject = () => {
-    const subject = 'albums';
-    if (!formData.subjects.includes(subject)) {
+  const addSubject = (subjectType: string) => {
+    if (!formData.subjects.includes(subjectType)) {
       setFormData({
         ...formData,
-        subjects: [...formData.subjects, subject]
-      });
-    }
-  };
-
-  const addCustomSubject = () => {
-    const customSubject = prompt('Enter a custom subject:');
-    if (customSubject && customSubject.trim() && !formData.subjects.includes(customSubject.trim())) {
-      setFormData({
-        ...formData,
-        subjects: [...formData.subjects, customSubject.trim()]
+        subjects: [...formData.subjects, subjectType]
       });
     }
   };
@@ -223,36 +164,17 @@ export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOr
             )}
           </div>
         ))}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={addItem}
-            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-          >
-            Add Item
-          </button>
-          <button
-            type="button"
-            onClick={setCorrectOrder}
-            className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-          >
-            Set Correct Order
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={addItem}
+          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+        >
+          Add Item
+        </button>
         {errors.items && <p className="text-red-500 text-sm mt-1">{errors.items}</p>}
       </div>
 
-      {formData.correctOrder.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded p-3">
-          <h4 className="font-medium text-green-800 mb-2">Correct Chronological Order:</h4>
-          <ol className="list-decimal list-inside text-green-700">
-            {formData.correctOrder.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ol>
-        </div>
-      )}
-      {errors.correctOrder && <p className="text-red-500 text-sm mt-1">{errors.correctOrder}</p>}
+
 
       <div>
         <label className="block text-sm font-medium mb-2">Themes</label>
@@ -289,35 +211,62 @@ export default function TimelineOrderForm({ onSubmit, isSubmitting }: TimelineOr
               </button>
             </div>
           ))}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               type="button"
-              onClick={addSubject}
+              onClick={() => addSubject('albums')}
               className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
             >
-              Add Albums Subject
+              Albums
             </button>
             <button
               type="button"
-              onClick={addCustomSubject}
+              onClick={() => addSubject('songs')}
               className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
             >
-              Add Custom Subject
+              Songs
             </button>
+            <button
+              type="button"
+              onClick={() => addSubject('events')}
+              className="px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600"
+            >
+              Events
+            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Custom subject"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const subject = e.currentTarget.value.trim();
+                    if (subject) {
+                      addSubject(subject);
+                      e.currentTarget.value = '';
+                    }
+                  }
+                }}
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                  const subject = input.value.trim();
+                  if (subject) {
+                    addSubject(subject);
+                    input.value = '';
+                  }
+                }}
+                className="px-2 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+              >
+                Add
+              </button>
+            </div>
           </div>
         </div>
         {errors.subjects && <p className="text-red-500 text-sm mt-1">{errors.subjects}</p>}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Hint (Optional)</label>
-        <input
-          type="text"
-          value={formData.hint}
-          onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
-          placeholder="Optional hint for the question"
-          className="w-full p-2 border rounded"
-        />
       </div>
 
       <button
