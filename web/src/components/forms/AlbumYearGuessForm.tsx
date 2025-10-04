@@ -76,7 +76,7 @@ export default function AlbumYearGuessForm({ onSubmit, isSubmitting }: AlbumYear
         album: formData.album
       },
       choices: formData.choices.map((text, index) => ({
-        id: `choice${index + 1}`,
+        id: `${index + 1}`,
         text
       })),
       correct: {

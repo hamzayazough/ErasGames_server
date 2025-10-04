@@ -15,10 +15,8 @@ interface FormData {
   subjects: string[];
   task: string;
   text: string;
-  song?: string;
   choices: string[];
   correctAnswer: number;
-  hint?: string;
 }
 
 export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormProps) {
@@ -26,12 +24,10 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
     difficulty: Difficulty.EASY,
     themes: [],
     subjects: [],
-    task: '',
+    task: 'Fill in the blank spots with the right words',
     text: '',
-    song: '',
     choices: ['', '', '', ''],
-    correctAnswer: 0,
-    hint: ''
+    correctAnswer: 0
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -81,17 +77,15 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
       subjects: formData.subjects,
       prompt: {
         task: formData.task,
-        text: formData.text,
-        song: formData.song || undefined
+        text: formData.text
       },
       choices: formData.choices.map((text, index) => ({
-        id: `choice${index + 1}`,
+        id: `${index + 1}`,
         text
       })),
       correct: {
-        choiceIndex: formData.correctAnswer
-      },
-      hint: formData.hint || undefined
+        index: formData.correctAnswer
+      }
     };
 
     onSubmit(questionData);
@@ -103,28 +97,17 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
     setFormData({ ...formData, choices: newChoices });
   };
 
-  const addSubject = () => {
-    if (formData.song && formData.song.trim()) {
-      const subject = `song:${formData.song.toLowerCase().replace(/\s+/g, '-')}`;
-      if (!formData.subjects.includes(subject)) {
-        setFormData({ 
-          ...formData, 
-          subjects: [...formData.subjects, subject]
-        });
-      }
+  const addSubject = (songName: string) => {
+    const subject = `song:${songName.toLowerCase().replace(/\s+/g, '-')}`;
+    if (!formData.subjects.includes(subject)) {
+      setFormData({ 
+        ...formData, 
+        subjects: [...formData.subjects, subject]
+      });
     }
   };
 
-  // Auto-add song subject when song changes
-  useEffect(() => {
-    if (formData.song && formData.song.trim() && formData.subjects.length === 0) {
-      const subject = `song:${formData.song.toLowerCase().replace(/\s+/g, '-')}`;
-      setFormData(prev => ({ 
-        ...prev, 
-        subjects: [subject]
-      }));
-    }
-  }, [formData.song]);
+
 
   const removeSubject = (index: number) => {
     const newSubjects = formData.subjects.filter((_, i) => i !== index);
@@ -141,7 +124,7 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Difficulty */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -157,20 +140,6 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
             <option value={Difficulty.HARD}>Hard</option>
           </select>
         </div>
-
-        {/* Song (Optional) */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Song Name (Optional)
-          </label>
-          <input
-            type="text"
-            value={formData.song || ''}
-            onChange={(e) => setFormData({ ...formData, song: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Blank Space"
-          />
-        </div>
       </div>
 
       {/* Task Description */}
@@ -185,7 +154,7 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
           className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.task ? 'border-red-300' : 'border-gray-300'
           }`}
-          placeholder={formData.song ? `Complete the lyric from "${formData.song}"` : 'Complete the lyric'}
+          placeholder="Complete the lyric from 'Song Name'"
         />
         {errors.task && <p className="mt-1 text-sm text-red-600">{errors.task}</p>}
       </div>
@@ -252,14 +221,37 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={addSubject}
-          disabled={!formData.song}
-          className="text-blue-600 hover:text-blue-800 text-sm underline disabled:text-gray-400"
-        >
-          + Add song subject (auto-generated from song name)
-        </button>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Enter song name"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const songName = e.currentTarget.value.trim();
+                if (songName) {
+                  addSubject(songName);
+                  e.currentTarget.value = '';
+                }
+              }
+            }}
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+              const songName = input.value.trim();
+              if (songName) {
+                addSubject(songName);
+                input.value = '';
+              }
+            }}
+            className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+          >
+            Add Song Subject
+          </button>
+        </div>
         {errors.subjects && <p className="mt-1 text-sm text-red-600">{errors.subjects}</p>}
       </div>
 
@@ -293,19 +285,7 @@ export default function FillBlankForm({ onSubmit, isSubmitting }: FillBlankFormP
         {errors.choices && <p className="mt-1 text-sm text-red-600">{errors.choices}</p>}
       </div>
 
-      {/* Hint (Optional) */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Hint (Optional)
-        </label>
-        <textarea
-          value={formData.hint}
-          onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
-          rows={3}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Optional hint to help players..."
-        />
-      </div>
+
 
       {/* Submit Button */}
       <div className="flex justify-end space-x-4 pt-6 border-t">
