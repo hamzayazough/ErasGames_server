@@ -35,21 +35,10 @@ export function OutfitEraRenderer({ question }: OutfitEraRendererProps) {
           </div>
         )}
 
-        {/* Hint */}
-        {question.hint && (
-          <Card className="p-4 bg-yellow-50 border-yellow-200">
-            <div className="flex items-start gap-2">
-              <span className="text-yellow-600">💡</span>
-              <Text className="text-yellow-800">
-                <strong>Hint:</strong> {question.hint}
-              </Text>
-            </div>
-          </Card>
-        )}
-
         {/* Multiple Choice Options */}
         <MultipleChoice
           choices={question.choices}
+          correctIndex={question.correct?.index}
           onSelect={(choice) => {
             console.log('Selected:', choice);
           }}
