@@ -8,15 +8,19 @@ import { MediaDisplay } from '../common/MediaDisplay';
 
 interface AiVisualRendererProps {
   question: AiVisualQuestion;
+  showAnswer?: boolean;
 }
 
-export function AiVisualRenderer({ question }: AiVisualRendererProps) {
+export function AiVisualRenderer({ question, showAnswer = false }: AiVisualRendererProps) {
+  // Get the correct choice index
+  const correctIndex = question.correct?.index;
+  
   return (
     <Card className="p-6">
       <div className="space-y-6">
         <div className="text-center">
           <Text variant="h2" className="mb-4">
-            {question.prompt.task || question.prompt.main_prompt || 'Analyze this AI-generated image'}
+            {question.prompt.task || 'Analyze this AI-generated image'}
           </Text>
         </div>
 
@@ -42,38 +46,45 @@ export function AiVisualRenderer({ question }: AiVisualRendererProps) {
           </div>
         </Card>
 
-        {/* Image-based choices */}
+        {/* Text-based choices */}
         <div className="grid grid-cols-2 gap-4">
           {question.choices.map((choice, index) => {
-            const hasUrl = choice.url;
-            const hasText = choice.text;
+            // Handle both string and object choice formats
+            const choiceText = typeof choice === 'string' ? choice : choice.text;
+            const isCorrect = showAnswer && correctIndex === index;
             
             return (
-              <div key={choice.id || index} className="cursor-pointer hover:opacity-80 transition-opacity">
-                {hasUrl ? (
-                  <div className="relative">
-                    <MediaDisplay
-                      url={choice.url}
-                      alt={`Choice ${index + 1}`}
-                      className="w-full rounded-lg border-2 border-gray-200 hover:border-blue-400"
-                    />
-                    <div className="absolute top-2 left-2 w-6 h-6 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center text-xs font-bold">
-                      {String.fromCharCode(65 + index)}
-                    </div>
-                  </div>
-                ) : hasText ? (
-                  <Card className="p-4 text-center border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50">
-                    <span className="font-medium">{choice.text}</span>
-                  </Card>
-                ) : (
-                  <Card className="p-4 text-center border-2 border-gray-200">
-                    <span className="text-gray-500">Choice {index + 1}</span>
-                  </Card>
-                )}
-              </div>
+              <Card 
+                key={index} 
+                className={`p-4 text-center border-2 cursor-pointer hover:opacity-80 transition-all ${
+                  isCorrect 
+                    ? 'border-green-500 bg-green-50' 
+                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-medium">{String.fromCharCode(65 + index)}.</span>
+                  <span className="font-medium">{choiceText}</span>
+                  {isCorrect && <span className="text-green-600">✓</span>}
+                </div>
+              </Card>
             );
           })}
         </div>
+
+        {/* Show correct answer if enabled */}
+        {showAnswer && correctIndex !== undefined && (
+          <Card className="p-4 bg-green-50 border-green-200">
+            <div className="text-center">
+              <Text className="text-green-800 font-medium">
+                Correct Answer: {(() => {
+                  const correctChoice = question.choices[correctIndex];
+                  return typeof correctChoice === 'string' ? correctChoice : correctChoice?.text || 'Unknown';
+                })()}
+              </Text>
+            </div>
+          </Card>
+        )}
       </div>
     </Card>
   );

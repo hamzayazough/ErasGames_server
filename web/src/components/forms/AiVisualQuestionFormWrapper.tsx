@@ -16,7 +16,7 @@ export default function AiVisualQuestionFormWrapper({ onSubmit, isSubmitting }: 
     imageUrl: '',
     imageFilename: '',
     aiPrompt: '',
-    correctAnswer: '',
+    correctAnswerIndex: 0,
     options: ['', '', '', '']
   });
 
@@ -24,7 +24,7 @@ export default function AiVisualQuestionFormWrapper({ onSubmit, isSubmitting }: 
     e.preventDefault();
     
     // Validate required fields
-    if (!question.question || !question.imageUrl || !question.aiPrompt || !question.correctAnswer) {
+    if (!question.question || !question.imageUrl || !question.aiPrompt) {
       alert('Please fill in all required fields');
       return;
     }
@@ -34,22 +34,29 @@ export default function AiVisualQuestionFormWrapper({ onSubmit, isSubmitting }: 
       return;
     }
 
+    if (question.correctAnswerIndex === undefined || question.correctAnswerIndex < 0) {
+      alert('Please select the correct answer');
+      return;
+    }
+
     // Transform form data to match backend DTO structure
-    const correctAnswerIndex = question.options?.indexOf(question.correctAnswer) || 0;
-    
     const transformedData = {
       questionType: 'ai-visual',
       difficulty: question.difficulty || 'medium',
       era: question.era || '',
       prompt: {
-        main_prompt: question.aiPrompt
+        task: question.aiPrompt
       },
+      mediaRefs: [{
+        type: 'image',
+        url: question.imageUrl || ''
+      }],
       choices: question.options?.map((option, index) => ({
-        id: `choice_${index}`,
-        url: question.imageUrl || '' // All choices reference the same analyzed image
+        id: (index + 1).toString(),
+        text: option
       })) || [],
       correct: {
-        choiceId: `choice_${correctAnswerIndex}`
+        index: question.correctAnswerIndex
       }
     };
 

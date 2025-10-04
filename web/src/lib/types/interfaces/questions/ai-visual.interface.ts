@@ -1,14 +1,14 @@
-import { BasicQuestion } from './basic-question.interface';
-import { SingleChoiceCorrect } from '../corrects/single-choice-correct.interface';
-import { MediaRef } from '../media/media-ref.interface';
-import { ImageChoice } from '../choices/image-choice.interface';
-import { AiVisualPrompt } from '../prompts/prompt-interfaces';
+import { BasicQuestion } from "./basic-question.interface";
+import { SingleChoiceCorrect } from "../corrects/single-choice-correct.interface";
+import { MediaRef } from "../media/media-ref.interface";
+import { StringChoice } from "../choices/string-choice.type";
+import { AiVisualPrompt } from "../prompts/prompt-interfaces";
 
 export interface AiVisualQuestion extends BasicQuestion {
-  questionType: 'ai-visual';
+  questionType: "ai-visual";
   prompt: AiVisualPrompt;
   mediaRefs: MediaRef[];
-  choices: ImageChoice[];
+  choices: StringChoice[];
   correct?: SingleChoiceCorrect;
 }
 /**

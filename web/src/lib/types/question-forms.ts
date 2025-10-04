@@ -13,7 +13,7 @@ export interface AiVisualQuestionForm extends BaseQuestionForm {
   imageUrl: string;
   imageFilename: string;
   aiPrompt: string;
-  correctAnswer: string;
+  correctAnswerIndex: number;
   options: string[];
 }
 
