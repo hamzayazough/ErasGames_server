@@ -14,14 +14,29 @@ export interface Question {
   id: string;
   questionType: string;
   difficulty: string;
-  themes: string[];
-  subjects: string[];
-  prompt: any;
-  choices: any[];
-  mediaRefs?: any[];
-  isApproved: boolean;
-  isActive: boolean;
-  createdAt: string;
+  themesJSON: string[];
+  subjectsJSON: string[];
+  promptJSON: {
+    task: string;
+    [key: string]: unknown;
+  };
+  choicesJSON: Array<{
+    id: string;
+    text: string;
+    [key: string]: unknown;
+  }> | null;
+  correctJSON: {
+    [key: string]: unknown;
+  } | null;
+  mediaJSON?: Array<{
+    type: string;
+    url: string;
+    [key: string]: unknown;
+  }> | null;
+  approved: boolean;
+  disabled: boolean;
+  exposureCount: number;
+  lastUsedAt: string | null;
   updatedAt: string;
 }
 
@@ -123,10 +138,21 @@ export interface QuestionCreationDto {
   difficulty: string;
   themes: string[];
   subjects: string[];
-  prompt: any;
-  choices?: any[];
-  mediaRefs?: any[];
-  correct?: any;
+  prompt: {
+    task: string;
+    [key: string]: unknown;
+  };
+  choices?: Array<{
+    id: string;
+    text: string;
+  }>;
+  mediaRefs?: Array<{
+    type: string;
+    url: string;
+  }>;
+  correct?: {
+    [key: string]: unknown;
+  };
 }
 
 export interface QuestionStats {
