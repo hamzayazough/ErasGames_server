@@ -42,9 +42,36 @@ export function SongAlbumMatchRenderer({ question }: SongAlbumMatchRendererProps
           </Card>
         </div>
         
-        <Text className="text-center text-gray-600">
-          Match each song to its correct album (Interactive matching would be implemented here)
-        </Text>
+        <div className="text-center">
+          <Text className="text-gray-600 mb-4">
+            Drag and drop or click to match each song to its correct album
+          </Text>
+          
+          {/* Interactive matching would be implemented here */}
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <Text className="text-yellow-800 text-sm">
+              🚧 Interactive matching interface coming soon
+            </Text>
+          </div>
+        </div>
+
+        {/* Subjects/Themes Display */}
+        {(question.subjects || question.themes) && (
+          <div className="pt-4 border-t border-gray-200">
+            <div className="flex flex-wrap gap-2">
+              {question.themes?.map((theme, index) => (
+                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">
+                  {theme}
+                </span>
+              ))}
+              {question.subjects?.map((subject, index) => (
+                <span key={index} className="px-2 py-1 bg-green-100 text-green-800 text-sm rounded">
+                  {subject}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );

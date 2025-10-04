@@ -16,8 +16,6 @@ interface FormData {
   task: string;
   leftItems: string[];
   rightItems: string[];
-  correctMatches: Record<string, string>;
-  hint?: string;
 }
 
 export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbumMatchFormProps) {
@@ -25,11 +23,9 @@ export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbum
     difficulty: Difficulty.MEDIUM,
     themes: [],
     subjects: [],
-    task: '',
-    leftItems: [''],
-    rightItems: [''],
-    correctMatches: {},
-    hint: ''
+    task: 'Match each song to its correct album',
+    leftItems: ['', '', ''],
+    rightItems: ['', '', '', '']
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -53,12 +49,7 @@ export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbum
       newErrors.rightItems = 'All albums must be filled';
     }
 
-    // Check if all left items have matches
-    const leftItemsWithValues = formData.leftItems.filter(item => item.trim());
-    const matchCount = Object.keys(formData.correctMatches).length;
-    if (matchCount < leftItemsWithValues.length) {
-      newErrors.correctMatches = 'All songs must be matched to albums';
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -80,11 +71,7 @@ export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbum
         task: formData.task,
         left: formData.leftItems.filter(item => item.trim()),
         right: formData.rightItems.filter(item => item.trim())
-      },
-      correct: {
-        matches: formData.correctMatches
-      },
-      hint: formData.hint || undefined
+      }
     };
 
     onSubmit(questionData);
@@ -92,23 +79,8 @@ export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbum
 
   const updateLeftItem = (index: number, value: string) => {
     const newLeftItems = [...formData.leftItems];
-    const oldValue = newLeftItems[index];
     newLeftItems[index] = value;
-    
-    // Update matches if the key changed
-    const newMatches = { ...formData.correctMatches };
-    if (oldValue && newMatches[oldValue]) {
-      delete newMatches[oldValue];
-      if (value) {
-        newMatches[value] = formData.correctMatches[oldValue];
-      }
-    }
-    
-    setFormData({ 
-      ...formData, 
-      leftItems: newLeftItems,
-      correctMatches: newMatches
-    });
+    setFormData({ ...formData, leftItems: newLeftItems });
   };
 
   const updateRightItem = (index: number, value: string) => {
@@ -133,16 +105,7 @@ export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbum
 
   const removeLeftItem = (index: number) => {
     const newLeftItems = formData.leftItems.filter((_, i) => i !== index);
-    const removedItem = formData.leftItems[index];
-    const newMatches = { ...formData.correctMatches };
-    if (removedItem && newMatches[removedItem]) {
-      delete newMatches[removedItem];
-    }
-    setFormData({ 
-      ...formData, 
-      leftItems: newLeftItems,
-      correctMatches: newMatches
-    });
+    setFormData({ ...formData, leftItems: newLeftItems });
   };
 
   const removeRightItem = (index: number) => {
@@ -150,11 +113,7 @@ export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbum
     setFormData({ ...formData, rightItems: newRightItems });
   };
 
-  const setMatch = (leftItem: string, rightItem: string) => {
-    const newMatches = { ...formData.correctMatches };
-    newMatches[leftItem] = rightItem;
-    setFormData({ ...formData, correctMatches: newMatches });
-  };
+
 
   const toggleTheme = (theme: string) => {
     const newThemes = formData.themes.includes(theme)
@@ -301,50 +260,83 @@ export default function SongAlbumMatchForm({ onSubmit, isSubmitting }: SongAlbum
         </div>
       </div>
 
-      {/* Correct Matches */}
+      {/* Subjects */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Correct Matches
+          Subjects
         </label>
-        <div className="bg-gray-50 rounded-lg p-4">
-          {formData.leftItems
-            .filter(item => item.trim())
-            .map((leftItem, index) => (
-              <div key={index} className="flex items-center space-x-4 mb-2">
-                <span className="w-1/3 text-sm font-medium">{leftItem}</span>
-                <span className="text-gray-500">→</span>
-                <select
-                  value={formData.correctMatches[leftItem] || ''}
-                  onChange={(e) => setMatch(leftItem, e.target.value)}
-                  className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select album...</option>
-                  {formData.rightItems
-                    .filter(item => item.trim())
-                    .map((rightItem, rightIndex) => (
-                      <option key={rightIndex} value={rightItem}>
-                        {rightItem}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            ))}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {formData.subjects.map((subject, index) => (
+            <div key={index} className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              <span className="text-sm">{subject}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const newSubjects = formData.subjects.filter((_, i) => i !== index);
+                  setFormData({ ...formData, subjects: newSubjects });
+                }}
+                className="ml-2 text-blue-600 hover:text-blue-800"
+              >
+                ×
+              </button>
+            </div>
+          ))}
         </div>
-        {errors.correctMatches && <p className="mt-1 text-sm text-red-600">{errors.correctMatches}</p>}
-      </div>
-
-      {/* Hint (Optional) */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Hint (Optional)
-        </label>
-        <textarea
-          value={formData.hint}
-          onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
-          rows={3}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Optional hint to help players..."
-        />
+        <div className="flex gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              if (!formData.subjects.includes('albums')) {
+                setFormData({ ...formData, subjects: [...formData.subjects, 'albums'] });
+              }
+            }}
+            className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+          >
+            Albums
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!formData.subjects.includes('songs')) {
+                setFormData({ ...formData, subjects: [...formData.subjects, 'songs'] });
+              }
+            }}
+            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+          >
+            Songs
+          </button>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Custom subject"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const subject = e.currentTarget.value.trim();
+                  if (subject && !formData.subjects.includes(subject)) {
+                    setFormData({ ...formData, subjects: [...formData.subjects, subject] });
+                    e.currentTarget.value = '';
+                  }
+                }
+              }}
+              className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={(e) => {
+                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                const subject = input.value.trim();
+                if (subject && !formData.subjects.includes(subject)) {
+                  setFormData({ ...formData, subjects: [...formData.subjects, subject] });
+                  input.value = '';
+                }
+              }}
+              className="px-2 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+            >
+              Add
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Submit Button */}
