@@ -13,6 +13,10 @@ import { FillBlankQuestion } from '@/lib/types/interfaces/questions/fill-blank.i
 import AlbumYearGuessForm from '@/components/forms/AlbumYearGuessForm';
 import SongAlbumMatchForm from '@/components/forms/SongAlbumMatchForm';
 import FillBlankForm from '@/components/forms/FillBlankForm';
+import GuessByLyricForm from '@/components/forms/GuessByLyricForm';
+import OddOneOutForm from '@/components/forms/OddOneOutForm';
+import MoodMatchForm from '@/components/forms/MoodMatchForm';
+import InspirationMapForm from '@/components/forms/InspirationMapForm';
 
 export default function CreateQuestionPage() {
   const { user, loading } = useAuth();
@@ -23,11 +27,15 @@ export default function CreateQuestionPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Focus on these 3 question types for now
+  // Available question types
   const availableTypes = [
     { value: 'album-year-guess', label: 'Album Year Guess', description: 'Player guesses the release year of an album' },
     { value: 'song-album-match', label: 'Song Album Match', description: 'Player matches songs to their albums' },
-    { value: 'fill-blank', label: 'Fill in the Blank', description: 'Player completes missing lyrics or text' }
+    { value: 'fill-blank', label: 'Fill in the Blank', description: 'Player completes missing lyrics or text' },
+    { value: 'guess-by-lyric', label: 'Guess by Lyric', description: 'Player identifies the song from a lyric excerpt' },
+    { value: 'odd-one-out', label: 'Odd One Out', description: 'Player selects the item that doesn\'t belong' },
+    { value: 'mood-match', label: 'Mood Match', description: 'Player matches songs to their emotional mood' },
+    { value: 'inspiration-map', label: 'Inspiration Map', description: 'Player identifies who/what inspired a song' }
   ];
 
   useEffect(() => {
@@ -131,6 +139,80 @@ export default function CreateQuestionPage() {
           }
         };
       
+      case 'guess-by-lyric':
+        return {
+          questionType: 'guess-by-lyric',
+          difficulty: 'easy',
+          themes: ['lyrics'],
+          subjects: ['song:love-story'],
+          prompt: {
+            task: 'Which song contains this lyric?',
+            lyric: 'Romeo, take me somewhere we can be alone'
+          },
+          choices: [
+            {id: 'choice1', text: 'Love Story'},
+            {id: 'choice2', text: 'You Belong With Me'},
+            {id: 'choice3', text: 'White Horse'},
+            {id: 'choice4', text: 'Teardrops On My Guitar'},
+          ],
+          correct: {
+            choiceIndex: 0
+          }
+        };
+      
+      case 'odd-one-out':
+        return {
+          questionType: 'odd-one-out',
+          difficulty: 'medium',
+          themes: ['eras'],
+          subjects: ['albums'],
+          prompt: {
+            task: "Which album doesn't belong with the others?",
+            setRule: 'Albums from the 2010s'
+          },
+          choices: [
+            {id: 'choice1', text: 'Lover'},
+            {id: 'choice2', text: 'folklore'},
+            {id: 'choice3', text: '1989'},
+            {id: 'choice4', text: 'reputation'},
+          ],
+          correct: {
+            choiceIndex: 1
+          }
+        };
+      
+      case 'mood-match':
+        return {
+          questionType: 'mood-match',
+          difficulty: 'medium',
+          themes: ['emotions'],
+          subjects: ['songs'],
+          prompt: {
+            task: 'Which mood best describes the song "All Too Well"?',
+            moodTags: ['emotional', 'nostalgic', 'heartbreak'],
+            note: 'Consider the overall feeling and lyrics of the song'
+          },
+          mediaRefs: [],
+          choices: ['Melancholic', 'Upbeat', 'Romantic', 'Angry'],
+          correct: {
+            choiceIndex: 0
+          }
+        };
+      
+      case 'inspiration-map':
+        return {
+          questionType: 'inspiration-map',
+          difficulty: 'easy',
+          themes: ['influences'],
+          subjects: ['songs'],
+          prompt: {
+            task: 'Who is widely believed to have inspired the song "All Too Well"?',
+            disclaimer: 'Based on fan interpretations and media reports, not officially confirmed.'
+          },
+          choices: ['Joe Jonas', 'Jake Gyllenhaal', 'Harry Styles', 'John Mayer'],
+          correct: 1
+        };
+      
       default:
         return {};
     }
@@ -155,6 +237,34 @@ export default function CreateQuestionPage() {
       case 'fill-blank':
         return (
           <FillBlankForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'guess-by-lyric':
+        return (
+          <GuessByLyricForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'odd-one-out':
+        return (
+          <OddOneOutForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'mood-match':
+        return (
+          <MoodMatchForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'inspiration-map':
+        return (
+          <InspirationMapForm
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
           />
@@ -222,7 +332,7 @@ export default function CreateQuestionPage() {
         {/* Question Type Selection */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Question Type</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {availableTypes.map((type) => (
               <div
                 key={type.value}
@@ -277,6 +387,34 @@ export default function CreateQuestionPage() {
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
             >
               Test Fill Blank
+            </button>
+            <button
+              onClick={() => testQuestionCreation('guess-by-lyric')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+            >
+              Test Guess by Lyric
+            </button>
+            <button
+              onClick={() => testQuestionCreation('odd-one-out')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              Test Odd One Out
+            </button>
+            <button
+              onClick={() => testQuestionCreation('mood-match')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50"
+            >
+              Test Mood Match
+            </button>
+            <button
+              onClick={() => testQuestionCreation('inspiration-map')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              Test Inspiration Map
             </button>
           </div>
         </div>
