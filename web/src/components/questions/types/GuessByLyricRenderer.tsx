@@ -35,6 +35,19 @@ export function GuessByLyricRenderer({ question }: GuessByLyricRendererProps) {
           }}
         />
 
+        {/* Show Correct Answer */}
+        {question.correct && (() => {
+          const correctChoice = question.choices[question.correct.index];
+          const correctAnswer = typeof correctChoice === 'string' ? correctChoice : correctChoice.text;
+          return (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <Text variant="body" className="text-green-800">
+                <span className="font-semibold">Correct Answer:</span> {correctAnswer}
+              </Text>
+            </div>
+          );
+        })()}
+
         {/* Subjects/Themes Display */}
         {(question.subjects || question.themes) && (
           <div className="pt-4 border-t border-gray-200">

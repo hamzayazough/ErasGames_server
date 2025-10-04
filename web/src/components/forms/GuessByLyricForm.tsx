@@ -17,7 +17,6 @@ interface FormData {
   lyric: string;
   choices: string[];
   correctAnswer: number;
-  hint?: string;
 }
 
 export default function GuessByLyricForm({ onSubmit, isSubmitting }: GuessByLyricFormProps) {
@@ -25,11 +24,10 @@ export default function GuessByLyricForm({ onSubmit, isSubmitting }: GuessByLyri
     difficulty: Difficulty.EASY,
     themes: [],
     subjects: [],
-    task: '',
+    task: 'Which song contains this lyric?',
     lyric: '',
     choices: ['', '', '', ''],
-    correctAnswer: 0,
-    hint: ''
+    correctAnswer: 0
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -78,13 +76,12 @@ export default function GuessByLyricForm({ onSubmit, isSubmitting }: GuessByLyri
         lyric: formData.lyric
       },
       choices: formData.choices.map((text, index) => ({
-        id: `choice${index + 1}`,
+        id: `${index + 1}`,
         text
       })),
       correct: {
-        choiceIndex: formData.correctAnswer
-      },
-      hint: formData.hint || undefined
+        index: formData.correctAnswer
+      }
     };
 
     onSubmit(questionData);
@@ -231,17 +228,6 @@ export default function GuessByLyricForm({ onSubmit, isSubmitting }: GuessByLyri
           </button>
         </div>
         {errors.subjects && <p className="text-red-500 text-sm mt-1">{errors.subjects}</p>}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Hint (Optional)</label>
-        <input
-          type="text"
-          value={formData.hint}
-          onChange={(e) => setFormData({ ...formData, hint: e.target.value })}
-          placeholder="Optional hint for the question"
-          className="w-full p-2 border rounded"
-        />
       </div>
 
       <button
