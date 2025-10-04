@@ -34,10 +34,26 @@ export default function AiVisualQuestionFormWrapper({ onSubmit, isSubmitting }: 
       return;
     }
 
-    onSubmit({
-      ...question,
-      type: 'ai-visual'
-    });
+    // Transform form data to match backend DTO structure
+    const correctAnswerIndex = question.options?.indexOf(question.correctAnswer) || 0;
+    
+    const transformedData = {
+      questionType: 'ai-visual',
+      difficulty: question.difficulty || 'medium',
+      era: question.era || '',
+      prompt: {
+        main_prompt: question.aiPrompt
+      },
+      choices: question.options?.map((option, index) => ({
+        id: `choice_${index}`,
+        url: question.imageUrl || '' // All choices reference the same analyzed image
+      })) || [],
+      correct: {
+        choiceId: `choice_${correctAnswerIndex}`
+      }
+    };
+
+    onSubmit(transformedData);
   };
 
   return (
