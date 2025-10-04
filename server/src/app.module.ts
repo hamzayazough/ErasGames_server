@@ -65,12 +65,14 @@ import { TestController } from './admin/controllers/cdn-test.controller';
 import { AuthController } from './controllers/auth.controller';
 import { UserController } from './controllers/user.controller';
 import { NotificationController } from './controllers/notification.controller';
+import { MediaUploadController } from './controllers/media-upload.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
 import { NotificationService } from './services/notification.service';
 import { FirebaseService } from './services/firebase.service';
 import { AuthService } from './services/auth.service';
+import { MediaUploadService } from './services/media-upload.service';
 import { FirebaseAuthMiddleware } from './middleware/firebase-auth.middleware';
 import { AdminGuard } from './guards/admin.guard';
 
@@ -198,6 +200,7 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     AuthController,
     UserController,
     NotificationController,
+    MediaUploadController,
     SeasonsController,
     AdminSeasonsController,
   ],
@@ -219,6 +222,8 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     FirebaseService,
     AuthService,
     AdminGuard,
+    // Media Upload Service
+    MediaUploadService,
     // Attempt Scoring Services
     AttemptScoringService,
     QuestionCorrectnessService,

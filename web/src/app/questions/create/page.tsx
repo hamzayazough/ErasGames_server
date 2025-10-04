@@ -24,6 +24,11 @@ import LongestSongForm from '@/components/forms/LongestSongForm';
 import TracklistOrderForm from '@/components/forms/TracklistOrderForm';
 import LyricMashupForm from '@/components/forms/LyricMashupForm';
 import SpeedTapForm from '@/components/forms/SpeedTapForm';
+import AiVisualQuestionFormWrapper from '@/components/forms/AiVisualQuestionFormWrapper';
+import SoundAlikeSnippetQuestionFormWrapper from '@/components/forms/SoundAlikeSnippetQuestionFormWrapper';
+import OutfitEraQuestionFormWrapper from '@/components/forms/OutfitEraQuestionFormWrapper';
+import ReverseAudioQuestionFormWrapper from '@/components/forms/ReverseAudioQuestionFormWrapper';
+import OneSecondQuestionFormWrapper from '@/components/forms/OneSecondQuestionFormWrapper';
 
 export default function CreateQuestionPage() {
   const { user, loading } = useAuth();
@@ -49,7 +54,12 @@ export default function CreateQuestionPage() {
     { value: 'longest-song', label: 'Longest Song', description: 'Player identifies the longest song from options' },
     { value: 'tracklist-order', label: 'Tracklist Order', description: 'Player arranges tracks in their album order' },
     { value: 'lyric-mashup', label: 'Lyric Mashup', description: 'Player matches lyric snippets to correct songs' },
-    { value: 'speed-tap', label: 'Speed Tap', description: 'Player taps correct items as fast as possible' }
+    { value: 'speed-tap', label: 'Speed Tap', description: 'Player taps correct items as fast as possible' },
+    { value: 'ai-visual', label: 'AI Visual Question', description: 'Player answers questions about images analyzed by AI' },
+    { value: 'sound-alike-snippet', label: 'Sound-Alike Snippet', description: 'Player identifies words from similar-sounding audio clips' },
+    { value: 'outfit-era', label: 'Outfit Era Question', description: 'Player identifies historical eras from clothing/outfit images' },
+    { value: 'reverse-audio', label: 'Reverse Audio Question', description: 'Player identifies words from reversed audio clips' },
+    { value: 'one-second', label: 'One Second Question', description: 'Player identifies sources from 1-second audio snippets' }
   ];
 
   useEffect(() => {
@@ -178,6 +188,41 @@ export default function CreateQuestionPage() {
       case 'speed-tap':
         return (
           <SpeedTapForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'ai-visual':
+        return (
+          <AiVisualQuestionFormWrapper
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'sound-alike-snippet':
+        return (
+          <SoundAlikeSnippetQuestionFormWrapper
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'outfit-era':
+        return (
+          <OutfitEraQuestionFormWrapper
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'reverse-audio':
+        return (
+          <ReverseAudioQuestionFormWrapper
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'one-second':
+        return (
+          <OneSecondQuestionFormWrapper
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
           />
