@@ -17,6 +17,13 @@ import GuessByLyricForm from '@/components/forms/GuessByLyricForm';
 import OddOneOutForm from '@/components/forms/OddOneOutForm';
 import MoodMatchForm from '@/components/forms/MoodMatchForm';
 import InspirationMapForm from '@/components/forms/InspirationMapForm';
+import LifeTriviaForm from '@/components/forms/LifeTriviaForm';
+import TimelineOrderForm from '@/components/forms/TimelineOrderForm';
+import PopularityMatchForm from '@/components/forms/PopularityMatchForm';
+import LongestSongForm from '@/components/forms/LongestSongForm';
+import TracklistOrderForm from '@/components/forms/TracklistOrderForm';
+import LyricMashupForm from '@/components/forms/LyricMashupForm';
+import SpeedTapForm from '@/components/forms/SpeedTapForm';
 
 export default function CreateQuestionPage() {
   const { user, loading } = useAuth();
@@ -35,7 +42,14 @@ export default function CreateQuestionPage() {
     { value: 'guess-by-lyric', label: 'Guess by Lyric', description: 'Player identifies the song from a lyric excerpt' },
     { value: 'odd-one-out', label: 'Odd One Out', description: 'Player selects the item that doesn\'t belong' },
     { value: 'mood-match', label: 'Mood Match', description: 'Player matches songs to their emotional mood' },
-    { value: 'inspiration-map', label: 'Inspiration Map', description: 'Player identifies who/what inspired a song' }
+    { value: 'inspiration-map', label: 'Inspiration Map', description: 'Player identifies who/what inspired a song' },
+    { value: 'life-trivia', label: 'Life Trivia', description: 'Player answers trivia about Taylor Swift\'s life or career' },
+    { value: 'timeline-order', label: 'Timeline Order', description: 'Player arranges items in chronological order' },
+    { value: 'popularity-match', label: 'Popularity Match', description: 'Player orders items by popularity or ranking' },
+    { value: 'longest-song', label: 'Longest Song', description: 'Player identifies the longest song from options' },
+    { value: 'tracklist-order', label: 'Tracklist Order', description: 'Player arranges tracks in their album order' },
+    { value: 'lyric-mashup', label: 'Lyric Mashup', description: 'Player matches lyric snippets to correct songs' },
+    { value: 'speed-tap', label: 'Speed Tap', description: 'Player taps correct items as fast as possible' }
   ];
 
   useEffect(() => {
@@ -213,6 +227,149 @@ export default function CreateQuestionPage() {
           correct: 1
         };
       
+      case 'life-trivia':
+        return {
+          questionType: 'life-trivia',
+          difficulty: 'medium',
+          themes: ['biography'],
+          subjects: ['biography'],
+          prompt: {
+            task: 'Answer this trivia question about Taylor Swift',
+            question: 'What is Taylor Swift\'s middle name?'
+          },
+          choices: [
+            {id: 'choice1', text: 'Alison'},
+            {id: 'choice2', text: 'Anne'},
+            {id: 'choice3', text: 'Andrea'},
+            {id: 'choice4', text: 'Ashley'},
+          ],
+          correct: {
+            choiceIndex: 0
+          }
+        };
+      
+      case 'timeline-order':
+        return {
+          questionType: 'timeline-order',
+          difficulty: 'hard',
+          themes: ['timeline', 'albums'],
+          subjects: ['albums'],
+          prompt: {
+            task: 'Arrange these albums in chronological release order',
+            items: ['Red', 'Speak Now', 'Fearless', '1989']
+          },
+          correct: {
+            values: ['Fearless', 'Speak Now', 'Red', '1989']
+          }
+        };
+      
+      case 'popularity-match':
+        return {
+          questionType: 'popularity-match',
+          difficulty: 'medium',
+          themes: ['charts', 'popularity'],
+          subjects: ['songs'],
+          prompt: {
+            task: 'Order these songs by total Spotify streams (highest to lowest)',
+            asOf: '2025-09-01'
+          },
+          choices: [
+            {id: 'choice1', text: 'Shake It Off'},
+            {id: 'choice2', text: 'Anti-Hero'},
+            {id: 'choice3', text: 'Love Story'},
+            {id: 'choice4', text: 'Cruel Summer'},
+          ],
+          correct: {
+            values: ['Anti-Hero', 'Shake It Off', 'Cruel Summer', 'Love Story']
+          }
+        };
+      
+      case 'longest-song':
+        return {
+          questionType: 'longest-song',
+          difficulty: 'medium',
+          themes: ['songs', 'duration'],
+          subjects: ['songs'],
+          prompt: {
+            task: 'Which of these songs is the longest?'
+          },
+          choices: [
+            {id: 'choice1', text: 'All Too Well (10 Minute Version)'},
+            {id: 'choice2', text: 'I Knew You Were Trouble'},
+            {id: 'choice3', text: 'Love Story'},
+            {id: 'choice4', text: 'Shake It Off'},
+          ],
+          correct: {
+            choiceIndex: 0
+          }
+        };
+      
+      case 'tracklist-order':
+        return {
+          questionType: 'tracklist-order',
+          difficulty: 'hard',
+          themes: ['albums', 'track-order'],
+          subjects: ['album:folklore'],
+          prompt: {
+            task: 'Arrange these songs in their album order',
+            album: 'folklore',
+            tracks: ['cardigan', 'the 1', 'august', 'exile']
+          },
+          correct: {
+            values: ['the 1', 'cardigan', 'exile', 'august']
+          }
+        };
+      
+      case 'lyric-mashup':
+        return {
+          questionType: 'lyric-mashup',
+          difficulty: 'hard',
+          themes: ['lyrics', 'mashup'],
+          subjects: ['lyrics'],
+          prompt: {
+            task: 'Match each lyric snippet to the correct song',
+            snippets: [
+              'We never go out of style',
+              'I\'ve got a blank space baby',
+              'Romeo take me somewhere we can be alone'
+            ],
+            optionsPerSnippet: ['Style', 'Blank Space', 'Love Story', 'Bad Blood']
+          },
+          correct: {
+            map: {
+              'We never go out of style': 'Style',
+              'I\'ve got a blank space baby': 'Blank Space',
+              'Romeo take me somewhere we can be alone': 'Love Story'
+            }
+          }
+        };
+      
+      case 'speed-tap':
+        return {
+          questionType: 'speed-tap',
+          difficulty: 'hard',
+          themes: ['speed', 'songs'],
+          subjects: ['songs'],
+          prompt: {
+            task: 'Tap all the song titles as fast as you can!',
+            targetRule: 'Songs from the 1989 album',
+            roundSeconds: 15,
+            grid: [
+              'Shake It Off', 'Cardigan', 'Style', 'Anti-Hero',
+              'Bad Blood', 'Love Story', 'Blank Space', 'Willow',
+              'Welcome to New York', 'The 1', 'Out of the Woods', 'Folklore',
+              'Clean', 'Champagne Problems', 'Wildest Dreams', 'Invisible String'
+            ]
+          },
+          correct: {
+            targets: ['Shake It Off', 'Style', 'Bad Blood', 'Blank Space', 'Welcome to New York', 'Out of the Woods', 'Clean', 'Wildest Dreams']
+          },
+          scoringHints: {
+            perCorrect: 10,
+            perWrong: -5
+          }
+        };
+      
       default:
         return {};
     }
@@ -265,6 +422,55 @@ export default function CreateQuestionPage() {
       case 'inspiration-map':
         return (
           <InspirationMapForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'life-trivia':
+        return (
+          <LifeTriviaForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'timeline-order':
+        return (
+          <TimelineOrderForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'popularity-match':
+        return (
+          <PopularityMatchForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'longest-song':
+        return (
+          <LongestSongForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'tracklist-order':
+        return (
+          <TracklistOrderForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'lyric-mashup':
+        return (
+          <LyricMashupForm
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        );
+      case 'speed-tap':
+        return (
+          <SpeedTapForm
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
           />
@@ -415,6 +621,55 @@ export default function CreateQuestionPage() {
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
               Test Inspiration Map
+            </button>
+            <button
+              onClick={() => testQuestionCreation('life-trivia')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50"
+            >
+              Test Life Trivia
+            </button>
+            <button
+              onClick={() => testQuestionCreation('timeline-order')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+            >
+              Test Timeline Order
+            </button>
+            <button
+              onClick={() => testQuestionCreation('popularity-match')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+            >
+              Test Popularity Match
+            </button>
+            <button
+              onClick={() => testQuestionCreation('longest-song')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50"
+            >
+              Test Longest Song
+            </button>
+            <button
+              onClick={() => testQuestionCreation('tracklist-order')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition-colors disabled:opacity-50"
+            >
+              Test Tracklist Order
+            </button>
+            <button
+              onClick={() => testQuestionCreation('lyric-mashup')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50"
+            >
+              Test Lyric Mashup
+            </button>
+            <button
+              onClick={() => testQuestionCreation('speed-tap')}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50"
+            >
+              Test Speed Tap
             </button>
           </div>
         </div>
