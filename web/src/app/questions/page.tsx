@@ -361,7 +361,14 @@ export default function QuestionsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
-                          onClick={() => router.push(`/questions/${question.id}`)}
+                          onClick={() => {
+                            // Store the question data in sessionStorage and navigate
+                            console.log('Storing question in sessionStorage:', question);
+                            console.log('Storage key:', `question-${question.id}`);
+                            sessionStorage.setItem(`question-${question.id}`, JSON.stringify(question));
+                            console.log('Stored successfully, navigating to:', `/questions/${question.id}`);
+                            router.push(`/questions/${question.id}`);
+                          }}
                           className="text-blue-600 hover:text-blue-900"
                         >
                           View

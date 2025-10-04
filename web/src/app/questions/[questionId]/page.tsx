@@ -7,7 +7,7 @@ import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { QuestionRenderer } from '@/components/questions/QuestionRenderer';
 import { AnyQuestion } from '@/lib/types/interfaces/questions/any-question.type';
-import { allQuizMocks } from '@/lib/constants/quizMocks';
+import { questionService } from '@/lib/services/question.service';
 
 export default function QuestionPage() {
   const params = useParams();
@@ -17,30 +17,97 @@ export default function QuestionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Find question in mock data (in real app, this would be an API call)
-    const findQuestionById = (id: string): AnyQuestion | null => {
-      for (const quiz of allQuizMocks) {
-        const foundQuestion = quiz.questions.find(q => q.id === id);
-        if (foundQuestion) {
-          return foundQuestion;
+    // Prevent double execution
+    if (question) return;
+    
+    const loadQuestion = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // First, try to get the question from sessionStorage (passed from list page)
+        const storedQuestion = sessionStorage.getItem(`question-${questionId}`);
+        
+        console.log('Question ID:', questionId);
+        console.log('Stored question raw:', storedQuestion);
+        
+        if (storedQuestion) {
+          console.log('Loading question from sessionStorage');
+          const apiQuestion = JSON.parse(storedQuestion);
+          console.log('Parsed question from sessionStorage:', apiQuestion);
+          
+          // Check if we have valid question data
+          if (!apiQuestion || !apiQuestion.id) {
+            throw new Error('Invalid question data from sessionStorage');
+          }
+          
+          // Transform API response to match our interface structure
+          const transformedQuestion: AnyQuestion = {
+            id: apiQuestion.id,
+            questionType: apiQuestion.questionType,
+            difficulty: apiQuestion.difficulty,
+            themes: apiQuestion.themesJSON || [],
+            subjects: apiQuestion.subjectsJSON || [],
+            prompt: apiQuestion.promptJSON || {},
+            choices: apiQuestion.choicesJSON || [],
+            correct: apiQuestion.correctJSON || {},
+            mediaRefs: apiQuestion.mediaJSON || [],
+            // Add any additional properties that might exist
+            ...(apiQuestion.hint && { hint: apiQuestion.hint }),
+            ...(apiQuestion.approved !== undefined && { approved: apiQuestion.approved }),
+            ...(apiQuestion.disabled !== undefined && { disabled: apiQuestion.disabled }),
+          };
+          
+          console.log('Transformed question from sessionStorage:', transformedQuestion);
+          setQuestion(transformedQuestion);
+          
+          // Clean up sessionStorage after successful load
+          setTimeout(() => {
+            sessionStorage.removeItem(`question-${questionId}`);
+          }, 100);
+          
+        } else {
+          // Fallback: fetch from API if not found in sessionStorage (direct URL access)
+          console.log('Question not found in sessionStorage, fetching from API');
+          const response = await questionService.getQuestionById(questionId);
+          const apiQuestion = response.data;
+          
+          if (!apiQuestion || !apiQuestion.id) {
+            throw new Error('Invalid question data received from API');
+          }
+          
+          // Transform API response to match our interface structure
+          const transformedQuestion: AnyQuestion = {
+            id: apiQuestion.id,
+            questionType: apiQuestion.questionType,
+            difficulty: apiQuestion.difficulty,
+            themes: apiQuestion.themesJSON || [],
+            subjects: apiQuestion.subjectsJSON || [],
+            prompt: apiQuestion.promptJSON || {},
+            choices: apiQuestion.choicesJSON || [],
+            correct: apiQuestion.correctJSON || {},
+            mediaRefs: apiQuestion.mediaJSON || [],
+            // Add any additional properties that might exist
+            ...(apiQuestion.hint && { hint: apiQuestion.hint }),
+            ...(apiQuestion.approved !== undefined && { approved: apiQuestion.approved }),
+            ...(apiQuestion.disabled !== undefined && { disabled: apiQuestion.disabled }),
+          };
+          
+          setQuestion(transformedQuestion);
         }
+        
+      } catch (err: any) {
+        console.error('Failed to load question:', err);
+        setError(err.message || 'Failed to load question');
+      } finally {
+        setLoading(false);
       }
-      return null;
     };
 
-    try {
-      const foundQuestion = findQuestionById(questionId);
-      if (foundQuestion) {
-        setQuestion(foundQuestion);
-      } else {
-        setError('Question not found');
-      }
-    } catch (err) {
-      setError('Failed to load question');
-    } finally {
-      setLoading(false);
+    if (questionId && !question) {
+      loadQuestion();
     }
-  }, [questionId]);
+  }, [questionId, question]);
 
   if (loading) {
     return (
@@ -59,12 +126,29 @@ export default function QuestionPage() {
           <Text className="text-center text-red-600 mb-4">
             {error || 'Question not found'}
           </Text>
-          <Button 
-            onClick={() => window.history.back()}
-            className="w-full"
-          >
-            Go Back
-          </Button>
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
+              <Text className="font-semibold">Debug Info:</Text>
+              <Text>Question ID: {questionId}</Text>
+              <Text>API Endpoint: /questions/{questionId}</Text>
+              <Text>Error: {error}</Text>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Button 
+              onClick={() => window.history.back()}
+              className="w-full"
+              variant="outline"
+            >
+              ← Go Back
+            </Button>
+            <Button 
+              onClick={() => window.location.href = '/questions'}
+              className="w-full"
+            >
+              View All Questions
+            </Button>
+          </div>
         </Card>
       </div>
     );

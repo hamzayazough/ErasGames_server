@@ -20,7 +20,7 @@ export const dailyQuizMock: QuizMock = {
   questions: [
     // 3 Easy Questions
     {
-      id: "1",
+      id: "8f0b194b-db7d-4b7b-b932-d79b1c4db066",
       questionType: "album-year-guess",
       difficulty: "easy",
       themes: ["timeline"],
@@ -37,7 +37,7 @@ export const dailyQuizMock: QuizMock = {
       ],
     },
     {
-      id: "2",
+      id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       questionType: "guess-by-lyric",
       difficulty: "easy",
       themes: ["lyrics"],
@@ -54,7 +54,7 @@ export const dailyQuizMock: QuizMock = {
       ],
     },
     {
-      id: "3",
+      id: "f9e8d7c6-b5a4-9384-7261-504938271605",
       questionType: "inspiration-map",
       difficulty: "easy",
       themes: ["influences"],
@@ -127,7 +127,7 @@ export const basicQuizMock: QuizMock = {
   estimatedTime: 8,
   questions: [
     {
-      id: "1",
+      id: "12345678-1234-1234-1234-123456789012",
       questionType: "album-year-guess",
       difficulty: "easy",
       themes: ["timeline"],
