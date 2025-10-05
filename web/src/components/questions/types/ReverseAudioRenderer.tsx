@@ -8,9 +8,11 @@ import { MediaPlayer } from '../common/MediaPlayer';
 
 interface ReverseAudioRendererProps {
   question: ReverseAudioQuestion;
+  showAnswer?: boolean;
 }
 
-export function ReverseAudioRenderer({ question }: ReverseAudioRendererProps) {
+export function ReverseAudioRenderer({ question, showAnswer = false }: ReverseAudioRendererProps) {
+  const correctIndex = question.correct?.index;
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -43,10 +45,40 @@ export function ReverseAudioRenderer({ question }: ReverseAudioRendererProps) {
           </div>
         </Card>
 
-        <MultipleChoice
-          choices={question.choices}
-          onSelect={(choice) => console.log('Selected:', choice)}
-        />
+        {/* Song choices */}
+        <div className="grid grid-cols-2 gap-4">
+          {question.choices.map((choice, index) => {
+            const isCorrect = showAnswer && correctIndex === index;
+            
+            return (
+              <Card 
+                key={index} 
+                className={`p-4 text-center border-2 cursor-pointer hover:opacity-80 transition-all ${
+                  isCorrect 
+                    ? 'border-green-500 bg-green-50' 
+                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-medium">{String.fromCharCode(65 + index)}.</span>
+                  <span className="font-medium">{choice}</span>
+                  {isCorrect && <span className="text-green-600">✓</span>}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Show correct answer if enabled */}
+        {showAnswer && correctIndex !== undefined && (
+          <Card className="p-4 bg-green-50 border-green-200">
+            <div className="text-center">
+              <Text className="text-green-800 font-medium">
+                Correct Answer: {question.choices[correctIndex]}
+              </Text>
+            </div>
+          </Card>
+        )}
       </div>
     </Card>
   );

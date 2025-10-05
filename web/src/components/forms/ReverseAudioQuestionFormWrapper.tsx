@@ -11,35 +11,54 @@ export default function ReverseAudioQuestionFormWrapper({ onSubmit, isSubmitting
   const [question, setQuestion] = useState<Partial<ReverseAudioQuestionFormType>>({
     type: 'reverse-audio',
     difficulty: 'medium',
-    era: '',
-    question: '',
-    reverseAudioUrl: '',
+    themes: ['audio', 'challenge'],
+    subjects: ['songs'],
+    task: 'Identify the song from this reversed audio clip',
+    audioUrl: '',
     audioFilename: '',
-    originalWord: '',
-    options: ['', '', '', ''],
-    wordClues: [],
-    reverseSpeed: 1,
-    audioQuality: 'standard'
+    choices: ['Love Story', 'You Belong With Me', 'Shake It Off', '22'],
+    correctAnswerIndex: 0
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate required fields
-    if (!question.question || !question.reverseAudioUrl || !question.originalWord) {
+    if (!question.task || !question.audioUrl) {
       alert('Please fill in all required fields');
       return;
     }
 
-    if (!question.options?.every(option => option.trim())) {
-      alert('Please fill in all answer options');
+    if (!question.choices?.every(choice => choice.trim())) {
+      alert('Please fill in all answer choices');
       return;
     }
 
-    onSubmit({
-      ...question,
-      type: 'reverse-audio'
-    });
+    if (question.correctAnswerIndex === undefined || question.correctAnswerIndex < 0) {
+      alert('Please select the correct answer');
+      return;
+    }
+
+    // Transform to match the desired structure
+    const transformedData = {
+      questionType: 'reverse-audio',
+      difficulty: question.difficulty || 'medium',
+      themes: question.themes || ['audio', 'challenge'],
+      subjects: question.subjects || ['songs'],
+      prompt: {
+        task: question.task
+      },
+      mediaRefs: [{
+        type: 'audio',
+        url: question.audioUrl
+      }],
+      choices: question.choices,
+      correct: {
+        index: question.correctAnswerIndex
+      }
+    };
+
+    onSubmit(transformedData);
   };
 
   return (

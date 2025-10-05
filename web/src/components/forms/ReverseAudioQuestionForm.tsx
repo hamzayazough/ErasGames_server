@@ -16,7 +16,7 @@ export default function ReverseAudioQuestionForm({ question, onChange }: Reverse
 
   const handleAudioUpload = (uploadData: { url: string; filename: string; size: number }) => {
     updateQuestion({
-      reverseAudioUrl: uploadData.url,
+      audioUrl: uploadData.url,
       audioFilename: uploadData.filename
     });
     setUploadError('');
@@ -26,50 +26,42 @@ export default function ReverseAudioQuestionForm({ question, onChange }: Reverse
     setUploadError(error);
   };
 
-  const addWordClue = () => {
-    const currentClues = question.wordClues || [];
-    updateQuestion({
-      wordClues: [...currentClues, { position: currentClues.length + 1, hint: '', category: '' }]
-    });
-  };
+  const popularSongs = [
+    'Love Story', 'You Belong With Me', 'Shake It Off', '22', 'Anti-Hero',
+    'Cruel Summer', 'cardigan', 'Willow', 'We Are Never Getting Back Together',
+    'Look What You Made Me Do', 'Delicate', 'Paper Rings', 'All Too Well'
+  ];
 
-  const updateWordClue = (index: number, field: keyof typeof question.wordClues[0], value: any) => {
-    const currentClues = question.wordClues || [];
-    const newClues = [...currentClues];
-    newClues[index] = { ...newClues[index], [field]: value };
-    updateQuestion({ wordClues: newClues });
-  };
+  const commonChoiceSets = [
+    ['Love Story', 'You Belong With Me', 'Shake It Off', '22'],
+    ['Anti-Hero', 'Cruel Summer', 'cardigan', 'Willow'],
+    ['All Too Well', 'Red', 'I Knew You Were Trouble', 'Begin Again'],
+    ['Delicate', 'Look What You Made Me Do', 'Ready For It', 'End Game']
+  ];
 
-  const removeWordClue = (index: number) => {
-    const currentClues = question.wordClues || [];
-    const newClues = currentClues.filter((_, i) => i !== index);
-    // Update positions to be sequential
-    const updatedClues = newClues.map((clue, i) => ({ ...clue, position: i + 1 }));
-    updateQuestion({ wordClues: updatedClues });
-  };
+
 
   return (
     <div className="space-y-6">
-      {/* Question Text */}
+      {/* Task Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Question Text *
+          Task Description
         </label>
         <input
           type="text"
-          value={question.question || ''}
-          onChange={(e) => updateQuestion({ question: e.target.value })}
-          placeholder="Enter the question text (e.g., 'Listen to this reversed audio and identify the original word')"
+          value={question.task || 'Identify the song from this reversed audio clip'}
+          onChange={(e) => updateQuestion({ task: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
-      {/* Reverse Audio Upload */}
+      {/* Audio Upload */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Reversed Audio *
         </label>
-        {question.reverseAudioUrl ? (
+        {question.audioUrl ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center">
@@ -81,14 +73,14 @@ export default function ReverseAudioQuestionForm({ question, onChange }: Reverse
                 </span>
               </div>
               <button
-                onClick={() => updateQuestion({ reverseAudioUrl: '', audioFilename: '' })}
+                onClick={() => updateQuestion({ audioUrl: '', audioFilename: '' })}
                 className="text-red-500 hover:text-red-700 text-sm"
               >
                 Remove
               </button>
             </div>
             <audio controls className="w-full max-w-md">
-              <source src={question.reverseAudioUrl} type="audio/mpeg" />
+              <source src={question.audioUrl} type="audio/mpeg" />
               Your browser does not support the audio element.
             </audio>
           </div>
@@ -105,145 +97,64 @@ export default function ReverseAudioQuestionForm({ question, onChange }: Reverse
         )}
       </div>
 
-      {/* Original Word */}
+      {/* Answer Choices */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Original Word *
+          Answer Choices *
         </label>
-        <input
-          type="text"
-          value={question.originalWord || ''}
-          onChange={(e) => updateQuestion({ originalWord: e.target.value })}
-          placeholder="Enter the original word that was reversed"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* Answer Options */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Answer Options *
-        </label>
-        <div className="space-y-2">
-          {(question.options || ['', '', '', '']).map((option, index) => (
-            <input
-              key={index}
-              type="text"
-              value={option}
-              onChange={(e) => {
-                const newOptions = [...(question.options || ['', '', '', ''])];
-                newOptions[index] = e.target.value;
-                updateQuestion({ options: newOptions });
-              }}
-              placeholder={`Option ${index + 1}`}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Word Clues */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <label className="block text-sm font-medium text-gray-700">
-            Word Clues (Optional Hints)
-          </label>
-          <button
-            onClick={addWordClue}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Add Clue
-          </button>
-        </div>
-        
-        <div className="space-y-3">
-          {(question.wordClues || []).map((clue, index) => (
-            <div key={index} className="flex gap-3 items-start p-3 border border-gray-200 rounded-lg">
-              <div className="w-16">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Position</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={clue.position}
-                  onChange={(e) => updateWordClue(index, 'position', parseInt(e.target.value) || 1)}
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Hint</label>
-                <input
-                  type="text"
-                  value={clue.hint}
-                  onChange={(e) => updateWordClue(index, 'hint', e.target.value)}
-                  placeholder="Hint about the word"
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                <input
-                  type="text"
-                  value={clue.category}
-                  onChange={(e) => updateWordClue(index, 'category', e.target.value)}
-                  placeholder="Category (e.g., 'Animal', 'Object')"
-                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+        <div className="mb-3">
+          <label className="block text-xs font-medium mb-1">Quick Presets:</label>
+          <div className="flex flex-wrap gap-2">
+            {commonChoiceSets.map((choiceSet, setIndex) => (
               <button
-                onClick={() => removeWordClue(index)}
-                className="text-red-500 hover:text-red-700 p-1 mt-5"
+                key={setIndex}
+                type="button"
+                onClick={() => updateQuestion({ choices: [...choiceSet] })}
+                className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs hover:bg-purple-200"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                {choiceSet.join(', ')}
               </button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3">
+          {(question.choices || ['', '', '', '']).map((choice, index) => (
+            <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+              <button
+                type="button"
+                onClick={() => updateQuestion({ correctAnswerIndex: index })}
+                className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  question.correctAnswerIndex === index
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'border-gray-300 hover:border-green-400'
+                }`}
+              >
+                {question.correctAnswerIndex === index && (
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+              <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-gray-600">{index + 1}</span>
+              </div>
+              <input
+                type="text"
+                value={choice}
+                onChange={(e) => {
+                  const newChoices = [...(question.choices || ['', '', '', ''])];
+                  newChoices[index] = e.target.value;
+                  updateQuestion({ choices: newChoices });
+                }}
+                placeholder={`Song option ${index + 1}`}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
           ))}
         </div>
-        
-        {(!question.wordClues || question.wordClues.length === 0) && (
-          <p className="text-sm text-gray-500 italic">
-            No word clues added yet. These provide optional hints to help players identify the reversed word.
-          </p>
-        )}
-      </div>
-
-      {/* Audio Processing Settings */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">Audio Processing Settings</h3>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Reverse Speed
-            </label>
-            <select
-              value={question.reverseSpeed || 1}
-              onChange={(e) => updateQuestion({ reverseSpeed: parseFloat(e.target.value) })}
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value={0.5}>0.5x (Slower)</option>
-              <option value={1}>1x (Normal)</option>
-              <option value={1.5}>1.5x (Faster)</option>
-              <option value={2}>2x (Much Faster)</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Audio Quality
-            </label>
-            <select
-              value={question.audioQuality || 'standard'}
-              onChange={(e) => updateQuestion({ audioQuality: e.target.value as 'low' | 'standard' | 'high' })}
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="low">Low Quality</option>
-              <option value="standard">Standard Quality</option>
-              <option value="high">High Quality</option>
-            </select>
-          </div>
-        </div>
+        <p className="mt-2 text-sm text-gray-500">
+          Click the circle button to select the correct answer
+        </p>
       </div>
 
       {/* Difficulty */}
@@ -260,20 +171,6 @@ export default function ReverseAudioQuestionForm({ question, onChange }: Reverse
           <option value="medium">Medium</option>
           <option value="hard">Hard</option>
         </select>
-      </div>
-
-      {/* Era */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Era
-        </label>
-        <input
-          type="text"
-          value={question.era || ''}
-          onChange={(e) => updateQuestion({ era: e.target.value })}
-          placeholder="Enter the historical era (optional)"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
       </div>
     </div>
   );

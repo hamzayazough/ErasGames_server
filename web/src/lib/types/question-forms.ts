@@ -43,17 +43,13 @@ export interface OutfitEraQuestionForm extends BaseQuestionForm {
 
 export interface ReverseAudioQuestionForm extends BaseQuestionForm {
   type: "reverse-audio";
-  reverseAudioUrl: string;
+  task: string;
+  themes: string[];
+  subjects: string[];
+  audioUrl: string;
   audioFilename: string;
-  originalWord: string;
-  options: string[];
-  wordClues: Array<{
-    position: number;
-    hint: string;
-    category: string;
-  }>;
-  reverseSpeed: number;
-  audioQuality: "low" | "standard" | "high";
+  choices: string[];
+  correctAnswerIndex: number;
 }
 
 export interface OneSecondQuestionForm extends BaseQuestionForm {
