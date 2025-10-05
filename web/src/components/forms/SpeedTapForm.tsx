@@ -27,12 +27,12 @@ interface FormData {
 
 export default function SpeedTapForm({ onSubmit, isSubmitting }: SpeedTapFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    difficulty: Difficulty.HARD,
-    themes: [],
-    subjects: [],
-    task: '',
-    targetRule: '',
-    roundSeconds: 10,
+    difficulty: Difficulty.EASY,
+    themes: ['speed', 'challenge'],
+    subjects: ['songs'],
+    task: 'Tap all the real song titles as quickly as possible!',
+    targetRule: 'Real Taylor Swift songs',
+    roundSeconds: 15,
     gridItems: Array(16).fill(''), // 4x4 grid by default
     correctTargets: [],
     scoringHints: {
@@ -41,6 +41,58 @@ export default function SpeedTapForm({ onSubmit, isSubmitting }: SpeedTapFormPro
     },
     hint: ''
   });
+
+  // Popular Taylor Swift speed tap challenge presets
+  const speedTapPresets = {
+    'Real vs Fake Songs': {
+      task: 'Tap all the real song titles as quickly as possible!',
+      targetRule: 'Real Taylor Swift songs',
+      gridItems: [
+        'Love Story', 'Heart Attack', 'You Belong With Me', 'Bad Romance',
+        'Fearless', 'Poker Face', 'Shake It Off', 'Rolling in the Deep',
+        '22', 'Someone Like You', 'Anti-Hero', 'Halo',
+        'cardigan', 'Roar', 'Blank Space', 'Firework'
+      ],
+      correctTargets: ['Love Story', 'You Belong With Me', 'Fearless', 'Shake It Off', '22', 'Anti-Hero', 'cardigan', 'Blank Space'],
+      roundSeconds: 15
+    },
+    'Album Titles Only': {
+      task: 'Tap only the album titles, not the songs!',
+      targetRule: 'Taylor Swift album titles',
+      gridItems: [
+        'folklore', 'Love Story', 'Midnights', 'Anti-Hero',
+        '1989', 'Shake It Off', 'reputation', 'Look What You Made Me Do',
+        'Lover', 'ME!', 'Fearless', 'You Belong With Me',
+        'evermore', 'willow', 'Red', '22'
+      ],
+      correctTargets: ['folklore', 'Midnights', '1989', 'reputation', 'Lover', 'Fearless', 'evermore', 'Red'],
+      roundSeconds: 12
+    },
+    'Hit Singles Rush': {
+      task: 'Tap all the #1 Billboard hits!',
+      targetRule: 'Taylor Swift #1 singles',
+      gridItems: [
+        'Shake It Off', 'Style', 'Blank Space', 'Bad Blood',
+        'Look What You Made Me Do', 'Ready For It', 'We Are Never Getting Back Together', 'I Knew You Were Trouble',
+        'Anti-Hero', 'Lavender Haze', '22', 'Begin Again',
+        'Fortnight', 'Love Story', 'cardigan', 'willow'
+      ],
+      correctTargets: ['Shake It Off', 'Blank Space', 'Look What You Made Me Do', 'We Are Never Getting Back Together', 'Anti-Hero', 'cardigan', 'willow'],
+      roundSeconds: 18
+    },
+    'Era Challenge': {
+      task: 'Tap all the folklore era songs!',
+      targetRule: 'Songs from folklore/evermore',
+      gridItems: [
+        'cardigan', 'Shake It Off', 'the 1', 'Anti-Hero',
+        'august', 'Lover', 'exile', 'Style',
+        'willow', '22', 'champagne problems', 'Blank Space',
+        'betty', 'ME!', 'gold rush', 'Bad Blood'
+      ],
+      correctTargets: ['cardigan', 'the 1', 'august', 'exile', 'willow', 'champagne problems', 'betty', 'gold rush'],
+      roundSeconds: 20
+    }
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -191,6 +243,28 @@ export default function SpeedTapForm({ onSubmit, isSubmitting }: SpeedTapFormPro
           placeholder="e.g., Tap all the song titles as fast as you can!"
           className={`w-full p-2 border rounded ${errors.task ? 'border-red-500' : ''}`}
         />
+        <div className="mt-2">
+          <label className="block text-xs font-medium mb-1">Quick Presets:</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(speedTapPresets).map(([name, preset]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setFormData({
+                  ...formData,
+                  task: preset.task,
+                  targetRule: preset.targetRule,
+                  gridItems: [...preset.gridItems],
+                  correctTargets: [...preset.correctTargets],
+                  roundSeconds: preset.roundSeconds
+                })}
+                className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs hover:bg-yellow-200"
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
         {errors.task && <p className="text-red-500 text-sm mt-1">{errors.task}</p>}
       </div>
 

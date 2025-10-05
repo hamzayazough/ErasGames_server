@@ -8,9 +8,11 @@ import { SpeedTapQuestion } from '@/lib/types/interfaces/questions/speed-tap.int
 
 interface SpeedTapRendererProps {
   question: SpeedTapQuestion;
+  showAnswer?: boolean;
 }
 
-export function SpeedTapRenderer({ question }: SpeedTapRendererProps) {
+export function SpeedTapRenderer({ question, showAnswer = false }: SpeedTapRendererProps) {
+  const correctTargets = question.correct?.targets || [];
   const [timeLeft, setTimeLeft] = useState(question.prompt.roundSeconds || 15);
   const [gameStarted, setGameStarted] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -84,22 +86,53 @@ export function SpeedTapRenderer({ question }: SpeedTapRendererProps) {
             {question.prompt.grid?.map((item, index) => {
               const isSelected = selectedItems.includes(item);
               const isTimeUp = timeLeft <= 0;
+              const isCorrectTarget = correctTargets.includes(item);
               
               return (
                 <Button
                   key={index}
                   variant={isSelected ? 'default' : 'outline'}
                   className={`h-16 text-sm ${
-                    isSelected ? 'bg-green-600 text-white' : 'hover:bg-gray-50'
+                    showAnswer && isCorrectTarget
+                      ? 'bg-green-500 text-white border-green-600'
+                      : isSelected 
+                        ? 'bg-blue-600 text-white' 
+                        : 'hover:bg-gray-50'
                   } ${isTimeUp ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   onClick={() => handleItemTap(item)}
-                  disabled={isTimeUp}
+                  disabled={isTimeUp || showAnswer}
                 >
-                  {item}
+                  <div className="flex flex-col items-center">
+                    <span>{item}</span>
+                    {showAnswer && isCorrectTarget && (
+                      <span className="text-xs mt-1">✓ Target</span>
+                    )}
+                  </div>
                 </Button>
               );
             })}
           </div>
+        )}
+
+        {/* Show correct targets if enabled */}
+        {showAnswer && correctTargets.length > 0 && (
+          <Card className="p-4 bg-green-50 border-green-200">
+            <div className="text-center mb-3">
+              <Text className="text-green-800 font-medium text-lg">
+                🎯 Correct Targets to Tap
+              </Text>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {correctTargets.map((target, index) => (
+                <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
+                  {target}
+                </span>
+              ))}
+            </div>
+            <Text className="text-center text-green-700 text-sm mt-2">
+              Tap these {correctTargets.length} items as fast as possible!
+            </Text>
+          </Card>
         )}
 
         {gameStarted && timeLeft <= 0 && (
