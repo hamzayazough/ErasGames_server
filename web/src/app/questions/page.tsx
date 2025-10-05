@@ -59,6 +59,7 @@ export default function QuestionsPage() {
 
     if (user) {
       fetchData();
+      fetchFilteredQuestions();
     }
   }, [user, loading, router]);
 
@@ -67,19 +68,13 @@ export default function QuestionsPage() {
       setIsLoading(true);
       setError(null);
 
-      // Fetch stats and questions in parallel
-      const [statsResponse, questionsResponse] = await Promise.all([
-        questionService.getQuestionStats(),
-        questionService.getAllQuestions()
-      ]);
+      // Fetch stats only - questions will be fetched by fetchFilteredQuestions
+      const statsResponse = await questionService.getQuestionStats();
 
       console.log('Stats response:', statsResponse);
-      console.log('Questions response:', questionsResponse);
 
       // Handle response - server returns data directly, not wrapped
       setStats(statsResponse.data || statsResponse || null);
-      const questionsData = questionsResponse.data || questionsResponse;
-      setQuestions(Array.isArray(questionsData) ? questionsData : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch questions data');
       console.error('Error fetching questions data:', err);
