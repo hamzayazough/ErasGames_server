@@ -17,5 +17,6 @@ export enum QuestionTheme {
   Tracklist = 'tracklist',
   Speed = 'speed',
   Visuals = 'visuals',
-  Events = 'events'
+  Events = 'events',
+  Challenge = 'challenge',
 }
