@@ -271,9 +271,9 @@ export class AdminDailyQuizController {
 
   /**
    * 📋 Get quiz details with questions
-   * GET /admin/daily-quiz/details/:quizId
+   * GET /admin/daily-quiz/details?quizId=X
    */
-  @Get('details/:quizId')
+  @Get('details')
   async getQuizDetails(@Query('quizId') quizId: string) {
     return await this.adminService.getQuizDetails(quizId);
   }

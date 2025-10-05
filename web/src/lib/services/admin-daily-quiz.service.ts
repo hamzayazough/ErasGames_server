@@ -109,6 +109,84 @@ export class AdminDailyQuizService {
       message: string;
     }>(`${this.baseEndpoint}/by-days?days=${days}`);
   }
+
+  /**
+   * Get detailed quiz information by quiz ID
+   * @param quizId - The ID of the quiz to retrieve
+   */
+  async getQuizDetails(quizId: string) {
+    return httpService.get<{
+      success: boolean;
+      data: DailyQuiz;
+      message: string;
+    }>(`${this.baseEndpoint}/details?quizId=${quizId}`);
+  }
+
+  /**
+   * Create a custom daily quiz with specific questions and drop time
+   * @param request - Quiz creation parameters
+   */
+  async createCustomQuiz(request: {
+    dropAtUTC: string;
+    questionIds: string[];
+    mode?: string;
+    replaceExisting?: boolean;
+  }) {
+    return httpService.post<{
+      success: boolean;
+      data: DailyQuiz;
+      message: string;
+    }>(`${this.baseEndpoint}/create-custom`, request);
+  }
+
+  /**
+   * Update the drop time of an existing quiz (must not have dropped yet)
+   * @param request - Quiz ID and new drop time
+   */
+  async updateQuizDropTime(request: { quizId: string; newDropAtUTC: string }) {
+    return httpService.patch<{
+      success: boolean;
+      data: DailyQuiz;
+      message: string;
+    }>(`${this.baseEndpoint}/update-drop-time`, request);
+  }
+
+  /**
+   * Update the questions of an existing quiz (must not have dropped yet)
+   * @param request - Quiz ID and new question IDs
+   */
+  async updateQuizQuestions(request: {
+    quizId: string;
+    questionIds: string[];
+  }) {
+    return httpService.patch<{
+      success: boolean;
+      data: DailyQuiz;
+      message: string;
+    }>(`${this.baseEndpoint}/update-questions`, request);
+  }
+
+  /**
+   * Regenerate the CDN template for a quiz
+   * @param request - Quiz ID to regenerate template for
+   */
+  async regenerateTemplate(request: { quizId: string }) {
+    return httpService.post<{
+      success: boolean;
+      message: string;
+    }>(`${this.baseEndpoint}/regenerate-template`, request);
+  }
+
+  /**
+   * Delete a quiz (must not have dropped yet)
+   * @param request - Quiz ID to delete
+   */
+  async deleteQuiz(request: { quizId: string }) {
+    return httpService.delete<{
+      success: boolean;
+      message: string;
+    }>(`${this.baseEndpoint}/delete`, request);
+  }
 }
 
 export const adminDailyQuizService = new AdminDailyQuizService();
