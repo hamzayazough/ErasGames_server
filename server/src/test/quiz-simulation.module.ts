@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { QuizSimulationService } from './quiz-simulation.service';
 import { QuizSimulationController } from './quiz-simulation.controller';
-import { DailyQuizTestController } from './daily-quiz-test.controller';
 import { DailyQuiz } from '../database/entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../database/entities/daily-quiz-question.entity';
 import { Question } from '../database/entities/question.entity';
@@ -15,8 +14,10 @@ import { DailyQuizJobProcessor } from '../services/daily-quiz-job-processor.serv
  * 🧪 Quiz Testing Module
  *
  * Self-contained module for testing the complete daily quiz workflow:
- * - DailyQuizTestController: Centralized endpoint for real-life testing
  * - QuizSimulationController: 10-minute simulation environment
+ * 
+ * Note: Daily quiz testing endpoints have been moved to AdminDailyQuizController
+ * in the admin module for better organization and security.
  */
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { DailyQuizJobProcessor } from '../services/daily-quiz-job-processor.serv
     ]),
     DailyQuizComposerModule,
   ],
-  controllers: [QuizSimulationController, DailyQuizTestController],
+  controllers: [QuizSimulationController],
   providers: [
     QuizSimulationService,
     NotificationService,

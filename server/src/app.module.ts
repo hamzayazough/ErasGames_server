@@ -87,6 +87,10 @@ import { VisualAestheticQuestionService } from './database/services/question-cre
 // Daily Quiz Composer Module
 import { DailyQuizComposerModule } from './database/services/daily-quiz-composer';
 
+// Quiz Creation Services
+import { QuizCreationService } from './services/quiz-creation/quiz-creation.service';
+import { AdminService } from './services/quiz-creation/admin.service';
+
 // Attempt Scoring Services
 import { AttemptScoringService } from './services/attempt-scoring/attempt-scoring.service';
 import { QuestionCorrectnessService } from './services/attempt-scoring/question-correctness.service';
@@ -216,6 +220,9 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     VisualAestheticQuestionService,
     // Job Processing Services
     DailyQuizJobProcessor,
+    // Quiz Creation Services
+    QuizCreationService,
+    AdminService,
     // Notification Services
     NotificationService,
     // Authentication Services
