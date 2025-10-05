@@ -23,20 +23,55 @@ interface FormData {
 export default function TracklistOrderForm({ onSubmit, isSubmitting }: TracklistOrderFormProps) {
   const [formData, setFormData] = useState<FormData>({
     difficulty: Difficulty.HARD,
-    themes: [],
+    themes: ['albums', 'track-order'],
     subjects: [],
-    task: '',
+    task: 'Arrange these songs in their album order',
     album: '',
-    tracks: [''],
+    tracks: ['', '', '', ''],
     correctOrder: [],
     hint: ''
   });
+
+  // Popular Taylor Swift albums with their track data
+  const albumData = {
+    'folklore': {
+      tracks: ['the 1', 'cardigan', 'the last great american dynasty', 'exile', 'my tears ricochet', 'mirrorball', 'seven', 'august', 'this is me trying', 'illicit affairs', 'invisible string', 'mad woman', 'epiphany', 'betty', 'peace', 'hoax'],
+      subject: 'album:folklore'
+    },
+    'evermore': {
+      tracks: ['willow', 'champagne problems', 'gold rush', 'tis the damn season', 'tolerate it', 'no body, no crime', 'happiness', 'dorothea', 'coney island', 'ivy', 'cowboy like me', 'long story short', 'marjorie', 'closure', 'evermore'],
+      subject: 'album:evermore'
+    },
+    '1989': {
+      tracks: ['Welcome To New York', 'Blank Space', 'Style', 'Out Of The Woods', 'All You Had To Do Was Stay', 'Shake It Off', 'I Wish You Would', 'Bad Blood', 'Wildest Dreams', 'How You Get The Girl', 'This Love', 'I Know Places', 'Clean'],
+      subject: 'album:1989'
+    },
+    'Midnights': {
+      tracks: ['Lavender Haze', 'Maroon', 'Anti-Hero', 'Snow On The Beach', 'You\'re On Your Own, Kid', 'Midnight Rain', 'Question...?', 'Vigilante Shit', 'Bejeweled', 'Labyrinth', 'Karma', 'Sweet Nothing', 'Mastermind'],
+      subject: 'album:midnights'
+    }
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const availableThemes = [
     'albums', 'track-order', 'tracklist', 'order', 'sequence'
   ];
+
+  const loadAlbumPreset = (albumName: string) => {
+    const album = albumData[albumName as keyof typeof albumData];
+    if (album) {
+      // Load a subset of tracks for the question (4-6 tracks)
+      const selectedTracks = album.tracks.slice(0, 4);
+      setFormData({
+        ...formData,
+        album: albumName,
+        tracks: selectedTracks,
+        correctOrder: [...selectedTracks], // Correct order is the album order
+        subjects: [album.subject]
+      });
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -221,6 +256,25 @@ export default function TracklistOrderForm({ onSubmit, isSubmitting }: Tracklist
           placeholder="e.g., folklore"
           className={`w-full p-2 border rounded ${errors.album ? 'border-red-500' : ''}`}
         />
+        <div className="mt-2">
+          <label className="block text-xs font-medium mb-1">Quick Presets:</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(albumData).map(album => (
+              <button
+                key={album}
+                type="button"
+                onClick={() => loadAlbumPreset(album)}
+                className={`px-2 py-1 rounded text-xs ${
+                  formData.album === album
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {album}
+              </button>
+            ))}
+          </div>
+        </div>
         {errors.album && <p className="text-red-500 text-sm mt-1">{errors.album}</p>}
       </div>
 
