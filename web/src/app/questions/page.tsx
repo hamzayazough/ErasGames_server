@@ -27,8 +27,28 @@ export default function QuestionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Focus on these 3 question types for now
-  const focusedQuestionTypes = ['album-year-guess', 'song-album-match', 'fill-blank'];
+  // All available question types
+  const focusedQuestionTypes = [
+    'album-year-guess',
+    'song-album-match', 
+    'fill-blank',
+    'guess-by-lyric',
+    'odd-one-out',
+    'ai-visual',
+    'sound-alike-snippet',
+    'mood-match',
+    'inspiration-map',
+    'life-trivia',
+    'timeline-order',
+    'popularity-match',
+    'longest-song',
+    'tracklist-order',
+    'outfit-era',
+    'lyric-mashup',
+    'speed-tap',
+    'reverse-audio',
+    'one-second'
+  ];
 
   useEffect(() => {
     if (!loading && !user) {
@@ -203,13 +223,13 @@ export default function QuestionsPage() {
         {stats && (
           <div className="bg-white rounded-lg shadow p-6 mb-8">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Questions by Type</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {focusedQuestionTypes.map((type) => (
-                <div key={type} className="border rounded-lg p-4">
-                  <h4 className="font-medium text-gray-800 capitalize">
-                    {type.replace('-', ' ')}
+                <div key={type} className="border rounded-lg p-3">
+                  <h4 className="font-medium text-gray-800 text-sm">
+                    {type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </h4>
-                  <p className="text-2xl font-bold text-blue-600 mt-2">
+                  <p className="text-xl font-bold text-blue-600 mt-1">
                     {stats.byType[type] || 0}
                   </p>
                 </div>
