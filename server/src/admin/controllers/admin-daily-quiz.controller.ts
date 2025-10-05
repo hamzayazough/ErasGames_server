@@ -10,6 +10,8 @@ import {
 import { AdminGuard } from '../../guards/admin.guard';
 import { DailyQuizMode } from '../../database/services/daily-quiz-composer';
 import { AdminService } from '../../services/quiz-creation/admin.service';
+import { AdminJobManagementService } from '../../services/quiz-creation/admin-job-management.service';
+import { AdminTestingService } from '../../services/quiz-creation/admin-testing.service';
 
 /**
  * 🔧 Admin Daily Quiz Controller
@@ -28,7 +30,11 @@ import { AdminService } from '../../services/quiz-creation/admin.service';
 export class AdminDailyQuizController {
   private readonly logger = new Logger(AdminDailyQuizController.name);
 
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly jobManagementService: AdminJobManagementService,
+    private readonly testingService: AdminTestingService,
+  ) {}
 
   // ========== MANUAL COMPOSITION ENDPOINTS ==========
 
@@ -122,7 +128,7 @@ export class AdminDailyQuizController {
    */
   @Post('jobs/trigger-composition')
   async triggerDailyComposition(@Body() request: { dropAtUTC: string }) {
-    return await this.adminService.triggerDailyComposition(request);
+    return await this.jobManagementService.triggerDailyComposition(request);
   }
 
   /**
@@ -131,7 +137,7 @@ export class AdminDailyQuizController {
    */
   @Post('jobs/trigger-warmup')
   async triggerTemplateWarmup(@Body() request: { quizId: string }) {
-    return await this.adminService.triggerTemplateWarmup(request);
+    return await this.jobManagementService.triggerTemplateWarmup(request);
   }
 
   /**
@@ -140,7 +146,7 @@ export class AdminDailyQuizController {
    */
   @Get('jobs/status')
   getJobStatus() {
-    return this.adminService.getJobStatus();
+    return this.jobManagementService.getJobStatus();
   }
 
   /**
@@ -151,7 +157,7 @@ export class AdminDailyQuizController {
   async testCompleteWorkflow(
     @Body() request: { dropAtUTC: string; mode?: DailyQuizMode },
   ) {
-    return await this.adminService.testCompleteWorkflow(request);
+    return await this.jobManagementService.testCompleteWorkflow(request);
   }
 
   // ========== TESTING ENDPOINTS (from DailyQuizTestController) ==========
@@ -170,7 +176,7 @@ export class AdminDailyQuizController {
    */
   @Post('create-todays-quiz')
   async createTodaysQuiz() {
-    return await this.adminService.createTodaysQuiz();
+    return await this.testingService.createTodaysQuiz();
   }
 
   /**
@@ -188,7 +194,7 @@ export class AdminDailyQuizController {
    */
   @Post('create-today-only')
   async createTodayOnly() {
-    return await this.adminService.createTodayOnly();
+    return await this.testingService.createTodayOnly();
   }
 
   /**
@@ -198,5 +204,91 @@ export class AdminDailyQuizController {
   @Post('cleanup')
   async cleanupTodaysQuiz() {
     return await this.adminService.cleanupTodaysQuiz();
+  }
+
+  // ========== NEW QUIZ MANAGEMENT ENDPOINTS ==========
+
+  /**
+   * 🎯 Create a custom quiz with specific questions
+   * POST /admin/daily-quiz/create-custom
+   */
+  @Post('create-custom')
+  async createCustomQuiz(
+    @Body()
+    request: {
+      dropAtUTC: string;
+      questionIds: string[];
+      mode?: DailyQuizMode;
+      replaceExisting?: boolean;
+    },
+  ) {
+    return await this.adminService.createCustomQuiz(request);
+  }
+
+  /**
+   * 🕒 Update quiz drop time
+   * POST /admin/daily-quiz/update-drop-time
+   */
+  @Post('update-drop-time')
+  async updateQuizDropTime(
+    @Body()
+    request: {
+      quizId: string;
+      newDropAtUTC: string;
+    },
+  ) {
+    return await this.adminService.updateQuizDropTime(request);
+  }
+
+  /**
+   * 📝 Update quiz questions
+   * POST /admin/daily-quiz/update-questions
+   */
+  @Post('update-questions')
+  async updateQuizQuestions(
+    @Body()
+    request: {
+      quizId: string;
+      questionIds: string[];
+    },
+  ) {
+    return await this.adminService.updateQuizQuestions(request);
+  }
+
+  /**
+   * 🎨 Regenerate quiz template
+   * POST /admin/daily-quiz/regenerate-template
+   */
+  @Post('regenerate-template')
+  async regenerateTemplate(
+    @Body()
+    request: {
+      quizId: string;
+    },
+  ) {
+    return await this.adminService.regenerateTemplate(request);
+  }
+
+  /**
+   * 📋 Get quiz details with questions
+   * GET /admin/daily-quiz/details/:quizId
+   */
+  @Get('details/:quizId')
+  async getQuizDetails(@Query('quizId') quizId: string) {
+    return await this.adminService.getQuizDetails(quizId);
+  }
+
+  /**
+   * 🗑️ Delete a quiz (only if not yet dropped)
+   * POST /admin/daily-quiz/delete (using POST for consistency with other endpoints)
+   */
+  @Post('delete')
+  async deleteQuiz(
+    @Body()
+    request: {
+      quizId: string;
+    },
+  ) {
+    return await this.adminService.deleteQuiz(request.quizId);
   }
 }

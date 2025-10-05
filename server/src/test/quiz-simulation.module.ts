@@ -7,6 +7,7 @@ import { DailyQuizQuestion } from '../database/entities/daily-quiz-question.enti
 import { Question } from '../database/entities/question.entity';
 import { UserDevice } from '../database/entities/user-device.entity';
 import { DailyQuizComposerModule } from '../database/services/daily-quiz-composer';
+import { QuizCreationModule } from '../services/quiz-creation/quiz-creation.module';
 import { NotificationService } from '../services/notification.service';
 import { DailyQuizJobProcessor } from '../services/daily-quiz-job-processor.service';
 
@@ -28,6 +29,7 @@ import { DailyQuizJobProcessor } from '../services/daily-quiz-job-processor.serv
       UserDevice,
     ]),
     DailyQuizComposerModule,
+    QuizCreationModule,
   ],
   controllers: [QuizSimulationController],
   providers: [

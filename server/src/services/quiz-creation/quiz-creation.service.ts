@@ -165,12 +165,19 @@ export class QuizCreationService {
 
     await this.dailyQuizRepository.save(quiz);
 
-    // Create quiz-question relationships in specified order
-    const quizQuestions = questionIds.map((questionId, index) => {
+    // Create quiz-question relationships with proper question data
+    const quizQuestions = questionIds.map((questionId) => {
+      const question = questions.find((q) => q.id === questionId);
+      if (!question) {
+        throw new Error(`Question not found: ${questionId}`);
+      }
+
       return this.dailyQuizQuestionRepository.create({
         dailyQuiz: quiz,
-        question: { id: questionId },
-        order: index + 1,
+        question: question,
+        difficulty: question.difficulty,
+        questionType: question.questionType,
+        quizYear: new Date().getFullYear(),
       });
     });
 
@@ -204,12 +211,14 @@ export class QuizCreationService {
   ): Promise<{ templateUrl: string; version: string }> {
     this.logger.log(`Generating template for quiz ${quiz.id}`);
 
-    const { templateUrl, version } =
+    const { templateUrl, version: versionNumber } =
       await this.templateService.buildAndUploadTemplate(
         quiz,
         questions,
         quiz.themePlanJSON as any,
       );
+
+    const version = versionNumber.toString();
 
     // Update quiz with template URL
     await this.dailyQuizRepository.update(quiz.id, {
@@ -343,12 +352,19 @@ export class QuizCreationService {
       dailyQuiz: { id: quizId },
     });
 
-    // Create new quiz-question relationships
-    const quizQuestions = newQuestionIds.map((questionId, index) => {
+    // Create new quiz-question relationships with proper question data
+    const quizQuestions = newQuestionIds.map((questionId) => {
+      const question = questions.find((q) => q.id === questionId);
+      if (!question) {
+        throw new Error(`Question not found: ${questionId}`);
+      }
+
       return this.dailyQuizQuestionRepository.create({
         dailyQuiz: quiz,
-        question: { id: questionId },
-        order: index + 1,
+        question: question,
+        difficulty: question.difficulty,
+        questionType: question.questionType,
+        quizYear: new Date().getFullYear(),
       });
     });
 
@@ -366,7 +382,9 @@ export class QuizCreationService {
       .execute();
 
     // Invalidate template (it needs to be regenerated with new questions)
-    await this.dailyQuizRepository.update(quizId, { templateCdnUrl: null });
+    await this.dailyQuizRepository.update(quizId, {
+      templateCdnUrl: undefined,
+    });
 
     this.logger.log(
       `✅ Updated quiz ${quizId} with ${questions.length} new questions`,
@@ -454,7 +472,6 @@ export class QuizCreationService {
     const quizQuestions = await this.dailyQuizQuestionRepository.find({
       where: { dailyQuiz: { id: quizId } },
       relations: ['question'],
-      order: { order: 'ASC' },
     });
 
     const questions = quizQuestions.map((qq) => qq.question);
