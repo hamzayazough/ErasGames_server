@@ -22,15 +22,82 @@ interface FormData {
 
 export default function LyricMashupForm({ onSubmit, isSubmitting }: LyricMashupFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    difficulty: Difficulty.HARD,
-    themes: [],
-    subjects: [],
-    task: '',
+    difficulty: Difficulty.MEDIUM,
+    themes: ['lyrics', 'challenge'],
+    subjects: ['songs'],
+    task: 'Match each lyric snippet to the correct song',
     snippets: [''],
     optionsPerSnippet: [''],
     correctMatches: {},
     hint: ''
   });
+
+  // Popular Taylor Swift lyric mashup presets
+  const lyricMashupPresets = {
+    'Era Signature Lines': {
+      task: 'Match each lyric snippet to the correct song',
+      snippets: [
+        'Midnight rain',
+        'Golden daylight', 
+        'Paper rings',
+        'Cornelia Street'
+      ],
+      options: [
+        'Lavender Haze',
+        'Daylight',
+        'Paper Rings', 
+        'Cornelia Street'
+      ],
+      matches: {
+        'Midnight rain': 'Lavender Haze',
+        'Golden daylight': 'Daylight',
+        'Paper rings': 'Paper Rings',
+        'Cornelia Street': 'Cornelia Street'
+      }
+    },
+    'Love Song Classics': {
+      task: 'Match each romantic lyric to its song',
+      snippets: [
+        'You were my crown',
+        'I want to wear his initial',
+        'Romeo take me somewhere',
+        'We never go out of style'
+      ],
+      options: [
+        'cardigan',
+        'Call It What You Want',
+        'Love Story',
+        'Style'
+      ],
+      matches: {
+        'You were my crown': 'cardigan',
+        'I want to wear his initial': 'Call It What You Want',
+        'Romeo take me somewhere': 'Love Story',
+        'We never go out of style': 'Style'
+      }
+    },
+    'Heartbreak Anthology': {
+      task: 'Match each breakup lyric to the correct song',
+      snippets: [
+        'All too well',
+        'We are never getting back together',
+        'I knew you were trouble',
+        'Bad blood'
+      ],
+      options: [
+        'All Too Well',
+        'We Are Never Getting Back Together',
+        'I Knew You Were Trouble',
+        'Bad Blood'
+      ],
+      matches: {
+        'All too well': 'All Too Well',
+        'We are never getting back together': 'We Are Never Getting Back Together',
+        'I knew you were trouble': 'I Knew You Were Trouble',
+        'Bad blood': 'Bad Blood'
+      }
+    }
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -204,6 +271,27 @@ export default function LyricMashupForm({ onSubmit, isSubmitting }: LyricMashupF
           placeholder="e.g., Match each lyric snippet to the correct song"
           className={`w-full p-2 border rounded ${errors.task ? 'border-red-500' : ''}`}
         />
+        <div className="mt-2">
+          <label className="block text-xs font-medium mb-1">Quick Presets:</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(lyricMashupPresets).map(([name, preset]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setFormData({
+                  ...formData,
+                  task: preset.task,
+                  snippets: [...preset.snippets],
+                  optionsPerSnippet: [...preset.options],
+                  correctMatches: {...preset.matches}
+                })}
+                className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs hover:bg-purple-200"
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
         {errors.task && <p className="text-red-500 text-sm mt-1">{errors.task}</p>}
       </div>
 
