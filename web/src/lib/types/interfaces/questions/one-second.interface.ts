@@ -1,8 +1,8 @@
-import { BasicQuestion, MediaRef } from './basic-question.interface';
-import { OneSecondPrompt } from '../prompts/prompt-interfaces';
+import { BasicQuestion, MediaRef } from "./basic-question.interface";
+import { OneSecondPrompt } from "../prompts/prompt-interfaces";
 
 export interface OneSecondQuestion extends BasicQuestion {
-  questionType: 'one-second';
+  questionType: "one-second";
   prompt: OneSecondPrompt;
   mediaRefs: MediaRef[];
   choices: string[];

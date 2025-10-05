@@ -3,14 +3,15 @@
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { OneSecondQuestion } from '@/lib/types/interfaces/questions/one-second.interface';
-import { MultipleChoice } from '../common/MultipleChoice';
 import { MediaPlayer } from '../common/MediaPlayer';
 
 interface OneSecondRendererProps {
   question: OneSecondQuestion;
+  showAnswer?: boolean;
 }
 
-export function OneSecondRenderer({ question }: OneSecondRendererProps) {
+export function OneSecondRenderer({ question, showAnswer = false }: OneSecondRendererProps) {
+  const correctIndex = typeof question.correct === 'number' ? question.correct : question.correct?.index;
   return (
     <Card className="p-6">
       <div className="space-y-6">
@@ -49,13 +50,40 @@ export function OneSecondRenderer({ question }: OneSecondRendererProps) {
           </div>
         </Card>
 
-        {/* Multiple Choice Options */}
-        <MultipleChoice
-          choices={question.choices}
-          onSelect={(choice) => {
-            console.log('Selected:', choice);
-          }}
-        />
+        {/* Answer choices */}
+        <div className="grid grid-cols-1 gap-3">
+          {question.choices.map((choice, index) => {
+            const isCorrect = showAnswer && correctIndex === index;
+            
+            return (
+              <Card 
+                key={index} 
+                className={`p-4 border-2 cursor-pointer hover:opacity-80 transition-all ${
+                  isCorrect 
+                    ? 'border-green-500 bg-green-50' 
+                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-blue-600">{String.fromCharCode(65 + index)}.</span>
+                  <span className="font-medium">{choice}</span>
+                  {isCorrect && <span className="text-green-600 ml-auto">✓ Correct</span>}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Show correct answer if enabled */}
+        {showAnswer && correctIndex !== undefined && (
+          <Card className="p-4 bg-green-50 border-green-200">
+            <div className="text-center">
+              <Text className="text-green-800 font-medium">
+                🏆 Correct Answer: {question.choices[correctIndex]}
+              </Text>
+            </div>
+          </Card>
+        )}
 
         {/* Subjects/Themes Display */}
         {(question.subjects || question.themes) && (
