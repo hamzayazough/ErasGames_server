@@ -214,12 +214,21 @@ export class AdminService {
         `Updating quiz ${request.quizId} with ${request.questionIds.length} new questions`,
       );
 
+      this.logger.log(
+        `📞 Calling quiz creation service updateQuizQuestions method`,
+      );
       const questions = await this.quizCreationService.updateQuizQuestions(
         request.quizId,
         request.questionIds,
       );
+      this.logger.log(
+        `✅ Quiz creation service completed successfully - got ${questions.length} questions`,
+      );
 
-      return {
+      this.logger.log(
+        `🎯 Preparing response with ${questions.length} questions`,
+      );
+      const response = {
         success: true,
         data: {
           quizId: request.quizId,
@@ -237,6 +246,8 @@ export class AdminService {
         },
         message: `Quiz questions updated successfully`,
       };
+      this.logger.log(`✅ Response prepared successfully`);
+      return response;
     } catch (error) {
       this.logger.error(
         `Failed to update quiz questions: ${error instanceof Error ? error.message : 'Unknown error'}`,

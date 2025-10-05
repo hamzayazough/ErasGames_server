@@ -10,6 +10,7 @@ import DropTimeTab from './edit-modal/DropTimeTab';
 import QuestionsTab from './edit-modal/QuestionsTab';
 import ActionsTab from './edit-modal/ActionsTab';
 import SwapQuestionModal from './edit-modal/SwapQuestionModal';
+import AddQuestionModal from './edit-modal/AddQuestionModal';
 
 interface EditQuizModalProps {
   isOpen: boolean;
@@ -42,6 +43,11 @@ export default function EditQuizModal({
   const [swapQuestionIndex, setSwapQuestionIndex] = useState<number>(-1);
   const [swapCandidates, setSwapCandidates] = useState<any[]>([]);
   const [loadingSwapCandidates, setLoadingSwapCandidates] = useState(false);
+  
+  // Question adding
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addCandidates, setAddCandidates] = useState<any[]>([]);
+  const [loadingAddCandidates, setLoadingAddCandidates] = useState(false);
 
   // Initialize component when opened
   useEffect(() => {
@@ -112,7 +118,7 @@ export default function EditQuizModal({
   };
 
   const handleUpdateQuestions = async () => {
-    if (!quiz?.id || selectedQuestions.length !== 6) return;
+    if (!quiz?.id || selectedQuestions.length === 0 || selectedQuestions.length > 6) return;
 
     setLoading(true);
     try {
@@ -216,13 +222,6 @@ export default function EditQuizModal({
     const newQuestions = [...selectedQuestions];
     newQuestions[swapQuestionIndex] = newQuestion.id;
     
-    // Ensure we only have 6 questions
-    if (newQuestions.length !== 6) {
-      console.error('Invalid question array length:', newQuestions.length);
-      alert('Error: Question array must contain exactly 6 questions.');
-      return;
-    }
-    
     try {
       await adminDailyQuizService.updateQuizQuestions({
         quizId: quiz.id,
@@ -243,10 +242,75 @@ export default function EditQuizModal({
     }
   };
 
+  const handleAddQuestion = async () => {
+    setShowAddModal(true);
+    setLoadingAddCandidates(true);
+    
+    try {
+      // Get all available questions
+      const response = await adminDailyQuizService.getAllQuestions();
+      
+      // Filter out questions that are already in the current quiz
+      const currentQuestionIds = currentQuestions.map(q => q.id);
+      const candidates = response.filter((q: any) => 
+        !currentQuestionIds.includes(q.id) && 
+        q.approved && 
+        !q.disabled
+      );
+      
+      setAddCandidates(candidates);
+    } catch (error) {
+      console.error('Failed to load add candidates:', error);
+      alert('Failed to load available questions. Please try again.');
+    } finally {
+      setLoadingAddCandidates(false);
+    }
+  };
+
+  const handleConfirmAdd = async (newQuestion: any) => {
+    if (!quiz?.id) return;
+    
+    // Check if quiz has already dropped
+    if (quiz.status === 'dropped') {
+      alert('Cannot add questions to a quiz that has already been dropped.');
+      return;
+    }
+    
+    // Create new questions array with the added question
+    const newQuestions = [...selectedQuestions, newQuestion.id];
+    
+    // Ensure we don't exceed 6 questions
+    if (newQuestions.length > 6) {
+      alert('Cannot add more than 6 questions to a quiz.');
+      return;
+    }
+    
+    try {
+      await adminDailyQuizService.updateQuizQuestions({
+        quizId: quiz.id,
+        questionIds: newQuestions,
+      });
+      
+      // Refresh the quiz details
+      await loadQuizDetails();
+      setShowAddModal(false);
+      
+      alert('Question added successfully!');
+    } catch (error) {
+      console.error('Failed to add question:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to add question: ${errorMessage}`);
+    }
+  };
+
   const closeSwapModal = () => {
     setShowSwapModal(false);
     setQuestionToSwap(null);
     setSwapQuestionIndex(-1);
+  };
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
   };
 
   const formatDropTime = (dropAtUTC: string) => {
@@ -342,6 +406,7 @@ export default function EditQuizModal({
                 loadingDetails={loadingDetails}
                 onUpdateQuestions={handleUpdateQuestions}
                 onSwapQuestion={handleSwapQuestion}
+                onAddQuestion={handleAddQuestion}
               />
             )}
 
@@ -365,6 +430,15 @@ export default function EditQuizModal({
         candidates={swapCandidates}
         loading={loadingSwapCandidates}
         onSelectQuestion={handleConfirmSwap}
+      />
+
+      {/* Add Question Modal */}
+      <AddQuestionModal
+        isOpen={showAddModal}
+        onClose={closeAddModal}
+        candidates={addCandidates}
+        loading={loadingAddCandidates}
+        onSelectQuestion={handleConfirmAdd}
       />
     </>
   );

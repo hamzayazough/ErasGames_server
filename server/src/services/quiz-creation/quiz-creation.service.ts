@@ -308,12 +308,17 @@ export class QuizCreationService {
     quizId: string,
     newQuestionIds: string[],
   ): Promise<Question[]> {
+    this.logger.log(
+      `🔄 Starting updateQuizQuestions for quiz ${quizId} with ${newQuestionIds.length} questions`,
+    );
+
     const quiz = await this.dailyQuizRepository.findOne({
       where: { id: quizId },
     });
     if (!quiz) {
       throw new Error(`Quiz not found: ${quizId}`);
     }
+    this.logger.log(`✅ Quiz found: ${quiz.id}`);
 
     // Check if quiz has already dropped
     const now = new Date();
@@ -322,15 +327,22 @@ export class QuizCreationService {
         `Cannot update questions for quiz ${quizId} - it has already dropped`,
       );
     }
+    this.logger.log(`✅ Quiz drop time validation passed`);
 
-    // Validate question count
-    if (newQuestionIds.length !== 6) {
+    // Validate question count (allow 1-6 questions for incremental building)
+    if (newQuestionIds.length < 1 || newQuestionIds.length > 6) {
       throw new Error(
-        `Daily quiz requires exactly 6 questions, got ${newQuestionIds.length}`,
+        `Daily quiz must have between 1 and 6 questions, got ${newQuestionIds.length}`,
       );
     }
+    this.logger.log(
+      `✅ Question count validation passed: ${newQuestionIds.length} questions`,
+    );
 
     // Fetch and validate questions
+    this.logger.log(
+      `🔍 Fetching ${newQuestionIds.length} questions from database`,
+    );
     const questions = await this.questionRepository.findByIds(newQuestionIds);
     if (questions.length !== newQuestionIds.length) {
       const missingIds = newQuestionIds.filter(
@@ -338,6 +350,7 @@ export class QuizCreationService {
       );
       throw new Error(`Questions not found: ${missingIds.join(', ')}`);
     }
+    this.logger.log(`✅ All ${questions.length} questions found in database`);
 
     // Validate questions are approved and not disabled
     const invalidQuestions = questions.filter((q) => !q.approved || q.disabled);
@@ -346,13 +359,21 @@ export class QuizCreationService {
         `Invalid questions (not approved or disabled): ${invalidQuestions.map((q) => q.id).join(', ')}`,
       );
     }
+    this.logger.log(`✅ All questions are approved and enabled`);
 
     // Delete existing quiz questions
-    await this.dailyQuizQuestionRepository.delete({
+    this.logger.log(`🗑️ Deleting existing quiz questions for quiz ${quizId}`);
+    const deleteResult = await this.dailyQuizQuestionRepository.delete({
       dailyQuiz: { id: quizId },
     });
+    this.logger.log(
+      `✅ Deleted ${deleteResult.affected || 0} existing quiz questions`,
+    );
 
     // Create new quiz-question relationships with proper question data
+    this.logger.log(
+      `🔗 Creating ${newQuestionIds.length} new quiz-question relationships`,
+    );
     const quizQuestions = newQuestionIds.map((questionId) => {
       const question = questions.find((q) => q.id === questionId);
       if (!question) {
@@ -368,23 +389,49 @@ export class QuizCreationService {
       });
     });
 
-    await this.dailyQuizQuestionRepository.save(quizQuestions);
+    const savedQuizQuestions =
+      await this.dailyQuizQuestionRepository.save(quizQuestions);
+    this.logger.log(
+      `✅ Saved ${savedQuizQuestions.length} quiz-question relationships`,
+    );
 
     // Update exposure count for new questions
-    await this.questionRepository
-      .createQueryBuilder()
-      .update(Question)
-      .set({
-        exposureCount: () => 'exposure_count + 1',
-        lastUsedAt: new Date(),
-      })
-      .whereInIds(newQuestionIds)
-      .execute();
+    this.logger.log(
+      `📊 Updating exposure count for ${newQuestionIds.length} questions`,
+    );
+    try {
+      const updateResult = await this.questionRepository
+        .createQueryBuilder()
+        .update(Question)
+        .set({
+          exposureCount: () => 'exposure_count + 1',
+          lastUsedAt: new Date(),
+        })
+        .whereInIds(newQuestionIds)
+        .execute();
+      this.logger.log(
+        `✅ Updated exposure count - affected ${updateResult.affected || 0} questions`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to update exposure count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw error;
+    }
 
     // Invalidate template (it needs to be regenerated with new questions)
-    await this.dailyQuizRepository.update(quizId, {
-      templateCdnUrl: undefined,
-    });
+    this.logger.log(`🗂️ Invalidating template for quiz ${quizId}`);
+    try {
+      await this.dailyQuizRepository.update(quizId, {
+        templateCdnUrl: '',
+      });
+      this.logger.log(`✅ Template invalidated successfully`);
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to invalidate template: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw error;
+    }
 
     this.logger.log(
       `✅ Updated quiz ${quizId} with ${questions.length} new questions`,
