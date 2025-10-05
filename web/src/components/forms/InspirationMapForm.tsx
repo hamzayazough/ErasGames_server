@@ -22,15 +22,49 @@ interface FormData {
 
 export default function InspirationMapForm({ onSubmit, isSubmitting }: InspirationMapFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    difficulty: Difficulty.EASY,
-    themes: [],
-    subjects: [],
-    task: '',
-    disclaimer: '',
+    difficulty: Difficulty.MEDIUM,
+    themes: ['influences'],
+    subjects: ['songs'],
+    task: 'Who is widely believed to have inspired the song "All Too Well"?',
+    disclaimer: 'Based on fan interpretations and media reports, not officially confirmed.',
     choices: ['', '', '', ''],
     correctAnswer: 0,
     hint: ''
   });
+
+  // Popular Taylor Swift inspiration/relationship presets
+  const inspirationPresets = {
+    'All Too Well': {
+      task: 'Who is widely believed to have inspired the song "All Too Well"?',
+      disclaimer: 'Based on fan interpretations and media reports, not officially confirmed.',
+      choices: ['Joe Jonas', 'Jake Gyllenhaal', 'Harry Styles', 'John Mayer'],
+      correctAnswer: 1
+    },
+    'Dear John': {
+      task: 'Who is widely believed to have inspired "Dear John"?',
+      disclaimer: 'Based on fan interpretations and media reports, not officially confirmed.',
+      choices: ['Taylor Lautner', 'Joe Jonas', 'John Mayer', 'Conor Kennedy'],
+      correctAnswer: 2
+    },
+    'Style': {
+      task: 'Who is widely believed to have inspired the song "Style"?',
+      disclaimer: 'Based on fan interpretations and media reports, not officially confirmed.',
+      choices: ['Calvin Harris', 'Harry Styles', 'Tom Hiddleston', 'Joe Alwyn'],
+      correctAnswer: 1
+    },
+    'Getaway Car': {
+      task: 'What relationship situation is "Getaway Car" believed to reference?',
+      disclaimer: 'Based on fan interpretations and lyrical analysis.',
+      choices: ['Meeting Joe Alwyn', 'Ending with Calvin Harris', 'Brief Tom Hiddleston period', 'All of the above'],
+      correctAnswer: 3
+    },
+    'folklore Love Triangle': {
+      task: 'Who do fans believe the folklore love triangle songs reference?',
+      disclaimer: 'Based on fan theories and interpretations, not confirmed.',
+      choices: ['High school relationships', 'Joe Alwyn situation', 'Fictional characters', 'Industry relationships'],
+      correctAnswer: 0
+    }
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -145,6 +179,27 @@ export default function InspirationMapForm({ onSubmit, isSubmitting }: Inspirati
           placeholder="e.g., Who is widely believed to have inspired the song 'All Too Well'?"
           className={`w-full p-2 border rounded ${errors.task ? 'border-red-500' : ''}`}
         />
+        <div className="mt-2">
+          <label className="block text-xs font-medium mb-1">Quick Presets:</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(inspirationPresets).map(([name, preset]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setFormData({
+                  ...formData,
+                  task: preset.task,
+                  disclaimer: preset.disclaimer,
+                  choices: [...preset.choices],
+                  correctAnswer: preset.correctAnswer
+                })}
+                className="px-2 py-1 bg-pink-100 text-pink-800 rounded text-xs hover:bg-pink-200"
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
         {errors.task && <p className="text-red-500 text-sm mt-1">{errors.task}</p>}
       </div>
 
@@ -162,26 +217,40 @@ export default function InspirationMapForm({ onSubmit, isSubmitting }: Inspirati
 
       <div>
         <label className="block text-sm font-medium mb-2">Answer Choices</label>
-        {formData.choices.map((choice, index) => (
-          <div key={index} className="mb-2">
-            <div className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="correctAnswer"
-                checked={formData.correctAnswer === index}
-                onChange={() => setFormData({ ...formData, correctAnswer: index })}
-                className="mr-2"
-              />
+        <div className="space-y-3">
+          {formData.choices.map((choice, index) => (
+            <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, correctAnswer: index })}
+                className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  formData.correctAnswer === index
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'border-gray-300 hover:border-green-400'
+                }`}
+              >
+                {formData.correctAnswer === index && (
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </button>
+              <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-gray-600">{String.fromCharCode(65 + index)}</span>
+              </div>
               <input
                 type="text"
                 value={choice}
                 onChange={(e) => updateChoice(index, e.target.value)}
                 placeholder={`Person/inspiration ${index + 1}`}
-                className={`flex-1 p-2 border rounded ${errors.choices ? 'border-red-500' : ''}`}
+                className={`flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.choices ? 'border-red-500' : ''}`}
               />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <p className="mt-2 text-sm text-gray-500">
+          Click the circle button to select the correct answer
+        </p>
         {errors.choices && <p className="text-red-500 text-sm mt-1">{errors.choices}</p>}
       </div>
 

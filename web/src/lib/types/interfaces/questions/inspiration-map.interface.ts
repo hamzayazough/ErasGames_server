@@ -1,8 +1,8 @@
-import { BasicQuestion } from './basic-question.interface';
-import { InspirationMapPrompt } from '../prompts/prompt-interfaces';
+import { BasicQuestion } from "./basic-question.interface";
+import { InspirationMapPrompt } from "../prompts/prompt-interfaces";
 
 export interface InspirationMapQuestion extends BasicQuestion {
-  questionType: 'inspiration-map';
+  questionType: "inspiration-map";
   prompt: InspirationMapPrompt;
   choices: string[];
   correct: number;
