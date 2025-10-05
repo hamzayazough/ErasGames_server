@@ -22,15 +22,43 @@ interface FormData {
 
 export default function PopularityMatchForm({ onSubmit, isSubmitting }: PopularityMatchFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    difficulty: Difficulty.MEDIUM,
-    themes: [],
-    subjects: [],
-    task: '',
-    asOf: '',
+    difficulty: Difficulty.EASY,
+    themes: ['charts', 'popularity'],
+    subjects: ['songs'],
+    task: 'Order these songs by total Spotify streams (highest to lowest)',
+    asOf: '2025-09-01',
     items: [''],
     correctOrder: [],
     hint: ''
   });
+
+  // Popular Taylor Swift song streaming presets
+  const popularityPresets = {
+    'Spotify Streams': {
+      task: 'Order these songs by total Spotify streams (highest to lowest)',
+      asOf: '2025-09-01',
+      items: ['Shake It Off', 'Anti-Hero', 'Love Story', 'Cruel Summer'],
+      correctOrder: ['Anti-Hero', 'Shake It Off', 'Cruel Summer', 'Love Story']
+    },
+    'Billboard Hot 100': {
+      task: 'Order these songs by their Billboard Hot 100 peak position (highest to lowest)',
+      asOf: '2024-12-31',
+      items: ['We Are Never Getting Back Together', 'Shake It Off', 'Look What You Made Me Do', 'Anti-Hero'],
+      correctOrder: ['We Are Never Getting Back Together', 'Shake It Off', 'Look What You Made Me Do', 'Anti-Hero']
+    },
+    'Album Sales': {
+      task: 'Order these albums by total sales (highest to lowest)',
+      asOf: '2024-12-31',
+      items: ['1989', 'folklore', 'Midnights', 'evermore'],
+      correctOrder: ['1989', 'Midnights', 'folklore', 'evermore']
+    },
+    'Concert Attendance': {
+      task: 'Order these tour legs by average attendance per show (highest to lowest)',
+      asOf: '2024-12-31',
+      items: ['Eras Tour - US', 'Reputation Stadium Tour', '1989 World Tour', 'Fearless Tour'],
+      correctOrder: ['Eras Tour - US', 'Reputation Stadium Tour', '1989 World Tour', 'Fearless Tour']
+    }
+  };
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -81,10 +109,7 @@ export default function PopularityMatchForm({ onSubmit, isSubmitting }: Populari
         task: formData.task,
         asOf: formData.asOf
       },
-      choices: formData.items.filter(item => item.trim()).map((text, index) => ({
-        id: `choice${index + 1}`,
-        text
-      })),
+      choices: formData.items.filter(item => item.trim()),
       correct: {
         values: formData.correctOrder
       },
@@ -207,6 +232,27 @@ export default function PopularityMatchForm({ onSubmit, isSubmitting }: Populari
           placeholder="e.g., Order these songs by total Spotify streams (highest to lowest)"
           className={`w-full p-2 border rounded ${errors.task ? 'border-red-500' : ''}`}
         />
+        <div className="mt-2">
+          <label className="block text-xs font-medium mb-1">Quick Presets:</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(popularityPresets).map(([name, preset]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setFormData({
+                  ...formData,
+                  task: preset.task,
+                  asOf: preset.asOf,
+                  items: [...preset.items],
+                  correctOrder: [...preset.correctOrder]
+                })}
+                className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs hover:bg-purple-200"
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
         {errors.task && <p className="text-red-500 text-sm mt-1">{errors.task}</p>}
       </div>
 
