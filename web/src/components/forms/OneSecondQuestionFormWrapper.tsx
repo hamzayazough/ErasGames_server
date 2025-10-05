@@ -23,7 +23,7 @@ interface FormData {
 export default function OneSecondQuestionFormWrapper({ onSubmit, isSubmitting }: OneSecondQuestionFormWrapperProps) {
   const [formData, setFormData] = useState<FormData>({
     difficulty: Difficulty.HARD,
-    themes: ['audio', 'challenge'],
+    themes: ['audio', 'speed'],
     subjects: ['songs'],
     task: 'Identify the song from this 1-second audio clip',
     audioUrl: '',

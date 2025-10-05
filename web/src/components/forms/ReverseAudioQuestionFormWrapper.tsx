@@ -11,7 +11,7 @@ export default function ReverseAudioQuestionFormWrapper({ onSubmit, isSubmitting
   const [question, setQuestion] = useState<Partial<ReverseAudioQuestionFormType>>({
     type: 'reverse-audio',
     difficulty: 'medium',
-    themes: ['audio', 'challenge'],
+    themes: ['audio', 'trivia'],
     subjects: ['songs'],
     task: 'Identify the song from this reversed audio clip',
     audioUrl: '',
@@ -43,7 +43,7 @@ export default function ReverseAudioQuestionFormWrapper({ onSubmit, isSubmitting
     const transformedData = {
       questionType: 'reverse-audio',
       difficulty: question.difficulty || 'medium',
-      themes: question.themes || ['audio', 'challenge'],
+      themes: question.themes || ['audio', 'trivia'],
       subjects: question.subjects || ['songs'],
       prompt: {
         task: question.task

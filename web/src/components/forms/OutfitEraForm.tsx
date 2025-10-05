@@ -184,18 +184,39 @@ export default function OutfitEraForm({ onSubmit, isSubmitting }: OutfitEraFormP
                   </button>
                 </div>
                 
-                <MediaUpload
-                  onUpload={handleImageUpload(index)}
-                  onError={(error) => console.error('Upload error:', error)}
-                  accept="image/*"
-                  maxSize={10 * 1024 * 1024} // 10MB
-                />
-                
-                {media.url && (
-                  <div>
-                    <label className="block text-sm font-medium">Current URL:</label>
-                    <p className="text-sm text-gray-600 break-all">{media.url}</p>
+                {media.url ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span className="text-sm text-green-700">Image uploaded</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => updateMediaRef(index, '')}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="border rounded-lg overflow-hidden">
+                      <img 
+                        src={media.url} 
+                        alt={`Outfit reference ${index + 1}`}
+                        className="w-full max-w-md mx-auto h-auto object-contain bg-gray-50"
+                        style={{ maxHeight: '300px' }}
+                      />
+                    </div>
                   </div>
+                ) : (
+                  <MediaUpload
+                    type="image"
+                    onUploadSuccess={handleImageUpload(index)}
+                    onError={(error) => console.error('Upload error:', error)}
+                    className="w-full"
+                  />
                 )}
               </div>
             </div>

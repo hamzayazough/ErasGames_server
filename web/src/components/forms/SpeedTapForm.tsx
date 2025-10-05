@@ -28,7 +28,7 @@ interface FormData {
 export default function SpeedTapForm({ onSubmit, isSubmitting }: SpeedTapFormProps) {
   const [formData, setFormData] = useState<FormData>({
     difficulty: Difficulty.EASY,
-    themes: ['speed', 'challenge'],
+    themes: ['speed', 'trivia'],
     subjects: ['songs'],
     task: 'Tap all the real song titles as quickly as possible!',
     targetRule: 'Real Taylor Swift songs',
@@ -97,7 +97,7 @@ export default function SpeedTapForm({ onSubmit, isSubmitting }: SpeedTapFormPro
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const availableThemes = [
-    'speed', 'reaction', 'tap', 'challenge', 'quick-thinking', 'reflex'
+    'speed', 'trivia', 'songs', 'events'
   ];
 
   const validateForm = (): boolean => {
