@@ -24,6 +24,7 @@ export default function QuestionsPage() {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'approved' | 'pending'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [selectedDisabledFilter, setSelectedDisabledFilter] = useState<'all' | 'enabled' | 'disabled'>('enabled');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,8 +109,17 @@ export default function QuestionsPage() {
       }
 
       // Handle response - server returns data directly, not wrapped
-      const questionsData = response.data || response;
-      setQuestions(Array.isArray(questionsData) ? questionsData : []);
+      let questionsData = response.data || response;
+      questionsData = Array.isArray(questionsData) ? questionsData : [];
+      
+      // Apply disabled filter
+      if (selectedDisabledFilter === 'enabled') {
+        questionsData = questionsData.filter((q: AnyQuestion) => !q.disabled);
+      } else if (selectedDisabledFilter === 'disabled') {
+        questionsData = questionsData.filter((q: AnyQuestion) => q.disabled);
+      }
+      
+      setQuestions(questionsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch filtered questions');
       console.error('Error fetching filtered questions:', err);
@@ -124,7 +134,7 @@ export default function QuestionsPage() {
     if (user) {
       fetchFilteredQuestions();
     }
-  }, [selectedFilter, selectedType, selectedDifficulty, user]);
+  }, [selectedFilter, selectedType, selectedDifficulty, selectedDisabledFilter, user]);
 
   const handleApproveQuestion = async (questionId: string) => {
     try {
@@ -241,11 +251,11 @@ export default function QuestionsPage() {
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Status Filter */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Approval Status Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
+                Approval Status
               </label>
               <select
                 value={selectedFilter}
@@ -291,6 +301,22 @@ export default function QuestionsPage() {
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
                 <option value="hard">Hard</option>
+              </select>
+            </div>
+
+            {/* Disabled Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={selectedDisabledFilter}
+                onChange={(e) => setSelectedDisabledFilter(e.target.value as 'all' | 'enabled' | 'disabled')}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="enabled">Enabled Only</option>
+                <option value="all">All Questions</option>
+                <option value="disabled">Disabled Only</option>
               </select>
             </div>
           </div>
