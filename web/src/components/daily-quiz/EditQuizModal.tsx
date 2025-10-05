@@ -3,8 +3,29 @@
 
 import { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, RefreshCw } from 'lucide-react';
-import { DailyQuiz } from '@/lib/types/api.types';
+import { DailyQuiz, QuizQuestion } from '@/lib/types/api.types';
 import { adminDailyQuizService } from '@/lib/services/admin-daily-quiz.service';
+
+// Question renderer imports
+import { AlbumYearGuessRenderer } from '@/components/questions/types/AlbumYearGuessRenderer';
+import { SongAlbumMatchRenderer } from '@/components/questions/types/SongAlbumMatchRenderer';
+import { FillBlankRenderer } from '@/components/questions/types/FillBlankRenderer';
+import { GuessByLyricRenderer } from '@/components/questions/types/GuessByLyricRenderer';
+import { OddOneOutRenderer } from '@/components/questions/types/OddOneOutRenderer';
+import { AiVisualRenderer } from '@/components/questions/types/AiVisualRenderer';
+import { SoundAlikeSnippetRenderer } from '@/components/questions/types/SoundAlikeSnippetRenderer';
+import { MoodMatchRenderer } from '@/components/questions/types/MoodMatchRenderer';
+import { InspirationMapRenderer } from '@/components/questions/types/InspirationMapRenderer';
+import { LifeTriviaRenderer } from '@/components/questions/types/LifeTriviaRenderer';
+import { TimelineOrderRenderer } from '@/components/questions/types/TimelineOrderRenderer';
+import { PopularityMatchRenderer } from '@/components/questions/types/PopularityMatchRenderer';
+import { LongestSongRenderer } from '@/components/questions/types/LongestSongRenderer';
+import { TracklistOrderRenderer } from '@/components/questions/types/TracklistOrderRenderer';
+import { OutfitEraRenderer } from '@/components/questions/types/OutfitEraRenderer';
+import { LyricMashupRenderer } from '@/components/questions/types/LyricMashupRenderer';
+import { SpeedTapRenderer } from '@/components/questions/types/SpeedTapRenderer';
+import { ReverseAudioRenderer } from '@/components/questions/types/ReverseAudioRenderer';
+import { OneSecondRenderer } from '@/components/questions/types/OneSecondRenderer';
 
 interface EditQuizModalProps {
   quiz: DailyQuiz | null;
@@ -23,11 +44,10 @@ export default function EditQuizModal({
   const [activeTab, setActiveTab] = useState<'dropTime' | 'questions' | 'actions'>('dropTime');
   
   // Drop time editing
-  const [newDropDate, setNewDropDate] = useState('');
   const [newDropTime, setNewDropTime] = useState('');
   
   // Questions editing
-  const [currentQuestions, setCurrentQuestions] = useState<any[]>([]);
+  const [currentQuestions, setCurrentQuestions] = useState<QuizQuestion[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [availableQuestions, setAvailableQuestions] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -38,16 +58,15 @@ export default function EditQuizModal({
       loadQuizDetails();
       if (quiz.dropAtUTC) {
         const dropDate = new Date(quiz.dropAtUTC);
-        const localDate = new Date(dropDate.getTime() - dropDate.getTimezoneOffset() * 60000);
-        setNewDropDate(localDate.toISOString().split('T')[0]);
-        setNewDropTime(localDate.toTimeString().slice(0, 5));
+        const hours = dropDate.getHours().toString().padStart(2, '0');
+        const minutes = dropDate.getMinutes().toString().padStart(2, '0');
+        setNewDropTime(`${hours}:${minutes}`);
       }
     }
   }, [isOpen, quiz]);
 
   const resetForm = () => {
     setActiveTab('dropTime');
-    setNewDropDate('');
     setNewDropTime('');
     setCurrentQuestions([]);
     setSelectedQuestions([]);
@@ -71,11 +90,14 @@ export default function EditQuizModal({
   };
 
   const handleUpdateDropTime = async () => {
-    if (!quiz?.id || !newDropDate || !newDropTime) return;
+    if (!quiz?.id || !newDropTime || !quiz.dropAtUTC) return;
 
     setLoading(true);
     try {
-      const newDropAtUTC = new Date(`${newDropDate}T${newDropTime}:00`).toISOString();
+      // Use the current quiz date but update the time
+      const currentDate = new Date(quiz.dropAtUTC);
+      const currentDateString = currentDate.toISOString().split('T')[0];
+      const newDropAtUTC = new Date(`${currentDateString}T${newDropTime}:00`).toISOString();
       
       await adminDailyQuizService.updateQuizDropTime({
         quizId: quiz.id,
@@ -168,6 +190,95 @@ export default function EditQuizModal({
     });
   };
 
+  // Question renderer function
+  const renderQuestion = (question: QuizQuestion) => {
+    if (!question.questionType) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h4 className="text-yellow-800 font-medium">Unsupported Question Type: Unknown (normalized: )</h4>
+          <p className="text-yellow-700 text-sm mt-1">Task: {question.prompt?.task || 'No task available'}</p>
+          <pre className="mt-2 text-xs text-yellow-600 bg-yellow-100 p-2 rounded overflow-auto">
+            {JSON.stringify(question, null, 2)}
+          </pre>
+        </div>
+      );
+    }
+
+    // Transform question data to match renderer expectations
+    const questionProps = {
+      ...question,
+      prompt: question.prompt,
+      themes: question.themes || [],
+      choices: question.choices || question.choicesJSON || [],
+      correct: question.correct || question.correctJSON,
+      mediaRefs: question.mediaRefs || question.mediaJSON || []
+    };
+
+    const normalizedType = question.questionType.replace(/_/g, '-');
+
+    try {
+      switch (normalizedType) {
+        case 'album-year-guess':
+          return <AlbumYearGuessRenderer question={questionProps as any} showAnswer={true} />;
+        case 'song-album-match':
+          return <SongAlbumMatchRenderer question={questionProps as any} showAnswer={true} />;
+        case 'fill-blank':
+          return <FillBlankRenderer question={questionProps as any} showAnswer={true} />;
+        case 'guess-by-lyric':
+          return <GuessByLyricRenderer question={questionProps as any} showAnswer={true} />;
+        case 'odd-one-out':
+          return <OddOneOutRenderer question={questionProps as any} showAnswer={true} />;
+        case 'ai-visual':
+          return <AiVisualRenderer question={questionProps as any} showAnswer={true} />;
+        case 'sound-alike-snippet':
+          return <SoundAlikeSnippetRenderer question={questionProps as any} showAnswer={true} />;
+        case 'mood-match':
+          return <MoodMatchRenderer question={questionProps as any} showAnswer={true} />;
+        case 'inspiration-map':
+          return <InspirationMapRenderer question={questionProps as any} showAnswer={true} />;
+        case 'life-trivia':
+          return <LifeTriviaRenderer question={questionProps as any} showAnswer={true} />;
+        case 'timeline-order':
+          return <TimelineOrderRenderer question={questionProps as any} showAnswer={true} />;
+        case 'popularity-match':
+          return <PopularityMatchRenderer question={questionProps as any} showAnswer={true} />;
+        case 'longest-song':
+          return <LongestSongRenderer question={questionProps as any} showAnswer={true} />;
+        case 'tracklist-order':
+          return <TracklistOrderRenderer question={questionProps as any} showAnswer={true} />;
+        case 'outfit-era':
+          return <OutfitEraRenderer question={questionProps as any} showAnswer={true} />;
+        case 'lyric-mashup':
+          return <LyricMashupRenderer question={questionProps as any} showAnswer={true} />;
+        case 'speed-tap':
+          return <SpeedTapRenderer question={questionProps as any} showAnswer={true} />;
+        case 'reverse-audio':
+          return <ReverseAudioRenderer question={questionProps as any} showAnswer={true} />;
+        case 'one-second':
+          return <OneSecondRenderer question={questionProps as any} showAnswer={true} />;
+        default:
+          return (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h4 className="text-yellow-800 font-medium">Unsupported Question Type: {question.questionType} (normalized: {normalizedType})</h4>
+              <p className="text-yellow-700 text-sm mt-1">Task: {question.prompt?.task || 'No task available'}</p>
+              <pre className="mt-2 text-xs text-yellow-600 bg-yellow-100 p-2 rounded overflow-auto">
+                {JSON.stringify(question, null, 2)}
+              </pre>
+            </div>
+          );
+      }
+    } catch (error) {
+      console.error('Error rendering question:', error);
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h4 className="text-red-800 font-medium">Error Rendering Question</h4>
+          <p className="text-red-700 text-sm mt-1">Type: {question.questionType}</p>
+          <p className="text-red-700 text-sm">Error: {error instanceof Error ? error.message : 'Unknown error'}</p>
+        </div>
+      );
+    }
+  };
+
   if (!isOpen || !quiz) return null;
 
   const isDropped = quiz.status === 'dropped';
@@ -257,7 +368,7 @@ export default function EditQuizModal({
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Update Drop Time</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      Change when this quiz will be released to users. This will also update notification scheduling.
+                      Change the time when this quiz will be released. The date will remain the same. This will also update notification scheduling.
                     </p>
                   </div>
 
@@ -269,19 +380,7 @@ export default function EditQuizModal({
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        New Drop Date
-                      </label>
-                      <input
-                        type="date"
-                        value={newDropDate}
-                        onChange={(e) => setNewDropDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
+                  <div className="max-w-sm">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         New Drop Time (Local)
@@ -314,10 +413,10 @@ export default function EditQuizModal({
                   ) : (
                     <div>
                       <h4 className="font-medium text-gray-900 mb-3">Current Questions ({currentQuestions.length})</h4>
-                      <div className="space-y-3">
-                        {currentQuestions.map((question: any, index: number) => (
-                          <div key={question.id} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex items-start justify-between mb-2">
+                      <div className="space-y-6">
+                        {currentQuestions.map((question: QuizQuestion, index: number) => (
+                          <div key={question.id} className="border border-gray-200 rounded-lg">
+                            <div className="flex items-start justify-between p-4 pb-2 border-b border-gray-100">
                               <div className="flex items-center space-x-2">
                                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
                                   Q{index + 1}
@@ -325,13 +424,25 @@ export default function EditQuizModal({
                                 <span className="text-sm text-gray-600 capitalize">
                                   {question.difficulty}
                                 </span>
+                                {question.themes && question.themes.length > 0 && (
+                                  <div className="flex items-center space-x-1">
+                                    {question.themes.slice(0, 2).map((theme) => (
+                                      <span key={theme} className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">
+                                        {theme}
+                                      </span>
+                                    ))}
+                                    {question.themes.length > 2 && (
+                                      <span className="text-xs text-gray-500">+{question.themes.length - 2} more</span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <span className="text-xs text-gray-500 font-mono">
                                 {question.id}
                               </span>
                             </div>
-                            <div className="text-sm text-gray-800">
-                              {question.promptJSON?.task || 'Question content not available'}
+                            <div className="p-4">
+                              {renderQuestion(question)}
                             </div>
                           </div>
                         ))}
@@ -400,7 +511,7 @@ export default function EditQuizModal({
                 {activeTab === 'dropTime' && (
                   <button
                     onClick={handleUpdateDropTime}
-                    disabled={loading || !newDropDate || !newDropTime}
+                    disabled={loading || !newDropTime}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Updating...' : 'Update Drop Time'}

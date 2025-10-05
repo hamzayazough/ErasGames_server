@@ -321,6 +321,9 @@ export class AdminService {
               typeof q.promptJSON === 'object'
                 ? q.promptJSON
                 : { text: 'Question prompt' },
+            choicesJSON: q.choicesJSON,
+            correctJSON: q.correctJSON,
+            mediaJSON: q.mediaJSON,
             approved: q.approved,
             disabled: q.disabled,
             exposureCount: q.exposureCount,
