@@ -13,7 +13,7 @@ interface FormData {
   difficulty: Difficulty;
   themes: string[];
   subjects: string[];
-  task: string;
+  songName: string;
   moodTags: string[];
   note?: string;
   choices: string[];
@@ -24,12 +24,12 @@ interface FormData {
 export default function MoodMatchForm({ onSubmit, isSubmitting }: MoodMatchFormProps) {
   const [formData, setFormData] = useState<FormData>({
     difficulty: Difficulty.MEDIUM,
-    themes: [],
-    subjects: [],
-    task: '',
+    themes: ['emotions'],
+    subjects: ['songs'],
+    songName: '',
     moodTags: [],
-    note: '',
-    choices: ['', '', '', ''],
+    note: 'Consider the overall feeling and lyrics of the song',
+    choices: ['Melancholic', 'Upbeat', 'Romantic', 'Angry'],
     correctAnswer: 0,
     hint: ''
   });
@@ -45,11 +45,24 @@ export default function MoodMatchForm({ onSubmit, isSubmitting }: MoodMatchFormP
     'romantic', 'angry', 'sad', 'happy', 'energetic', 'calm', 'dramatic'
   ];
 
+  const popularSongs = [
+    'All Too Well', 'Love Story', 'Shake It Off', 'Anti-Hero', 'Blank Space',
+    'Cruel Summer', 'cardigan', 'Willow', 'We Are Never Getting Back Together',
+    'Look What You Made Me Do', 'Delicate', 'Paper Rings', 'August', 'Getaway Car'
+  ];
+
+  const commonMoodChoices = [
+    ['Melancholic', 'Upbeat', 'Romantic', 'Angry'],
+    ['Sad', 'Happy', 'Nostalgic', 'Energetic'],
+    ['Dramatic', 'Calm', 'Emotional', 'Playful'],
+    ['Heartbreak', 'Joyful', 'Mysterious', 'Confident']
+  ];
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.task.trim()) {
-      newErrors.task = 'Task description is required';
+    if (!formData.songName.trim()) {
+      newErrors.songName = 'Song name is required';
     }
 
     if (formData.choices.some(choice => !choice.trim())) {
@@ -77,14 +90,13 @@ export default function MoodMatchForm({ onSubmit, isSubmitting }: MoodMatchFormP
       themes: formData.themes,
       subjects: formData.subjects,
       prompt: {
-        task: formData.task,
+        task: `Which mood best describes the song "${formData.songName}"?`,
         moodTags: formData.moodTags,
         note: formData.note || undefined
       },
-      mediaRefs: [], // Can be extended later for audio/visual content
       choices: formData.choices,
       correct: {
-        choiceIndex: formData.correctAnswer
+        index: formData.correctAnswer
       },
       hint: formData.hint || undefined
     };
@@ -170,15 +182,32 @@ export default function MoodMatchForm({ onSubmit, isSubmitting }: MoodMatchFormP
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Task Description</label>
-        <input
-          type="text"
-          value={formData.task}
-          onChange={(e) => setFormData({ ...formData, task: e.target.value })}
-          placeholder="e.g., Which mood best describes the song 'All Too Well'?"
-          className={`w-full p-2 border rounded ${errors.task ? 'border-red-500' : ''}`}
-        />
-        {errors.task && <p className="text-red-500 text-sm mt-1">{errors.task}</p>}
+        <label className="block text-sm font-medium mb-2">Song Name</label>
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={formData.songName}
+            onChange={(e) => setFormData({ ...formData, songName: e.target.value })}
+            placeholder="Enter song name or select from popular songs below"
+            className={`w-full p-2 border rounded ${errors.songName ? 'border-red-500' : ''}`}
+          />
+          <div className="flex flex-wrap gap-2">
+            {popularSongs.map(song => (
+              <button
+                key={song}
+                type="button"
+                onClick={() => setFormData({ ...formData, songName: song })}
+                className={`px-2 py-1 rounded text-xs ${                  formData.songName === song
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {song}
+              </button>
+            ))}
+          </div>
+        </div>
+        {errors.songName && <p className="text-red-500 text-sm mt-1">{errors.songName}</p>}
       </div>
 
       <div>
@@ -235,6 +264,21 @@ export default function MoodMatchForm({ onSubmit, isSubmitting }: MoodMatchFormP
 
       <div>
         <label className="block text-sm font-medium mb-2">Answer Choices</label>
+        <div className="mb-3">
+          <label className="block text-xs font-medium mb-1">Quick Presets:</label>
+          <div className="flex flex-wrap gap-2">
+            {commonMoodChoices.map((choiceSet, setIndex) => (
+              <button
+                key={setIndex}
+                type="button"
+                onClick={() => setFormData({ ...formData, choices: [...choiceSet] })}
+                className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs hover:bg-purple-200"
+              >
+                {choiceSet.join(', ')}
+              </button>
+            ))}
+          </div>
+        </div>
         {formData.choices.map((choice, index) => (
           <div key={index} className="mb-2">
             <div className="flex items-center gap-2">
@@ -245,6 +289,7 @@ export default function MoodMatchForm({ onSubmit, isSubmitting }: MoodMatchFormP
                 onChange={() => setFormData({ ...formData, correctAnswer: index })}
                 className="mr-2"
               />
+              <span className="w-6 text-center font-medium">{String.fromCharCode(65 + index)}.</span>
               <input
                 type="text"
                 value={choice}
