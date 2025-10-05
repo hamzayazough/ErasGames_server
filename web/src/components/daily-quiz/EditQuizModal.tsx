@@ -112,7 +112,7 @@ export default function EditQuizModal({
   };
 
   const handleUpdateQuestions = async () => {
-    if (!quiz?.id || selectedQuestions.length !== 5) return;
+    if (!quiz?.id || selectedQuestions.length !== 6) return;
 
     setLoading(true);
     try {
@@ -204,15 +204,28 @@ export default function EditQuizModal({
   };
 
   const handleConfirmSwap = async (newQuestion: any) => {
-    if (!questionToSwap || swapQuestionIndex === -1) return;
+    if (!questionToSwap || swapQuestionIndex === -1 || !quiz?.id) return;
+    
+    // Check if quiz has already dropped
+    if (quiz.status === 'dropped') {
+      alert('Cannot swap questions for a quiz that has already been dropped.');
+      return;
+    }
     
     // Create new questions array with the swapped question
     const newQuestions = [...selectedQuestions];
     newQuestions[swapQuestionIndex] = newQuestion.id;
     
+    // Ensure we only have 6 questions
+    if (newQuestions.length !== 6) {
+      console.error('Invalid question array length:', newQuestions.length);
+      alert('Error: Question array must contain exactly 6 questions.');
+      return;
+    }
+    
     try {
       await adminDailyQuizService.updateQuizQuestions({
-        quizId: quiz!.id,
+        quizId: quiz.id,
         questionIds: newQuestions,
       });
       
@@ -225,7 +238,8 @@ export default function EditQuizModal({
       alert('Question swapped successfully!');
     } catch (error) {
       console.error('Failed to swap question:', error);
-      alert('Failed to swap question. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to swap question: ${errorMessage}`);
     }
   };
 

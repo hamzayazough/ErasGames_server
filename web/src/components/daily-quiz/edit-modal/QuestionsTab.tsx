@@ -73,13 +73,14 @@ export default function QuestionsTab({
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => onSwapQuestion(question, index)}
-                          disabled={isDropped}
-                          className="bg-orange-50 hover:bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Swap
-                        </button>
+                        {!isDropped && (
+                          <button
+                            onClick={() => onSwapQuestion(question, index)}
+                            className="bg-orange-50 hover:bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded"
+                          >
+                            Swap
+                          </button>
+                        )}
                         <span className="text-xs text-gray-500 font-mono">
                           {question.id}
                         </span>
@@ -100,7 +101,7 @@ export default function QuestionsTab({
           <div className="flex justify-end">
             <button
               onClick={onUpdateQuestions}
-              disabled={loading || selectedQuestions.length !== 5}
+              disabled={loading || selectedQuestions.length !== 6}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Updating...' : 'Update Questions'}
