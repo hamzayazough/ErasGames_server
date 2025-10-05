@@ -327,6 +327,7 @@ export class AdminDailyQuizController {
   }
 
   /**
+   * TODO: DELETE THIS ENDPOINT
    * Get recent composition logs
    * GET /admin/daily-quiz/logs
    */

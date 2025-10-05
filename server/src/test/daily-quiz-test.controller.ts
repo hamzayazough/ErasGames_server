@@ -10,6 +10,7 @@ import {
   DailyQuizMode,
 } from '../database/services/daily-quiz-composer';
 import { DailyQuizJobProcessor } from '../services/daily-quiz-job-processor.service';
+import { QuizCreationService } from '../services/quiz-creation';
 
 /**
  * 🧪 Daily Quiz Test Controller
@@ -31,6 +32,7 @@ export class DailyQuizTestController {
     private readonly composerService: DailyQuizComposerService,
     private readonly templateService: TemplateService,
     private readonly jobProcessor: DailyQuizJobProcessor,
+    private readonly quizCreationService: QuizCreationService,
   ) {}
 
   /**
@@ -51,7 +53,7 @@ export class DailyQuizTestController {
     );
 
     try {
-      // Helper function to create a quiz
+      // Helper function to create a quiz using the new service
       const createQuiz = async (
         dropTime: Date,
         dayLabel: string,
@@ -59,78 +61,32 @@ export class DailyQuizTestController {
       ) => {
         this.logger.log(`📋 Creating ${dayLabel}'s quiz...`);
 
-        // Check if quiz already exists for this day
-        const startOfDay = new Date(dropTime);
-        startOfDay.setUTCHours(0, 0, 0, 0);
-        const endOfDay = new Date(dropTime);
-        endOfDay.setUTCHours(23, 59, 59, 999);
-
-        const existingQuiz = await this.dailyQuizRepository
-          .createQueryBuilder('quiz')
-          .where('quiz.dropAtUTC >= :startOfDay', { startOfDay })
-          .andWhere('quiz.dropAtUTC <= :endOfDay', { endOfDay })
-          .getOne();
-
-        if (existingQuiz) {
-          this.logger.log(
-            `⚠️  ${dayLabel}'s quiz already exists, cleaning up first...`,
-          );
-
-          // Delete existing quiz questions
-          await this.dailyQuizQuestionRepository.delete({
-            dailyQuiz: { id: existingQuiz.id },
-          });
-
-          // Delete existing quiz
-          await this.dailyQuizRepository.delete(existingQuiz.id);
-
-          this.logger.log(`✅ Cleaned up existing ${dayLabel} quiz`);
-        }
-
-        // STEP 1: Create the quiz
-        const compositionResult = await this.composerService.composeDailyQuiz(
-          dropTime,
-          DailyQuizMode.MIX,
-        );
-
-        const quiz = compositionResult.dailyQuiz;
-        const questions = compositionResult.questions;
-
-        this.logger.log(
-          `✅ ${dayLabel} quiz created: ${quiz.id} with ${questions.length} questions`,
-        );
-
-        // STEP 2: Generate and upload template
-        this.logger.log(`🎨 Generating CDN template for ${dayLabel}...`);
-
-        const { templateUrl, version } =
-          await this.templateService.buildAndUploadTemplate(
-            quiz,
-            questions,
-            quiz.themePlanJSON as any,
-          );
-
-        // Update quiz with CDN URL
-        await this.dailyQuizRepository.update(quiz.id, {
-          templateCdnUrl: templateUrl,
+        // Create complete quiz with cleanup using the new service
+        const result = await this.quizCreationService.createCompleteQuiz({
+          dropAtUTC: dropTime,
+          mode: DailyQuizMode.MIX,
+          replaceExisting: true, // Always replace existing for testing
+          onTemplateReady: (quiz) => {
+            this.logger.log(
+              `📱 Scheduling push notification for ${dayLabel}...`,
+            );
+            this.jobProcessor.scheduleNotificationForQuiz(quiz);
+            this.logger.log(`✅ ${dayLabel} notification scheduled`);
+          },
         });
 
         this.logger.log(
-          `✅ ${dayLabel} template uploaded: ${templateUrl} (v${version})`,
+          `✅ ${dayLabel} quiz created: ${result.quiz.id} with ${result.questions.length} questions`,
+        );
+        this.logger.log(
+          `✅ ${dayLabel} template uploaded: ${result.templateUrl} (v${result.templateVersion})`,
         );
 
-        // STEP 3: Schedule notification
-        this.logger.log(`📱 Scheduling push notification for ${dayLabel}...`);
-
-        this.jobProcessor.scheduleNotificationForQuiz(quiz);
-
-        this.logger.log(`✅ ${dayLabel} notification scheduled`);
-
         return {
-          quiz,
-          questions,
-          templateUrl,
-          version,
+          quiz: result.quiz,
+          questions: result.questions,
+          templateUrl: result.templateUrl,
+          version: result.templateVersion,
           dropTime,
           timeUntilDrop: isToday
             ? 'AVAILABLE IN 3 MINUTES'

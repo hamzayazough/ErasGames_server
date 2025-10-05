@@ -12,13 +12,14 @@ import {
   DailyQuizMode,
 } from '../database/services/daily-quiz-composer';
 import { NotificationService } from './notification.service';
+import { QuizCreationService } from './quiz-creation';
 
 /**
  * Background job processor for daily quiz operations
  *
  * Handles:
- * - composer:daily (T-60m) - Generate daily quiz questions
- * - warmup:template (T-5m) - Build and upload CDN templates
+ * - daily-quiz-complete (2:00 AM UTC) - Complete quiz creation (composition + template generation)
+ * - template-retry (every 30 min) - Retry failed template generations for resilience
  */
 @Injectable()
 export class DailyQuizJobProcessor {
@@ -35,20 +36,22 @@ export class DailyQuizJobProcessor {
     private readonly templateService: TemplateService,
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly notificationService: NotificationService,
+    private readonly quizCreationService: QuizCreationService,
   ) {
     this.logger.log('DailyQuizJobProcessor service initialized');
   }
 
   /**
-   * Daily quiz composition job
+   * Complete daily quiz creation job
    * Runs every day at 2:00 AM UTC to generate tomorrow's quiz with random drop time (5-8 PM Toronto)
+   * Includes both composition and template generation in a single atomic operation
    */
   @Cron('0 2 * * *', {
-    name: 'composer:daily',
+    name: 'daily-quiz-complete',
     timeZone: 'UTC',
   })
-  async runDailyComposition(): Promise<void> {
-    this.logger.log('Starting daily quiz composition job');
+  async runDailyQuizCreation(): Promise<void> {
+    this.logger.log('Starting complete daily quiz creation job');
 
     try {
       // Calculate tomorrow's drop time with random hour (5-8 PM Toronto)
@@ -68,29 +71,41 @@ export class DailyQuizJobProcessor {
         `🎲 Random drop time selected: ${tomorrow.toISOString()} (${randomHour}:${randomMinute.toString().padStart(2, '0')} Toronto time)`,
       );
 
-      // Check if quiz already exists for tomorrow
-      const existingQuiz = await this.dailyQuizRepository.findOne({
-        where: { dropAtUTC: tomorrow },
-      });
+      // Check if quiz already exists for tomorrow using the new service
+      const existingCheck =
+        await this.quizCreationService.checkExistingQuizForDate(tomorrow);
 
-      if (existingQuiz) {
+      if (existingCheck.exists) {
         this.logger.log(
-          `Quiz already exists for ${tomorrow.toISOString()}, skipping composition`,
+          `Quiz already exists for ${tomorrow.toDateString()} (${existingCheck.quiz!.dropAtUTC.toISOString()}), attempting template generation if needed`,
         );
+
+        // If quiz exists but doesn't have template, try to generate it
+        if (!existingCheck.quiz!.templateCdnUrl) {
+          const quizDetails = await this.quizCreationService.getQuizDetails(
+            existingCheck.quiz!.id,
+          );
+          await this.quizCreationService.generateTemplate(
+            quizDetails.quiz,
+            quizDetails.questions,
+            (quiz) => this.scheduleNotificationForQuiz(quiz), // Only schedule notification when template is ready
+          );
+        }
         return;
       }
 
-      // Compose daily quiz
-      const result = await this.composerService.composeDailyQuiz(
-        tomorrow,
-        DailyQuizMode.MIX, // Default to MIX mode for MVP
-      );
+      // Create complete quiz using the new service with notification callback
+      const result = await this.quizCreationService.createCompleteQuiz({
+        dropAtUTC: tomorrow,
+        mode: DailyQuizMode.MIX,
+        onTemplateReady: (quiz) => this.scheduleNotificationForQuiz(quiz), // Only schedule notification when template is ready
+      });
 
       this.logger.log(
-        `Daily quiz composed successfully: ${result.dailyQuiz.id} with ${result.questions.length} questions`,
+        `🚀 Complete daily quiz creation finished successfully for quiz ${result.quiz.id}`,
       );
     } catch (error) {
-      this.logger.error('Failed to compose daily quiz', error);
+      this.logger.error('Failed in daily quiz creation process', error);
 
       // In production, this would trigger critical alerts:
       // - PagerDuty notification (wakes up engineers at 3 AM)
@@ -99,114 +114,70 @@ export class DailyQuizJobProcessor {
       // - Sentry error tracking for debugging
       //
       // Example production code:
-      // await this.alertingService.sendCriticalAlert('DailyQuizComposition', error, {
+      // await this.alertingService.sendCriticalAlert('DailyQuizCreation', error, {
       //   dropTime: tomorrow.toISOString(),
-      //   quizMode: DailyQuizMode.MIX
+      //   quizMode: DailyQuizMode.MIX,
+      //   quizCreated: !!result?.quiz,
+      //   templateGenerated: !!result?.templateUrl
       // });
-      //
-      // This ensures engineers are immediately notified when daily quiz
-      // creation fails, preventing users from having no quiz to play
     }
   }
 
   /**
-   * Template warmup job
-   * Runs every day at 2:05 AM UTC (5 minutes after daily composition)
-   * Generates templates for newly created quizzes
+   * Template retry job
+   * Runs every 6 hours to retry failed template generations
+   * This provides resilience if template generation fails during main job
    */
-  @Cron('5 2 * * *', {
-    name: 'warmup:template',
+  @Cron('0 */6 * * *', {
+    name: 'template-retry',
     timeZone: 'UTC',
   })
-  async runTemplateWarmup(): Promise<void> {
-    this.logger.log('Starting template warmup job');
+  async runTemplateRetry(): Promise<void> {
+    this.logger.log('Starting template retry job');
 
     try {
-      // Find today's quiz with any drop time (since it's now random)
-      const today = new Date();
-      const startOfDay = new Date(today);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(today);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-
-      // Find quizzes that need template generation and are dropping within the next 10 minutes
-      const tenMinutesFromNow = new Date(today.getTime() + 10 * 60 * 1000);
-
-      const quiz = await this.dailyQuizRepository
+      // Find quizzes without templates that are scheduled for the future
+      const now = new Date();
+      const quizzesNeedingTemplates = await this.dailyQuizRepository
         .createQueryBuilder('quiz')
-        .where('quiz.dropAtUTC > :now', { now: today })
-        .andWhere('quiz.dropAtUTC <= :tenMinutesFromNow', { tenMinutesFromNow })
+        .where('quiz.dropAtUTC > :now', { now })
         .andWhere("quiz.templateCdnUrl IS NULL OR quiz.templateCdnUrl = ''")
         .orderBy('quiz.dropAtUTC', 'ASC')
-        .getOne();
+        .limit(5) // Process up to 5 at a time to avoid overload
+        .getMany();
 
-      if (!quiz) {
-        this.logger.warn(
-          `No quiz found for today that needs template generation`,
-        );
+      if (quizzesNeedingTemplates.length === 0) {
+        this.logger.log('No quizzes found that need template generation');
         return;
-      }
-
-      // Check if template is already uploaded (URL will only be set after successful upload)
-      if (quiz.templateCdnUrl) {
-        this.logger.log(
-          `Template already uploaded for quiz ${quiz.id}: ${quiz.templateCdnUrl}`,
-        );
-        return;
-      }
-
-      // Get quiz questions
-      const quizQuestions = await this.dailyQuizQuestionRepository.find({
-        where: { dailyQuiz: { id: quiz.id } },
-        relations: ['question'],
-      });
-
-      if (quizQuestions.length === 0) {
-        this.logger.error(`No questions found for quiz ${quiz.id}`);
-        return;
-      }
-
-      const questions = quizQuestions.map((qq) => qq.question);
-
-      // Build and upload template
-      const { templateUrl, version } =
-        await this.templateService.buildAndUploadTemplate(
-          quiz,
-          questions,
-          quiz.themePlanJSON as any, // Type assertion for JSON field
-        );
-
-      // Update the quiz record with the actual CDN URL after successful upload
-      await this.dailyQuizRepository.update(quiz.id, {
-        templateCdnUrl: templateUrl,
-      });
-
-      // Schedule notification for exact drop time (OPTIMAL APPROACH)
-      const updatedQuiz = await this.dailyQuizRepository.findOne({
-        where: { id: quiz.id },
-      });
-      if (updatedQuiz) {
-        this.scheduleNotificationForQuiz(updatedQuiz);
       }
 
       this.logger.log(
-        `Template uploaded successfully for quiz ${quiz.id}: ${templateUrl} (v${version})`,
+        `Found ${quizzesNeedingTemplates.length} quizzes needing template generation`,
       );
-    } catch (error) {
-      this.logger.error('Failed to build template', error);
 
-      // In production, this would trigger critical alerts:
-      // - Engineers get immediately notified via PagerDuty
-      // - Slack alert: "Template upload failed - users won't be able to play quiz"
-      // - DataDog dashboard shows template failure spike
-      // - Automatic retry mechanism could be triggered
-      //
-      // Example production code:
-      // await this.alertingService.sendCriticalAlert('TemplateWarmup', error, {
-      //   quizId: quiz.id,
-      //   dropTime: quiz.dropAtUTC.toISOString(),
-      //   questionsCount: questions.length
-      // });
+      // Process each quiz using the new service
+      for (const quiz of quizzesNeedingTemplates) {
+        try {
+          const quizDetails = await this.quizCreationService.getQuizDetails(
+            quiz.id,
+          );
+          await this.quizCreationService.generateTemplate(
+            quizDetails.quiz,
+            quizDetails.questions,
+            (quiz) => this.scheduleNotificationForQuiz(quiz), // Only schedule notification when template is ready
+          );
+
+          this.logger.log(`✅ Template generated for quiz ${quiz.id}`);
+        } catch (error) {
+          this.logger.error(
+            `Failed to generate template for quiz ${quiz.id}`,
+            error,
+          );
+          // Continue with next quiz even if this one fails
+        }
+      }
+    } catch (error) {
+      this.logger.error('Failed in template retry job', error);
     }
   }
 
@@ -221,6 +192,20 @@ export class DailyQuizJobProcessor {
     if (quiz.notificationSent || quiz.dropAtUTC <= new Date()) {
       this.logger.log(`Skipping notification scheduling for quiz ${quiz.id}`);
       return;
+    }
+
+    // Check if notification job already exists (prevent duplicates)
+    try {
+      const existingJob = this.schedulerRegistry.getCronJob(jobName);
+      if (existingJob) {
+        this.logger.log(
+          `Notification already scheduled for quiz ${quiz.id}, skipping duplicate`,
+        );
+        return;
+      }
+    } catch (error) {
+      console.log("Job doesn't exist yet. We are gonna create it", error);
+      // Job doesn't exist, which is fine - we'll create it
     }
 
     // Create cron expression for exact drop time
@@ -319,10 +304,10 @@ export class DailyQuizJobProcessor {
   }
 
   /**
-   * Manual trigger for daily composition (for testing/admin)
+   * Manual trigger for complete daily quiz creation (for testing/admin)
    * If no dropAtUTC provided, generates one with random time for tomorrow
    */
-  async triggerDailyComposition(dropAtUTC?: Date): Promise<void> {
+  async triggerDailyQuizCreation(dropAtUTC?: Date): Promise<void> {
     let targetDropTime = dropAtUTC;
 
     if (!targetDropTime) {
@@ -343,67 +328,48 @@ export class DailyQuizJobProcessor {
     }
 
     this.logger.log(
-      `Manually triggering composition for ${targetDropTime.toISOString()}`,
+      `Manually triggering complete quiz creation for ${targetDropTime.toISOString()}`,
     );
 
-    const result = await this.composerService.composeDailyQuiz(
-      targetDropTime,
-      DailyQuizMode.MIX,
-    );
+    const result = await this.quizCreationService.createCompleteQuiz({
+      dropAtUTC: targetDropTime,
+      mode: DailyQuizMode.MIX,
+      onTemplateReady: (quiz) => this.scheduleNotificationForQuiz(quiz), // Only schedule notification when template is ready
+    });
 
     this.logger.log(
-      `Manual composition completed: ${result.dailyQuiz.id} with ${result.questions.length} questions`,
+      `Manual complete quiz creation finished for ${result.quiz.id}`,
     );
   }
 
   /**
-   * Manual trigger for template warmup (for testing/admin)
+   * Manual trigger for template generation (for testing/admin)
    */
-  async triggerTemplateWarmup(quizId: string): Promise<void> {
-    this.logger.log(`Manually triggering template warmup for quiz ${quizId}`);
-
-    const quiz = await this.dailyQuizRepository.findOne({
-      where: { id: quizId },
-    });
-
-    if (!quiz) {
-      throw new Error(`Quiz not found: ${quizId}`);
-    }
-
-    const quizQuestions = await this.dailyQuizQuestionRepository.find({
-      where: { dailyQuiz: { id: quiz.id } },
-      relations: ['question'],
-    });
-
-    const questions = quizQuestions.map((qq) => qq.question);
-
-    const { templateUrl, version } =
-      await this.templateService.buildAndUploadTemplate(
-        quiz,
-        questions,
-        quiz.themePlanJSON as any,
-      );
-
-    // Update the quiz record with the actual CDN URL after successful upload
-    await this.dailyQuizRepository.update(quiz.id, {
-      templateCdnUrl: templateUrl,
-    });
-
+  async triggerTemplateGeneration(quizId: string): Promise<void> {
     this.logger.log(
-      `Manual template warmup completed: ${templateUrl} (v${version})`,
+      `Manually triggering template generation for quiz ${quizId}`,
     );
+
+    const quizDetails = await this.quizCreationService.getQuizDetails(quizId);
+    await this.quizCreationService.generateTemplate(
+      quizDetails.quiz,
+      quizDetails.questions,
+      (quiz) => this.scheduleNotificationForQuiz(quiz), // Only schedule notification when template is ready
+    );
+
+    this.logger.log(`Manual template generation completed for quiz ${quizId}`);
   }
 
   /**
    * Health check for scheduled jobs
    */
   getJobStatus(): {
-    composer: {
+    dailyQuizCreation: {
       lastRun: string | null;
       nextRun: string;
       status: string;
     };
-    template: {
+    templateRetry: {
       lastRun: string | null;
       nextRun: string;
       status: string;
@@ -414,20 +380,20 @@ export class DailyQuizJobProcessor {
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setUTCHours(2, 0, 0, 0); // Next composition time (2 AM UTC)
+    tomorrow.setUTCHours(2, 0, 0, 0); // Next daily quiz creation time (2 AM UTC)
 
-    const nextTemplateCheck = new Date(now);
-    nextTemplateCheck.setMinutes(Math.ceil(now.getMinutes() / 5) * 5, 0, 0); // Next 5-minute interval
+    const nextTemplateRetry = new Date(now);
+    nextTemplateRetry.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0); // Next 30-minute interval
 
     return {
-      composer: {
+      dailyQuizCreation: {
         lastRun: null, // Would track actual last run in production
         nextRun: tomorrow.toISOString(),
         status: 'scheduled',
       },
-      template: {
+      templateRetry: {
         lastRun: null, // Would track actual last run in production
-        nextRun: nextTemplateCheck.toISOString(),
+        nextRun: nextTemplateRetry.toISOString(),
         status: 'scheduled',
       },
     };
