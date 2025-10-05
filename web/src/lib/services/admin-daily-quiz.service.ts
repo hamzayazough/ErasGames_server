@@ -6,6 +6,7 @@ import type {
   QuestionAvailability,
   DailyQuiz,
   JobStatus,
+  Question,
 } from "../types/api.types";
 
 export class AdminDailyQuizService {
@@ -186,6 +187,13 @@ export class AdminDailyQuizService {
       success: boolean;
       message: string;
     }>(`${this.baseEndpoint}/delete`, request);
+  }
+
+  /**
+   * Get all available questions for selection
+   */
+  async getAllQuestions() {
+    return httpService.get<Question[]>(`/questions`);
   }
 }
 

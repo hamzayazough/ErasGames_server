@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/auth.context';
 import { adminDailyQuizService } from '@/lib/services/admin-daily-quiz.service';
 import type { DailyQuiz, QuestionAvailability, JobStatus } from '@/lib/types/api.types';
+import QuizScheduleCard from '@/components/daily-quiz/QuizScheduleCard';
+import QuizDetailsModal from '@/components/daily-quiz/QuizDetailsModal';
+import CreateQuizModal from '@/components/daily-quiz/CreateQuizModal';
+import EditQuizModal from '@/components/daily-quiz/EditQuizModal';
 
 interface QuizScheduleItem {
   day: number;
@@ -22,6 +26,12 @@ export default function DailyQuizPage() {
   const [availability, setAvailability] = useState<QuestionAvailability | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [activeTab, setActiveTab] = useState<'schedule' | 'compose' | 'monitoring'>('schedule');
+  
+  // Modal states
+  const [selectedQuizForDetails, setSelectedQuizForDetails] = useState<DailyQuiz | null>(null);
+  const [selectedQuizForEdit, setSelectedQuizForEdit] = useState<DailyQuiz | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createTargetDate, setCreateTargetDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -111,29 +121,23 @@ export default function DailyQuizPage() {
   };
 
   const handleCreateQuiz = (targetDate: Date) => {
-    // TODO: Implement modal for creating quiz
-    alert(`Create quiz for ${targetDate.toDateString()}`);
+    setCreateTargetDate(targetDate);
+    setCreateModalOpen(true);
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    }).format(date);
+  const handleViewDetails = (quiz: DailyQuiz) => {
+    setSelectedQuizForDetails(quiz);
   };
 
-  const getQuizStatusColor = (quiz: DailyQuiz | null) => {
-    if (!quiz) return 'bg-gray-100 text-gray-600';
-    if (quiz.status === 'ready') return 'bg-green-100 text-green-800';
-    return 'bg-yellow-100 text-yellow-800';
+  const handleEditQuiz = (quiz: DailyQuiz) => {
+    setSelectedQuizForEdit(quiz);
   };
 
-  const getQuizStatusText = (quiz: DailyQuiz | null) => {
-    if (!quiz) return 'Not Created';
-    if (quiz.status === 'ready') return 'Ready';
-    return 'Pending Template';
+  const handleModalSuccess = () => {
+    refreshQuizSchedule();
   };
+
+
 
   if (loading || isLoading) {
     return (
@@ -217,67 +221,17 @@ export default function DailyQuizPage() {
             <div className="p-6">
               <div className="grid gap-4">
                 {quizSchedule.map((item) => (
-                  <div
+                  <QuizScheduleCard
                     key={item.day}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-gray-900">{item.label}</div>
-                        <div className="text-sm text-gray-500">{formatDate(item.date)}</div>
-                      </div>
-                      <div className="h-8 w-px bg-gray-200"></div>
-                      <div>
-                        {item.loading ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                            <span className="text-sm text-gray-600">Loading...</span>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full ${getQuizStatusColor(
-                                  item.quiz
-                                )}`}
-                              >
-                                {getQuizStatusText(item.quiz)}
-                              </span>
-                              {item.quiz && (
-                                <span className="text-sm text-gray-600">
-                                  {item.quiz.questionCount} questions
-                                </span>
-                              )}
-                            </div>
-                            {item.quiz && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                ID: {item.quiz.id} | Mode: {item.quiz.mode}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      {item.quiz ? (
-                        <>
-                          <button className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors">
-                            View Details
-                          </button>
-                          <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
-                            Edit
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => handleCreateQuiz(item.date)}
-                          className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                        >
-                          Create Quiz
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                    day={item.day}
+                    label={item.label}
+                    date={item.date}
+                    quiz={item.quiz}
+                    loading={item.loading}
+                    onViewDetails={handleViewDetails}
+                    onEdit={handleEditQuiz}
+                    onCreate={handleCreateQuiz}
+                  />
                 ))}
               </div>
             </div>
@@ -371,6 +325,31 @@ export default function DailyQuizPage() {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <QuizDetailsModal
+        quiz={selectedQuizForDetails}
+        isOpen={!!selectedQuizForDetails}
+        onClose={() => setSelectedQuizForDetails(null)}
+        onEdit={handleEditQuiz}
+      />
+
+      <CreateQuizModal
+        isOpen={createModalOpen}
+        targetDate={createTargetDate}
+        onClose={() => {
+          setCreateModalOpen(false);
+          setCreateTargetDate(undefined);
+        }}
+        onSuccess={handleModalSuccess}
+      />
+
+      <EditQuizModal
+        quiz={selectedQuizForEdit}
+        isOpen={!!selectedQuizForEdit}
+        onClose={() => setSelectedQuizForEdit(null)}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }

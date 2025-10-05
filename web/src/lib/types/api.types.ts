@@ -51,13 +51,29 @@ export interface Season {
   updatedAt: string;
 }
 
+// Question as returned by quiz details API
+export interface QuizQuestion {
+  id: string;
+  questionType: string;
+  themes: string[];
+  difficulty: string;
+  prompt: {
+    task: string;
+    [key: string]: unknown;
+  };
+  approved: boolean;
+  disabled: boolean;
+  exposureCount: number;
+  lastUsedAt: string | null;
+}
+
 export interface DailyQuiz {
   id: string;
   dropAtUTC: string;
   mode: string;
   templateCdnUrl?: string;
   createdAt: string;
-  questions: Question[];
+  questions: QuizQuestion[];
 }
 
 // Admin Daily Quiz types

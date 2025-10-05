@@ -314,6 +314,7 @@ export class AdminService {
           },
           questions: questions.map((q) => ({
             id: q.id,
+            questionType: q.questionType,
             themes: q.themesJSON,
             difficulty: q.difficulty,
             prompt:

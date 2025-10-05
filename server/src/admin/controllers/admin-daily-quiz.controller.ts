@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
+  Delete,
   Body,
   Logger,
   Query,
@@ -227,9 +229,9 @@ export class AdminDailyQuizController {
 
   /**
    * 🕒 Update quiz drop time
-   * POST /admin/daily-quiz/update-drop-time
+   * PATCH /admin/daily-quiz/update-drop-time
    */
-  @Post('update-drop-time')
+  @Patch('update-drop-time')
   async updateQuizDropTime(
     @Body()
     request: {
@@ -242,9 +244,9 @@ export class AdminDailyQuizController {
 
   /**
    * 📝 Update quiz questions
-   * POST /admin/daily-quiz/update-questions
+   * PATCH /admin/daily-quiz/update-questions
    */
-  @Post('update-questions')
+  @Patch('update-questions')
   async updateQuizQuestions(
     @Body()
     request: {
@@ -280,9 +282,9 @@ export class AdminDailyQuizController {
 
   /**
    * 🗑️ Delete a quiz (only if not yet dropped)
-   * POST /admin/daily-quiz/delete (using POST for consistency with other endpoints)
+   * DELETE /admin/daily-quiz/delete
    */
-  @Post('delete')
+  @Delete('delete')
   async deleteQuiz(
     @Body()
     request: {
