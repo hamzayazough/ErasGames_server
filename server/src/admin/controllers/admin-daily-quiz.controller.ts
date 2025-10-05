@@ -13,13 +13,13 @@ import { AdminService } from '../../services/quiz-creation/admin.service';
 
 /**
  * 🔧 Admin Daily Quiz Controller
- * 
+ *
  * Centralized admin controller for all daily quiz operations including:
  * - Manual quiz composition and monitoring
- * - System health validation and statistics  
+ * - System health validation and statistics
  * - Testing endpoints for React Native development
  * - Job management and workflow testing
- * 
+ *
  * This controller consolidates functionality from both the original admin controller
  * and the daily quiz test controller into a single comprehensive admin interface.
  */
@@ -28,9 +28,7 @@ import { AdminService } from '../../services/quiz-creation/admin.service';
 export class AdminDailyQuizController {
   private readonly logger = new Logger(AdminDailyQuizController.name);
 
-  constructor(
-    private readonly adminService: AdminService,
-  ) {}
+  constructor(private readonly adminService: AdminService) {}
 
   // ========== MANUAL COMPOSITION ENDPOINTS ==========
 
@@ -161,13 +159,13 @@ export class AdminDailyQuizController {
   /**
    * 🚀 Create Today's and Tomorrow's Quiz for Testing
    * POST /admin/daily-quiz/create-todays-quiz
-   * 
+   *
    * This endpoint mimics the daily quiz job crons to:
    * 1. Create today's quiz with drop time in 5 minutes
    * 2. Create tomorrow's quiz with standard drop time
    * 3. Generate and upload CDN templates for both
    * 4. Schedule notifications for both quizzes
-   * 
+   *
    * Perfect for testing the React Native app with real quiz data!
    */
   @Post('create-todays-quiz')

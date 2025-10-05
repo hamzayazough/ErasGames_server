@@ -43,7 +43,7 @@ export interface CompositionLogsQuery {
 
 /**
  * 🔧 Admin Service
- * 
+ *
  * Centralized service for all admin operations related to daily quiz management.
  * This service consolidates logic from multiple controllers and provides a clean
  * interface for admin functionality including manual composition, testing, monitoring,
@@ -518,13 +518,13 @@ export class AdminService {
 
   /**
    * 🚀 Create Today's and Tomorrow's Quiz for Testing
-   * 
+   *
    * This method mimics the daily quiz job crons to:
    * 1. Create today's quiz with drop time in 5 minutes
    * 2. Create tomorrow's quiz with standard drop time
    * 3. Generate and upload CDN templates for both
    * 4. Schedule notifications for both quizzes
-   * 
+   *
    * Perfect for testing the React Native app with real quiz data!
    */
   async createTodaysQuiz() {

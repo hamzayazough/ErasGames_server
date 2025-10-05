@@ -15,7 +15,7 @@ import { DailyQuizJobProcessor } from '../services/daily-quiz-job-processor.serv
  *
  * Self-contained module for testing the complete daily quiz workflow:
  * - QuizSimulationController: 10-minute simulation environment
- * 
+ *
  * Note: Daily quiz testing endpoints have been moved to AdminDailyQuizController
  * in the admin module for better organization and security.
  */
