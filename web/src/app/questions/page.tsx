@@ -158,6 +158,17 @@ export default function QuestionsPage() {
     }
   };
 
+  const handleEnableQuestion = async (questionId: string) => {
+    try {
+      await questionService.enableQuestion(questionId);
+      // Refresh the data
+      await fetchFilteredQuestions();
+      await fetchData(); // Refresh stats
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to enable question');
+    }
+  };
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -382,11 +393,15 @@ export default function QuestionsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          question.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {question.approved ? 'Approved' : 'Pending'}
-                        </span>
+                        {question.disabled ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Disabled
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Enabled
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
@@ -419,7 +434,7 @@ export default function QuestionsPage() {
                         >
                           View
                         </button>
-                        {!question.approved && (
+                        {!question.approved && !question.disabled && (
                           <button
                             onClick={() => handleApproveQuestion(question.id)}
                             className="text-green-600 hover:text-green-900"
@@ -427,12 +442,20 @@ export default function QuestionsPage() {
                             Approve
                           </button>
                         )}
-                        {question.approved && (
+                        {question.approved && !question.disabled && (
                           <button
                             onClick={() => handleDisableQuestion(question.id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             Disable
+                          </button>
+                        )}
+                        {question.disabled && (
+                          <button
+                            onClick={() => handleEnableQuestion(question.id)}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            Enable
                           </button>
                         )}
                       </td>
