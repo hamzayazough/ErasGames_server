@@ -97,6 +97,18 @@ export class AdminDailyQuizService {
       mode,
     });
   }
+
+  /**
+   * Get quiz for a specific number of days from now
+   * @param days - Number of days from today (0 = today, 1 = tomorrow, etc.)
+   */
+  async getQuizByDaysFromNow(days: number = 0) {
+    return httpService.get<{
+      success: boolean;
+      data: DailyQuiz | null;
+      message: string;
+    }>(`${this.baseEndpoint}/by-days?days=${days}`);
+  }
 }
 
 export const adminDailyQuizService = new AdminDailyQuizService();

@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Between } from 'typeorm';
 import { AdminGuard } from '../../guards/admin.guard';
 import {
   DailyQuizComposerService,
@@ -16,6 +18,7 @@ import {
   DailyQuizMode,
 } from '../../database/services/daily-quiz-composer';
 import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.service';
+import { DailyQuiz } from '../../database/entities/daily-quiz.entity';
 
 /**
  * Admin controller for manual daily quiz composition and monitoring
@@ -34,6 +37,8 @@ export class AdminDailyQuizController {
   constructor(
     private readonly composerService: DailyQuizComposerService,
     private readonly jobProcessor: DailyQuizJobProcessor,
+    @InjectRepository(DailyQuiz)
+    private readonly dailyQuizRepository: Repository<DailyQuiz>,
   ) {}
 
   /**
@@ -207,6 +212,100 @@ export class AdminDailyQuizController {
 
       throw new HttpException(
         'Health check failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Get quiz for a specific number of days from now
+   * GET /admin/daily-quiz/by-days?days=0 (0=today, 1=tomorrow, etc.)
+   */
+  @Get('by-days')
+  async getQuizByDaysFromNow(@Query('days') days: string = '0') {
+    try {
+      const daysNumber = parseInt(days);
+
+      if (isNaN(daysNumber) || daysNumber < 0) {
+        throw new HttpException(
+          'Invalid days parameter. Must be a non-negative integer.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Calculate target date
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + daysNumber);
+
+      // Set to start of day to search for any quiz on that date
+      const startOfDay = new Date(targetDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(targetDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      this.logger.log(
+        `Searching for quiz on ${targetDate.toDateString()} (${daysNumber} days from now)`,
+      );
+
+      // Find quiz for the target date
+      const quiz = await this.dailyQuizRepository.findOne({
+        where: {
+          dropAtUTC: Between(startOfDay, endOfDay),
+        },
+      });
+
+      if (!quiz) {
+        const dateLabel =
+          daysNumber === 0
+            ? 'today'
+            : daysNumber === 1
+              ? 'tomorrow'
+              : `in ${daysNumber} days`;
+
+        return {
+          success: false,
+          data: null,
+          message: `No quiz found for ${dateLabel} (${targetDate.toDateString()})`,
+        };
+      }
+
+      // Get question count by querying the daily_quiz_question table
+      const questionCount = await this.dailyQuizRepository.manager
+        .query(
+          'SELECT COUNT(*) as count FROM daily_quiz_question WHERE daily_quiz_id = $1',
+          [quiz.id],
+        )
+        .then((result) => parseInt(result[0]?.count || '0'));
+
+      return {
+        success: true,
+        data: {
+          id: quiz.id,
+          dropAtUTC: quiz.dropAtUTC.toISOString(),
+          mode: quiz.mode,
+          themePlan: quiz.themePlanJSON,
+          questionCount: questionCount,
+          templateCdnUrl: quiz.templateCdnUrl,
+          templateVersion: quiz.templateVersion,
+          notificationSent: quiz.notificationSent,
+          createdAt: quiz.createdAt.toISOString(),
+          isReady: !!quiz.templateCdnUrl,
+          status: quiz.templateCdnUrl ? 'ready' : 'pending_template',
+        },
+        message: `Quiz found for ${targetDate.toDateString()}`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get quiz by days: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        `Failed to retrieve quiz: ${error instanceof Error ? error.message : 'Unknown error'}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

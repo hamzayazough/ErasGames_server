@@ -162,3 +162,74 @@ export interface QuestionStats {
   byType: Record<string, number>;
   byDifficulty: Record<string, number>;
 }
+
+// Daily Quiz types
+export interface DailyQuiz {
+  id: string;
+  dropAtUTC: string;
+  mode: string;
+  themePlan: Record<string, unknown>;
+  questionCount: number;
+  templateCdnUrl: string;
+  templateVersion: number;
+  notificationSent: boolean;
+  createdAt: string;
+  isReady: boolean;
+  status: "ready" | "pending_template";
+}
+
+export interface ComposeDailyQuizRequest {
+  dropAtUTC: string;
+  mode?: string;
+  config?: Record<string, unknown>;
+}
+
+export interface ComposeDailyQuizResponse {
+  success: boolean;
+  data?: {
+    quizId: string;
+    questionCount: number;
+    template: {
+      version: number;
+      cdnUrl: string;
+      size: number;
+    };
+    composition: {
+      relaxationLevel: number;
+      themeDistribution: Record<string, number>;
+      difficultyActual: Record<string, number>;
+      warnings: string[];
+      performanceMs: number;
+    };
+  };
+  message: string;
+}
+
+export interface QuestionAvailability {
+  success: boolean;
+  data: {
+    totalQuizzes: number;
+    averageRelaxationLevel: number;
+    themeDistribution: Record<string, number>;
+    recentWarnings: string[];
+    byDifficulty: Record<string, number>;
+  };
+  message: string;
+}
+
+export interface JobStatus {
+  success: boolean;
+  data: {
+    composer: {
+      lastRun: string | null;
+      nextRun: string;
+      status: string;
+    };
+    template: {
+      lastRun: string | null;
+      nextRun: string;
+      status: string;
+    };
+  };
+  message: string;
+}
