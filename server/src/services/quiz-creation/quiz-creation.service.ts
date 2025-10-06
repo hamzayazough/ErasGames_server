@@ -155,6 +155,8 @@ export class QuizCreationService {
     const quiz = this.dailyQuizRepository.create({
       dropAtUTC,
       mode,
+      templateVersion: 1, // Default template version for custom quizzes
+      templateCdnUrl: '', // Will be populated when template is generated
       // Set default theme plan - in real implementation this might be customizable
       themePlanJSON: {
         background: 'default',
