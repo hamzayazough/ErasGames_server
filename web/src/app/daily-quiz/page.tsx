@@ -25,7 +25,7 @@ export default function DailyQuizPage() {
   const [quizSchedule, setQuizSchedule] = useState<QuizScheduleItem[]>([]);
   const [availability, setAvailability] = useState<QuestionAvailability | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
-  const [activeTab, setActiveTab] = useState<'schedule' | 'compose' | 'monitoring'>('schedule');
+  const [activeTab, setActiveTab] = useState<'schedule' | 'monitoring'>('schedule');
   
   // Modal states
   const [selectedQuizForDetails, setSelectedQuizForDetails] = useState<DailyQuiz | null>(null);
@@ -187,16 +187,7 @@ export default function DailyQuizPage() {
               >
                 Quiz Schedule
               </button>
-              <button
-                onClick={() => setActiveTab('compose')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'compose'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Compose Quiz
-              </button>
+
               <button
                 onClick={() => setActiveTab('monitoring')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -238,19 +229,7 @@ export default function DailyQuizPage() {
           </div>
         )}
 
-        {activeTab === 'compose' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Compose New Quiz</h2>
-            <p className="text-gray-600 mb-6">Create a new daily quiz for a specific date and time</p>
-            
-            {/* Coming soon placeholder */}
-            <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
-              <div className="text-4xl mb-4">🎯</div>
-              <p className="text-gray-600">Quiz composition interface coming soon</p>
-              <p className="text-sm text-gray-500 mt-2">Will include date picker, mode selection, and question configuration</p>
-            </div>
-          </div>
-        )}
+
 
         {activeTab === 'monitoring' && (
           <div className="space-y-6">
