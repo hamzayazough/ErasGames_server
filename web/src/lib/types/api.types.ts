@@ -236,12 +236,12 @@ export interface QuestionAvailability {
 export interface JobStatus {
   success: boolean;
   data: {
-    composer: {
+    dailyQuizCreation: {
       lastRun: string | null;
       nextRun: string;
       status: string;
     };
-    template: {
+    templateRetry: {
       lastRun: string | null;
       nextRun: string;
       status: string;

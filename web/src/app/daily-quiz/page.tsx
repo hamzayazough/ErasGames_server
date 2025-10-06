@@ -274,30 +274,34 @@ export default function DailyQuizPage() {
             )}
 
             {/* Job Status */}
-            {jobStatus && (
+            {jobStatus && jobStatus.data && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-4">System Jobs</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 mb-2">Daily Composer</h3>
-                    <div className="space-y-2 text-sm">
-                      <div>Status: <span className="font-medium">{jobStatus.data.composer.status}</span></div>
-                      <div>Next Run: <span className="text-gray-600">{new Date(jobStatus.data.composer.nextRun).toLocaleString()}</span></div>
-                      {jobStatus.data.composer.lastRun && (
-                        <div>Last Run: <span className="text-gray-600">{new Date(jobStatus.data.composer.lastRun).toLocaleString()}</span></div>
-                      )}
+                  {jobStatus.data.dailyQuizCreation && (
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-medium text-gray-900 mb-2">Daily Quiz Creation</h3>
+                      <div className="space-y-2 text-sm">
+                        <div>Status: <span className="font-medium capitalize">{jobStatus.data.dailyQuizCreation.status}</span></div>
+                        <div>Next Run: <span className="text-gray-600">{new Date(jobStatus.data.dailyQuizCreation.nextRun).toLocaleString()}</span></div>
+                        {jobStatus.data.dailyQuizCreation.lastRun && (
+                          <div>Last Run: <span className="text-gray-600">{new Date(jobStatus.data.dailyQuizCreation.lastRun).toLocaleString()}</span></div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 mb-2">Template Builder</h3>
-                    <div className="space-y-2 text-sm">
-                      <div>Status: <span className="font-medium">{jobStatus.data.template.status}</span></div>
-                      <div>Next Run: <span className="text-gray-600">{new Date(jobStatus.data.template.nextRun).toLocaleString()}</span></div>
-                      {jobStatus.data.template.lastRun && (
-                        <div>Last Run: <span className="text-gray-600">{new Date(jobStatus.data.template.lastRun).toLocaleString()}</span></div>
-                      )}
+                  )}
+                  {jobStatus.data.templateRetry && (
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-medium text-gray-900 mb-2">Template Retry</h3>
+                      <div className="space-y-2 text-sm">
+                        <div>Status: <span className="font-medium capitalize">{jobStatus.data.templateRetry.status}</span></div>
+                        <div>Next Run: <span className="text-gray-600">{new Date(jobStatus.data.templateRetry.nextRun).toLocaleString()}</span></div>
+                        {jobStatus.data.templateRetry.lastRun && (
+                          <div>Last Run: <span className="text-gray-600">{new Date(jobStatus.data.templateRetry.lastRun).toLocaleString()}</span></div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
