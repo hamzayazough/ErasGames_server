@@ -7,6 +7,7 @@ import {
   Body,
   Logger,
   Query,
+  Param,
   UseGuards,
 } from '@nestjs/common';
 import { AdminGuard } from '../../guards/admin.guard';
@@ -282,15 +283,10 @@ export class AdminDailyQuizController {
 
   /**
    * 🗑️ Delete a quiz (only if not yet dropped)
-   * DELETE /admin/daily-quiz/delete
+   * DELETE /admin/daily-quiz/delete/:quizId
    */
-  @Delete('delete')
-  async deleteQuiz(
-    @Body()
-    request: {
-      quizId: string;
-    },
-  ) {
-    return await this.adminService.deleteQuiz(request.quizId);
+  @Delete('delete/:quizId')
+  async deleteQuiz(@Param('quizId') quizId: string) {
+    return await this.adminService.deleteQuiz(quizId);
   }
 }

@@ -186,7 +186,7 @@ export class AdminDailyQuizService {
     return httpService.delete<{
       success: boolean;
       message: string;
-    }>(`${this.baseEndpoint}/delete`, request);
+    }>(`${this.baseEndpoint}/delete/${request.quizId}`);
   }
 
   /**
