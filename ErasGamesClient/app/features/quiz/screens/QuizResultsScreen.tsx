@@ -33,17 +33,21 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   const [displayScore, setDisplayScore] = useState(0);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [timeLeft, setTimeLeft] = useState('23:45:12');
+  const [animatingScores, setAnimatingScores] = useState(false);
+  const [currentUserAnimatedScore, setCurrentUserAnimatedScore] = useState(currentUser?.totalScore || 0);
+  const [rankImprovement, setRankImprovement] = useState(0);
   
   // Ranking data
   const hasRankingData = ranking && ranking.rankingContext && ranking.rankingContext.length > 0;
   
   // Get actual leaderboard data from API response
-  const leaderboardData = hasRankingData 
+  const allLeaderboardData = hasRankingData 
     ? ranking.rankingContext.map((player: any) => ({
         id: player.userId,
         username: player.handle || player.name || 'Anonymous',
         totalScore: player.totalPoints || 0,
-        avatar: `https://i.pravatar.cc/150?u=${player.userId}`, // Use userId for consistent avatars
+        newScore: player.totalPoints + (accPoints || 0), // Score after this round
+        avatar: `https://i.pravatar.cc/150?u=${player.userId}`,
         isCurrentUser: player.isCurrentUser || false,
         rank: player.rank || 0,
         country: player.country || null
@@ -51,7 +55,23 @@ export default function QuizResultsScreen({navigation, route}: Props) {
     : [];
   
   // Find current user from leaderboard data
-  const currentUser = leaderboardData.find((player: any) => player.isCurrentUser) || null;
+  const currentUser = allLeaderboardData.find((player: any) => player.isCurrentUser) || null;
+  
+  // Calculate contextual leaderboard (current user + 5 above + 5 below)
+  const getContextualLeaderboard = () => {
+    if (!currentUser || allLeaderboardData.length === 0) return allLeaderboardData.slice(0, 10);
+    
+    const currentRank = currentUser.rank;
+    const startRank = Math.max(1, currentRank - 5);
+    const endRank = currentRank + 5;
+    
+    // Filter players within the rank range and sort by rank
+    return allLeaderboardData
+      .filter(player => player.rank >= startRank && player.rank <= endRank)
+      .sort((a, b) => a.rank - b.rank);
+  };
+  
+  const leaderboardData = getContextualLeaderboard();
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -77,6 +97,10 @@ export default function QuizResultsScreen({navigation, route}: Props) {
         // Show leaderboard after score animation
         setTimeout(() => {
           setShowLeaderboard(true);
+          // Start animating the score increase in leaderboard
+          if (currentUser && accPoints > 0) {
+            animateScoreIncrease();
+          }
         }, 500);
       });
 
@@ -112,6 +136,49 @@ export default function QuizResultsScreen({navigation, route}: Props) {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Animate score increase in leaderboard
+  const animateScoreIncrease = () => {
+    if (!currentUser || !accPoints) return;
+    
+    setAnimatingScores(true);
+    const startScore = currentUser.totalScore;
+    const endScore = currentUser.newScore;
+    const duration = 2000; // 2 seconds
+    const steps = 60; // 60 fps
+    const increment = (endScore - startScore) / steps;
+    
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      const newScore = startScore + (increment * currentStep);
+      setCurrentUserAnimatedScore(Math.floor(newScore));
+      
+      if (currentStep >= steps) {
+        clearInterval(interval);
+        setCurrentUserAnimatedScore(endScore);
+        setAnimatingScores(false);
+        // Check if user moved up in ranking
+        checkRankImprovement();
+      }
+    }, duration / steps);
+  };
+
+  // Check if user's new score would move them up in ranking
+  const checkRankImprovement = () => {
+    if (!currentUser) return;
+    
+    const newScore = currentUser.newScore;
+    const playersAbove = allLeaderboardData.filter(p => 
+      p.rank < currentUser.rank && p.totalScore < newScore
+    );
+    
+    if (playersAbove.length > 0) {
+      setRankImprovement(playersAbove.length);
+      // Show celebration animation
+      setTimeout(() => setRankImprovement(0), 3000); // Clear after 3 seconds
+    }
+  };
 
   const getScoreMessage = () => {
     if (finalScore === 0) return "Better luck next time! 🎯";
@@ -231,8 +298,20 @@ export default function QuizResultsScreen({navigation, route}: Props) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.leaderboardTitle, { color: theme.colors.text }]}>
-              Daily Leaderboard
+              {ranking?.seasonInfo?.displayName || 'Season Leaderboard'}
             </Text>
+            {currentUser && (
+              <View style={styles.userRankContainer}>
+                <Text style={[styles.userRankInfo, { color: theme.colors.textSecondary }]}>
+                  Your Rank: #{currentUser.rank} • {currentUser.totalScore.toLocaleString()} pts
+                </Text>
+                {rankImprovement > 0 && (
+                  <Text style={[styles.rankImprovementText, { color: theme.colors.success || '#4CAF50' }]}>
+                    🎉 You'd move up {rankImprovement} position{rankImprovement > 1 ? 's' : ''}!
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
           
           {/* Player Score Section */}
@@ -287,13 +366,23 @@ export default function QuizResultsScreen({navigation, route}: Props) {
                       </Text>
                     )}
                   </View>
-                  <Text style={[
-                    styles.playerScore,
-                    { color: theme.colors.text },
-                    player.isCurrentUser && [styles.currentPlayerScore, { color: theme.colors.primary }]
-                  ]}>
-                    {player.totalScore.toLocaleString()}
-                  </Text>
+                  <View style={styles.scoreContainer}>
+                    <Text style={[
+                      styles.playerScore,
+                      { color: theme.colors.text },
+                      player.isCurrentUser && [styles.currentPlayerScore, { color: theme.colors.primary }]
+                    ]}>
+                      {player.isCurrentUser && animatingScores 
+                        ? currentUserAnimatedScore.toLocaleString()
+                        : player.totalScore.toLocaleString()
+                      }
+                    </Text>
+                    {player.isCurrentUser && accPoints > 0 && (
+                      <Text style={[styles.pointsGained, { color: theme.colors.success || '#4CAF50' }]}>
+                        +{accPoints}
+                      </Text>
+                    )}
+                  </View>
                 </View>
               ))
             ) : (
@@ -465,6 +554,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
   },
+  userRankContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  userRankInfo: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  rankImprovementText: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 4,
+  },
   playerScoreSection: {
     marginHorizontal: 20,
     marginBottom: 20,
@@ -574,5 +678,14 @@ const styles = StyleSheet.create({
   noDataText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  scoreContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  pointsGained: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
   },
 });
