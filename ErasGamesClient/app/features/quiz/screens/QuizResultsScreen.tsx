@@ -36,21 +36,22 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   
   // Ranking data
   const hasRankingData = ranking && ranking.rankingContext && ranking.rankingContext.length > 0;
-  const currentUser = { id: 'user' }; // Replace with actual current user data
   
-  // Sample leaderboard data - replace with actual data from your API
-  const leaderboardData = [
-    { id: 1, username: 'ProGamer123', totalScore: 1250, avatar: 'https://i.pravatar.cc/150?img=1' },
-    { id: 2, username: 'QuizMaster', totalScore: 1100, avatar: 'https://i.pravatar.cc/150?img=2' },
-    { id: 3, username: 'BrainBox', totalScore: 950, avatar: 'https://i.pravatar.cc/150?img=3' },
-    { id: 'user', username: 'You', totalScore: finalScore, avatar: 'https://i.pravatar.cc/150?img=4' },
-    { id: 5, username: 'SmartCookie', totalScore: 800, avatar: 'https://i.pravatar.cc/150?img=5' },
-    { id: 6, username: 'ThinkFast', totalScore: 750, avatar: 'https://i.pravatar.cc/150?img=6' },
-    { id: 7, username: 'Genius99', totalScore: 700, avatar: 'https://i.pravatar.cc/150?img=7' },
-    { id: 8, username: 'QuickWit', totalScore: 650, avatar: 'https://i.pravatar.cc/150?img=8' },
-    { id: 9, username: 'BrightMind', totalScore: 600, avatar: 'https://i.pravatar.cc/150?img=9' },
-    { id: 10, username: 'WiseOwl', totalScore: 550, avatar: 'https://i.pravatar.cc/150?img=10' },
-  ].sort((a, b) => b.totalScore - a.totalScore); // Sort by score descending
+  // Get actual leaderboard data from API response
+  const leaderboardData = hasRankingData 
+    ? ranking.rankingContext.map((player: any) => ({
+        id: player.userId,
+        username: player.handle || player.name || 'Anonymous',
+        totalScore: player.totalPoints || 0,
+        avatar: `https://i.pravatar.cc/150?u=${player.userId}`, // Use userId for consistent avatars
+        isCurrentUser: player.isCurrentUser || false,
+        rank: player.rank || 0,
+        country: player.country || null
+      }))
+    : [];
+  
+  // Find current user from leaderboard data
+  const currentUser = leaderboardData.find((player: any) => player.isCurrentUser) || null;
   
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -242,7 +243,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
                 style={styles.coinIcon} 
               />
               <Text style={[styles.coinText, { color: theme.colors.primary }]}>
-                +{finalScore}
+                +{accPoints || finalScore}
               </Text>
             </View>
             <Text style={[styles.earnedText, { color: theme.colors.textSecondary }]}>
@@ -252,41 +253,56 @@ export default function QuizResultsScreen({navigation, route}: Props) {
           
           {/* Leaderboard List */}
           <Card style={[styles.leaderboardContainer, { backgroundColor: theme.colors.card }]}>
-            {leaderboardData.slice(0, 10).map((player, index) => (
-              <View 
-                key={player.id} 
-                style={[
-                  styles.playerRow,
-                  player.id === currentUser?.id && [styles.currentPlayerRow, { backgroundColor: theme.colors.primaryContainer }]
-                ]}
-              >
-                <Text style={[
-                  styles.playerRank, 
-                  { color: theme.colors.textSecondary },
-                  player.id === currentUser?.id && { color: theme.colors.primary }
-                ]}>
-                  #{index + 1}
-                </Text>
-                <Image 
-                  source={{ uri: player.avatar || 'https://via.placeholder.com/40' }} 
-                  style={styles.playerAvatar} 
-                />
-                <Text style={[
-                  styles.playerName,
-                  { color: theme.colors.text },
-                  player.id === currentUser?.id && [styles.currentPlayerName, { color: theme.colors.primary }]
-                ]}>
-                  {player.username}
-                </Text>
-                <Text style={[
-                  styles.playerScore,
-                  { color: theme.colors.text },
-                  player.id === currentUser?.id && [styles.currentPlayerScore, { color: theme.colors.primary }]
-                ]}>
-                  {player.totalScore.toLocaleString()}
+            {leaderboardData && leaderboardData.length > 0 ? (
+              leaderboardData.slice(0, 10).map((player: any) => (
+                <View 
+                  key={player.id} 
+                  style={[
+                    styles.playerRow,
+                    player.isCurrentUser && [styles.currentPlayerRow, { backgroundColor: theme.colors.primaryContainer }]
+                  ]}
+                >
+                  <Text style={[
+                    styles.playerRank, 
+                    { color: theme.colors.textSecondary },
+                    player.isCurrentUser && { color: theme.colors.primary }
+                  ]}>
+                    #{player.rank}
+                  </Text>
+                  <Image 
+                    source={{ uri: player.avatar }} 
+                    style={styles.playerAvatar} 
+                  />
+                  <View style={styles.playerInfo}>
+                    <Text style={[
+                      styles.playerName,
+                      { color: theme.colors.text },
+                      player.isCurrentUser && [styles.currentPlayerName, { color: theme.colors.primary }]
+                    ]}>
+                      {player.isCurrentUser ? 'You' : player.username}
+                    </Text>
+                    {player.country && (
+                      <Text style={[styles.playerCountry, { color: theme.colors.textSecondary }]}>
+                        {player.country}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.playerScore,
+                    { color: theme.colors.text },
+                    player.isCurrentUser && [styles.currentPlayerScore, { color: theme.colors.primary }]
+                  ]}>
+                    {player.totalScore.toLocaleString()}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={[styles.noDataText, { color: theme.colors.textSecondary }]}>
+                  Leaderboard data not available
                 </Text>
               </View>
-            ))}
+            )}
           </Card>
           
           {/* Countdown Timer */}
@@ -513,10 +529,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 12,
   },
-  playerName: {
+  playerInfo: {
     flex: 1,
+  },
+  playerName: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  playerCountry: {
+    fontSize: 12,
+    fontWeight: '400',
+    marginTop: 2,
   },
   currentPlayerName: {
     fontWeight: '700',
@@ -543,5 +566,13 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  noDataContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
