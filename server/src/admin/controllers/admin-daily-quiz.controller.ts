@@ -15,6 +15,7 @@ import { DailyQuizMode } from '../../database/services/daily-quiz-composer';
 import { AdminService } from '../../services/quiz-creation/admin.service';
 import { AdminJobManagementService } from '../../services/quiz-creation/admin-job-management.service';
 import { AdminTestingService } from '../../services/quiz-creation/admin-testing.service';
+import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.service';
 
 /**
  * 🔧 Admin Daily Quiz Controller
@@ -37,6 +38,7 @@ export class AdminDailyQuizController {
     private readonly adminService: AdminService,
     private readonly jobManagementService: AdminJobManagementService,
     private readonly testingService: AdminTestingService,
+    private readonly jobProcessor: DailyQuizJobProcessor,
   ) {}
 
   // ========== MANUAL COMPOSITION ENDPOINTS ==========
@@ -225,7 +227,9 @@ export class AdminDailyQuizController {
       replaceExisting?: boolean;
     },
   ) {
-    return await this.adminService.createCustomQuiz(request);
+    return await this.adminService.createCustomQuiz(request, {
+      jobProcessor: this.jobProcessor,
+    });
   }
 
   /**
@@ -240,7 +244,9 @@ export class AdminDailyQuizController {
       newDropAtUTC: string;
     },
   ) {
-    return await this.adminService.updateQuizDropTime(request);
+    return await this.adminService.updateQuizDropTime(request, {
+      jobProcessor: this.jobProcessor,
+    });
   }
 
   /**

@@ -31,6 +31,19 @@ export class AdminJobController {
   }
 
   /**
+   * GET /admin/jobs/notifications
+   * Get list of active notification cron jobs for debugging
+   */
+  @Get('notifications')
+  getActiveNotificationJobs() {
+    return {
+      success: true,
+      data: this.jobProcessor.getActiveNotificationJobs(),
+      message: 'Active notification jobs retrieved',
+    };
+  }
+
+  /**
    * POST /admin/jobs/composer/trigger
    * Manually trigger daily composition job
    */

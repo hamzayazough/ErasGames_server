@@ -18,9 +18,17 @@ export interface CustomQuizRequest {
   replaceExisting?: boolean;
 }
 
+export interface CustomQuizOptions {
+  jobProcessor?: any; // DailyQuizJobProcessor (optional to avoid circular import)
+}
+
 export interface UpdateQuizDropTimeRequest {
   quizId: string;
   newDropAtUTC: string;
+}
+
+export interface UpdateQuizDropTimeOptions {
+  jobProcessor?: any; // DailyQuizJobProcessor (optional to avoid circular import)
 }
 
 export interface UpdateQuizQuestionsRequest {
@@ -100,7 +108,10 @@ export class AdminService {
    * 🎯 Create a custom quiz with specific questions
    * POST /admin/daily-quiz/create-custom
    */
-  async createCustomQuiz(request: CustomQuizRequest) {
+  async createCustomQuiz(
+    request: CustomQuizRequest,
+    options?: CustomQuizOptions,
+  ) {
     try {
       const dropDate = new Date(request.dropAtUTC);
       if (isNaN(dropDate.getTime())) {
@@ -119,6 +130,9 @@ export class AdminService {
         mode: request.mode || DailyQuizMode.MIX,
         questionIds: request.questionIds,
         replaceExisting: request.replaceExisting || false,
+        onTemplateReady: options?.jobProcessor
+          ? (quiz) => options.jobProcessor.scheduleNotificationForQuiz(quiz)
+          : undefined,
       });
 
       return {
@@ -162,7 +176,10 @@ export class AdminService {
    * 🕒 Update quiz drop time
    * POST /admin/daily-quiz/update-drop-time
    */
-  async updateQuizDropTime(request: UpdateQuizDropTimeRequest) {
+  async updateQuizDropTime(
+    request: UpdateQuizDropTimeRequest,
+    options?: UpdateQuizDropTimeOptions,
+  ) {
     try {
       const newDropDate = new Date(request.newDropAtUTC);
       if (isNaN(newDropDate.getTime())) {
@@ -181,6 +198,32 @@ export class AdminService {
         newDropDate,
       );
 
+      // 🔔 RESCHEDULE NOTIFICATION for new drop time (if job processor is available)
+      let notificationRescheduled = false;
+      if (updatedQuiz.templateCdnUrl && options?.jobProcessor) {
+        this.logger.log(
+          `📱 Rescheduling notification for quiz ${updatedQuiz.id} with new drop time`,
+        );
+        try {
+          options.jobProcessor.scheduleNotificationForQuiz(updatedQuiz);
+          this.logger.log(`✅ Notification successfully rescheduled`);
+          notificationRescheduled = true;
+        } catch (notificationError) {
+          this.logger.error(
+            `⚠️ Failed to reschedule notification, but drop time was updated:`,
+            notificationError,
+          );
+        }
+      } else if (!updatedQuiz.templateCdnUrl) {
+        this.logger.log(
+          `ℹ️ Template not ready yet - notification will be scheduled when template is generated`,
+        );
+      } else {
+        this.logger.log(
+          `ℹ️ Job processor not available - notification rescheduling skipped`,
+        );
+      }
+
       return {
         success: true,
         data: {
@@ -189,8 +232,15 @@ export class AdminService {
           newDropTime: newDropDate.toISOString(),
           mode: updatedQuiz.mode,
           templateCdnUrl: updatedQuiz.templateCdnUrl,
+          notificationRescheduled,
         },
-        message: `Quiz drop time updated successfully`,
+        message: `Quiz drop time updated successfully${
+          notificationRescheduled
+            ? ' and notification rescheduled'
+            : updatedQuiz.templateCdnUrl
+              ? ' (notification rescheduling unavailable)'
+              : ' (notification will be scheduled when template is ready)'
+        }`,
       };
     } catch (error) {
       this.logger.error(

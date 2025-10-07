@@ -29,6 +29,25 @@ export interface QuizSubmission {
     timeSpentMs: number;
     accuracyPoints: number;
   }>;
+  ranking?: {
+    currentRank: number;
+    previousRank?: number;
+    totalPoints: number;
+    rankingContext: Array<{
+      userId: string;
+      handle: string;
+      name?: string;
+      country?: string;
+      totalPoints: number;
+      rank: number;
+      isCurrentUser: boolean;
+    }>;
+    seasonInfo: {
+      id: string;
+      name: string;
+      displayName: string;
+    };
+  };
 }
 
 export interface QuizAnswer {

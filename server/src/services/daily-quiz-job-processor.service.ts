@@ -194,18 +194,17 @@ export class DailyQuizJobProcessor {
       return;
     }
 
-    // Check if notification job already exists (prevent duplicates)
+    // Remove existing notification job if it exists (for rescheduling)
     try {
       const existingJob = this.schedulerRegistry.getCronJob(jobName);
       if (existingJob) {
         this.logger.log(
-          `Notification already scheduled for quiz ${quiz.id}, skipping duplicate`,
+          `🔄 Removing existing notification job for quiz ${quiz.id} to reschedule`,
         );
-        return;
+        this.schedulerRegistry.deleteCronJob(jobName);
       }
-    } catch (error) {
-      console.log("Job doesn't exist yet. We are gonna create it", error);
-      // Job doesn't exist, which is fine - we'll create it
+    } catch {
+      // Job doesn't exist, which is fine - we'll create a new one
     }
 
     // Create cron expression for exact drop time
@@ -213,9 +212,8 @@ export class DailyQuizJobProcessor {
     const cronExpression = `${dropTime.getUTCSeconds()} ${dropTime.getUTCMinutes()} ${dropTime.getUTCHours()} ${dropTime.getUTCDate()} ${dropTime.getUTCMonth() + 1} *`;
 
     this.logger.log(
-      `📅 OPTIMAL: Scheduling notification for quiz ${quiz.id} at EXACT time ${dropTime.toISOString()}`,
+      `📅 Scheduling notification for quiz ${quiz.id} at ${dropTime.toISOString()}`,
     );
-    this.logger.log(`   No more database polling! Cron: ${cronExpression}`);
 
     try {
       // Create the cron job for exact timing
@@ -234,7 +232,9 @@ export class DailyQuizJobProcessor {
       // Register the job with NestJS scheduler
       this.schedulerRegistry.addCronJob(jobName, job);
 
-      this.logger.log(`✅ Notification scheduled for EXACT drop time`);
+      this.logger.log(
+        `✅ Notification scheduled for ${dropTime.toISOString()} (${jobName})`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to schedule notification for quiz ${quiz.id}`,
@@ -397,5 +397,48 @@ export class DailyQuizJobProcessor {
         status: 'scheduled',
       },
     };
+  }
+
+  /**
+   * Get list of all active notification cron jobs
+   * This is useful for debugging notification scheduling
+   */
+  getActiveNotificationJobs(): Array<{
+    jobName: string;
+    cronExpression: string;
+    nextExecution: string;
+    isRunning: boolean;
+  }> {
+    const jobs = this.schedulerRegistry.getCronJobs();
+    const notificationJobs: Array<{
+      jobName: string;
+      cronExpression: string;
+      nextExecution: string;
+      isRunning: boolean;
+    }> = [];
+
+    jobs.forEach((job, name) => {
+      if (name.startsWith('notification-')) {
+        try {
+          const nextDate = job.nextDate();
+          notificationJobs.push({
+            jobName: name,
+            cronExpression: String((job.cronTime as any)?.source || 'Unknown'),
+            nextExecution: nextDate ? nextDate.toString() : 'Unknown',
+            isRunning: Boolean((job as any).running),
+          });
+        } catch (error) {
+          this.logger.warn(`Could not get details for job ${name}:`, error);
+          notificationJobs.push({
+            jobName: name,
+            cronExpression: 'Unknown',
+            nextExecution: 'Unknown',
+            isRunning: false,
+          });
+        }
+      }
+    });
+
+    return notificationJobs;
   }
 }
