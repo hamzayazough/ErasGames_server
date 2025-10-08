@@ -6,7 +6,9 @@ import {
   BadRequestException,
   Param,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
+import { AdminGuard } from '../../guards/admin.guard';
 import { QuestionCreationService } from '../../database/services/question-creation/question-creation.service';
 import { QuestionService } from '../../database/services/question-creation/question.service';
 import { Question } from '../../database/entities/question.entity';
@@ -19,6 +21,7 @@ import { CreateAiVisualQuestionDto } from '../../database/services/question-crea
 import { CreateOddOneOutQuestionDto } from '../../database/services/question-creation/dto/create-odd-one-out-question.dto';
 
 @Controller('questions')
+@UseGuards(AdminGuard)
 export class QuestionController {
   constructor(
     private readonly questionCreationService: QuestionCreationService,

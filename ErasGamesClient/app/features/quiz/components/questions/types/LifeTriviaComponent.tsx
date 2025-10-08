@@ -70,7 +70,7 @@ export const LifeTriviaComponent: React.FC<LifeTriviaComponentProps> = ({
     if (isCorrect || isWrong || isSelected) {
       return { color: theme.colors.textOnPrimary };
     }
-    return { color: theme.colors.accent4 };
+    return { color: theme.colors.textSecondary };
   };
 
   return (
@@ -82,7 +82,7 @@ export const LifeTriviaComponent: React.FC<LifeTriviaComponentProps> = ({
 
       {/* Main trivia question in teal container */}
       <View style={[styles.questionContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
-        <Text style={[styles.categoryLabel, { color: theme.colors.accent4 }]}>
+        <Text style={[styles.categoryLabel, { color: theme.colors.textSecondary }]}>
           🧠 LIFE TRIVIA
         </Text>
         <Text style={[styles.questionText, { color: theme.colors.textPrimary }]}>

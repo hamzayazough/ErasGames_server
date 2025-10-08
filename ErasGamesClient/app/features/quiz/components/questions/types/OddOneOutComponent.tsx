@@ -59,7 +59,7 @@ export const OddOneOutComponent: React.FC<OddOneOutComponentProps> = ({
             textStyle.push({ color: theme.colors.textOnPrimary });
           } else {
             buttonStyle.push({ backgroundColor: theme.colors.accent1 });
-            textStyle.push({ color: theme.colors.accent4 });
+            textStyle.push({ color: theme.colors.textSecondary });
           }
 
           return (

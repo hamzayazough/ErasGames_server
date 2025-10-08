@@ -13,7 +13,6 @@ interface QuizCompletedStateProps {
   timeTaken?: string;
   nextDayTimeLeft: number;
   nextDayTotalTime: number;
-  navigation: RootStackScreenProps<'DailyDrop'>['navigation'];
 }
 
 export function QuizCompletedState({
@@ -22,8 +21,7 @@ export function QuizCompletedState({
   totalQuestions,
   timeTaken,
   nextDayTimeLeft,
-  nextDayTotalTime,
-  navigation
+  nextDayTotalTime
 }: QuizCompletedStateProps) {
   const theme = useTheme();
 
@@ -50,15 +48,7 @@ export function QuizCompletedState({
         containerStyle={styles.timerContainer}
       />
 
-      {/* Practice Button */}
-      <View>
-        <Button
-          title="Explore Our Practice Quizzes"
-          onPress={() => navigation.navigate('QuizSelection')}
-          style={styles.practiceButton}
-          textStyle={styles.practiceButtonText}
-        />
-      </View>
+
     </View>
   );
 }
@@ -115,14 +105,5 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     alignItems: 'center',
-  },
-  practiceButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    minWidth: 220,
-    borderRadius: 25,
-  },
-  practiceButtonText: {
-    textAlign: 'center',
   },
 });

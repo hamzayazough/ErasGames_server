@@ -10,3 +10,6 @@ export {
   default as DefaultAnimatedActionButton,
 } from './AnimatedActionButton';
 export {default as ErrorModal} from './ErrorModal';
+export {default as DailyQuizNotificationModal} from './DailyQuizNotificationModal';
+export {default as GenericNotificationModal} from './GenericNotificationModal';
+export {default as GlobalNotificationHandler} from './GlobalNotificationHandler';

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ReverseAudioQuestion } from '../../../../../shared/interfaces/questions/reverse-audio.interface';
 import { QuestionComponentProps } from '../QuestionRenderer';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
+import { audioService } from '../../../../../core/services/audioService';
 
 interface ReverseAudioComponentProps extends Omit<QuestionComponentProps, 'question'> {
   question: ReverseAudioQuestion;
@@ -20,16 +21,43 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
   const theme = useTheme();
   const [isPlayingReversed, setIsPlayingReversed] = useState<boolean>(false);
 
+  // Cleanup audio when component unmounts
+  useEffect(() => {
+    return () => {
+      audioService.stopCurrentSound();
+    };
+  }, []);
+
   const handleChoiceSelect = (choiceIndex: number) => {
     if (!disabled) {
       onAnswerChange({ choiceIndex });
     }
   };
 
-  const handlePlayReversedAudio = () => {
-    // TODO: Implement actual audio playback for the reversed clip
-    setIsPlayingReversed(true);
-    setTimeout(() => setIsPlayingReversed(false), 3000); // Simulate 3-second playback
+  const handlePlayReversedAudio = async () => {
+    if (!question.mediaRefs || question.mediaRefs.length === 0) {
+      return;
+    }
+
+    const audioRef = question.mediaRefs.find(ref => ref.type === 'audio');
+    
+    if (!audioRef) {
+      return;
+    }
+
+    try {
+      setIsPlayingReversed(true);
+      
+      await audioService.playSound(
+        audioRef.url,
+        () => {
+          // Audio finished playing
+          setIsPlayingReversed(false);
+        }
+      );
+    } catch (error) {
+      setIsPlayingReversed(false);
+    }
   };
 
 
@@ -41,9 +69,6 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
       </Text>
 
       <View style={[styles.audioContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
-        <Text style={[styles.instructionText, { color: theme.colors.textPrimary }]}>
-          Listen to the reversed audio clip
-        </Text>
         
         <TouchableOpacity
           style={[styles.playButton, { backgroundColor: theme.colors.primary }]}
@@ -58,9 +83,6 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
       </View>
 
       <View style={styles.choicesSection}>
-        <Text variant="heading4" style={[styles.sectionTitle, { color: theme.colors.text }]}>
-          Which song is this?
-        </Text>
         
         {question.choices && question.choices.length > 0 ? (
           question.choices.map((choice, index) => {
@@ -69,7 +91,7 @@ export const ReverseAudioComponent: React.FC<ReverseAudioComponentProps> = ({
             const isWrong = showCorrect && isSelected && index !== correctAnswer?.choiceIndex;
             
             let buttonStyle = [styles.choiceContainer];
-            let textColor = theme.colors.accent4;
+            let textColor = theme.colors.textSecondary;
             
             if (isCorrect) {
               buttonStyle.push({ backgroundColor: theme.colors.success });

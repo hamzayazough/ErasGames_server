@@ -15,6 +15,8 @@ export default function QuizSelectionScreen({ navigation }: Props) {
     navigation.navigate('TestQuiz', { selectedQuiz: quiz });
   };
 
+  const styles = createStyles(theme);
+
   return (
     <ThemedBackground style={styles.container}>
       {/* Global Header */}
@@ -43,7 +45,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
         </View>
 
         {/* Title */}
-        <Text style={[styles.title, { color: theme.colors.text }]}>
+        <Text style={styles.title}>
           PRACTICE QUIZZES
         </Text>
 
@@ -59,14 +61,14 @@ export default function QuizSelectionScreen({ navigation }: Props) {
             >
               <View style={styles.quizItemContent}>
                 <View style={styles.quizInfo}>
-                  <Text style={[styles.quizTitle, { color: theme.colors.textOnSurface }]}>
+                  <Text style={styles.quizTitle}>
                     {quiz.title}
                   </Text>
-                  <Text style={[styles.quizMeta, { color: theme.colors.textOnSurface }]}>
+                  <Text style={styles.quizMeta}>
                     {quiz.questions.length} questions • {quiz.estimatedTime} min • {quiz.difficulty}
                   </Text>
                 </View>
-                <Text style={[styles.arrow, { color: theme.colors.textOnSurface }]}>
+                <Text style={styles.arrow}>
                   →
                 </Text>
               </View>
@@ -81,7 +83,7 @@ export default function QuizSelectionScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -90,43 +92,45 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: theme.spacing(2.5),
   },
   logoImage: {
     width: 280,
     height: 120,
   },
   title: {
-    fontSize: 32,
+    fontSize: theme.text.size['4xl'],
     fontWeight: '900',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing(1.5),
     letterSpacing: 1,
+    color: theme.colors.text,
   },
   subtitle: {
-    fontSize: 18,
-    fontWeight: '400',
+    fontSize: theme.text.size.lg,
+    fontWeight: theme.text.weight.normal,
     textAlign: 'center',
-    marginBottom: 40,
-    paddingHorizontal: 24,
+    marginBottom: theme.spacing(5),
+    paddingHorizontal: theme.spacing(3),
     lineHeight: 24,
+    color: theme.colors.textSecondary,
   },
   quizList: {
-    paddingHorizontal: 24,
+    paddingHorizontal: theme.spacing(3),
   },
   quizItem: {
-    marginBottom: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    marginBottom: theme.spacing(2),
+    paddingVertical: theme.spacing(2.5),
+    paddingHorizontal: theme.spacing(3),
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.currentMode === 'main' 
+      ? 'rgba(230, 230, 250, 0.8)' // Lavender with transparency for main theme
+      : theme.colors.accent1, // Cream for retro theme
     borderWidth: 1,
-    borderColor: 'rgba(244, 229, 177, 0.3)',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: theme.currentMode === 'main'
+      ? 'rgba(221, 160, 221, 0.4)' // Light plum border for main theme
+      : theme.colors.border, // Dark teal border for retro theme
+    ...theme.shadows.md,
   },
   quizItemContent: {
     flexDirection: 'row',
@@ -137,22 +141,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   quizTitle: {
-    fontSize: 22,
+    fontSize: theme.text.size['2xl'],
     fontWeight: '900',
-    marginBottom: 6,
+    marginBottom: theme.spacing(0.75),
     letterSpacing: 0.5,
+    color: theme.currentMode === 'main' 
+      ? theme.colors.text // Indigo for main theme
+      : theme.colors.charcoal, // Dark charcoal for retro theme
   },
   quizMeta: {
-    fontSize: 14,
-    fontWeight: '400',
-    opacity: 0.8,
+    fontSize: theme.text.size.sm,
+    fontWeight: theme.text.weight.normal,
+    color: theme.currentMode === 'main'
+      ? theme.colors.textMuted // Medium slate blue for main theme
+      : theme.colors.darkNeutral, // Darker neutral for retro theme
   },
   arrow: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginLeft: 16,
+    fontSize: theme.text.size.xl,
+    fontWeight: theme.text.weight.semibold,
+    marginLeft: theme.spacing(2),
+    color: theme.colors.primary,
   },
   bottomPadding: {
-    height: 60,
+    height: theme.spacing(7.5),
   },
 });

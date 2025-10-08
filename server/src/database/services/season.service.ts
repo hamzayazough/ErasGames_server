@@ -529,6 +529,122 @@ export class SeasonService {
     });
   }
 
+  /**
+   * Get user's participation in a season
+   */
+  async getUserParticipation(seasonId: string, userId: string) {
+    return await this.participationRepository.findOne({
+      where: { season: { id: seasonId }, user: { id: userId } },
+      relations: ['user', 'season'],
+    });
+  }
+
+  /**
+   * Update user's participation with new score and recalculate rankings
+   */
+  async updateUserParticipation(
+    seasonId: string,
+    userId: string,
+    newScore: number,
+  ) {
+    // Get or create participation
+    const participation = await this.getOrCreateParticipation(seasonId, userId);
+
+    // Add the new score to total points
+    participation.totalPoints += newScore;
+    participation.totalQuizzesCompleted += 1;
+    participation.lastActivityAt = new Date();
+
+    // Update streak logic would go here if needed
+    // For now, just save the participation
+    await this.participationRepository.save(participation);
+
+    // Recalculate rankings for the season
+    await this.recalculateSeasonRankings(seasonId);
+
+    return participation;
+  }
+
+  /**
+   * Get ranking context around a specific user (X positions above and below)
+   */
+  async getRankingContext(
+    seasonId: string,
+    userId: string,
+    positionsAbove: number = 5,
+    positionsBelow: number = 5,
+  ) {
+    // Get all participants sorted by points
+    const allParticipations = await this.participationRepository.find({
+      where: { season: { id: seasonId }, isActive: true },
+      relations: ['user'],
+      order: { totalPoints: 'DESC' },
+    });
+
+    // Find user's position
+    const userIndex = allParticipations.findIndex((p) => p.user.id === userId);
+    if (userIndex === -1) {
+      throw new Error('User not found in season participants');
+    }
+
+    const userParticipation = allParticipations[userIndex];
+    const userRank = userIndex + 1;
+
+    // Calculate range to show
+    const startIndex = Math.max(0, userIndex - positionsAbove);
+    const endIndex = Math.min(
+      allParticipations.length,
+      userIndex + positionsBelow + 1,
+    );
+
+    // Get participants in range
+    const contextParticipations = allParticipations.slice(startIndex, endIndex);
+
+    // Format the response
+    const players = contextParticipations.map((p, idx) => ({
+      userId: p.user.id,
+      handle: p.user.handle || 'Anonymous',
+      name: p.user.name,
+      country: p.user.country,
+      totalPoints: p.totalPoints,
+      rank: startIndex + idx + 1,
+      isCurrentUser: p.user.id === userId,
+    }));
+
+    return {
+      userRank,
+      userTotalPoints: userParticipation.totalPoints,
+      players,
+    };
+  }
+
+  /**
+   * Recalculate rankings for all participants in a season
+   */
+  private async recalculateSeasonRankings(seasonId: string) {
+    const participations = await this.participationRepository.find({
+      where: { season: { id: seasonId }, isActive: true },
+      relations: ['user'],
+      order: { totalPoints: 'DESC' },
+    });
+
+    // Update ranks
+    for (let i = 0; i < participations.length; i++) {
+      const participation = participations[i];
+      const newRank = i + 1;
+
+      // Track best rank
+      if (!participation.bestRank || newRank < participation.bestRank) {
+        participation.bestRank = newRank;
+      }
+
+      participation.currentRank = newRank;
+      participation.lastRankUpdate = new Date();
+    }
+
+    await this.participationRepository.save(participations);
+  }
+
   private calculateStandardDeviation(numbers: number[]): number {
     if (numbers.length === 0) return 0;
 

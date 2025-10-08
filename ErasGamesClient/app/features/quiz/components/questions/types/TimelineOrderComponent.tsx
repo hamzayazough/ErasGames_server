@@ -61,7 +61,7 @@ export const TimelineOrderComponent: React.FC<TimelineOrderComponentProps> = ({
     if (showCorrect && correctAnswer?.orderedItems) {
       return theme.colors.textOnPrimary;
     }
-    return theme.colors.accent4;
+    return theme.colors.textSecondary;
   };
 
   return (

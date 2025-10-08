@@ -30,8 +30,11 @@ const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 type Props = RootStackScreenProps<'DailyDrop'>;
 
-export default function DailyDropScreen({navigation}: Props) {
+export default function DailyDropScreen({navigation, route}: Props) {
   const theme = useTheme();
+  
+  // Extract notification-specific quizId if provided
+  const notificationQuizId = route.params?.quizId;
   
   // Use the consolidated hook that handles everything
   const { 
@@ -63,6 +66,16 @@ export default function DailyDropScreen({navigation}: Props) {
   
   // Quiz starting state
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
+
+  // Handle notification deep link
+  useEffect(() => {
+    if (notificationQuizId && isAvailable && !isLoading) {
+      console.log('🔗 Deep link from notification detected, quiz ID:', notificationQuizId);
+      // If quiz is available and we have a notification quiz ID, 
+      // we could auto-start the quiz or show some indication
+      // For now, just log it - the user will see the available quiz
+    }
+  }, [notificationQuizId, isAvailable, isLoading]);
 
   // Initialize local countdown from server data  
   useEffect(() => {
@@ -217,7 +230,7 @@ export default function DailyDropScreen({navigation}: Props) {
           // Show completed quiz message
           Alert.alert(
             'Quiz Already Completed',
-            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0}%! Come back tomorrow for a new quiz.`,
+            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0} points! Come back tomorrow for a new quiz.`,
             [{text: 'OK'}]
           );
         } else {
@@ -392,7 +405,6 @@ export default function DailyDropScreen({navigation}: Props) {
               timeTaken={status?.attempt?.timeTaken ? `${status.attempt.timeTaken}s` : undefined}
               nextDayTimeLeft={nextDayTimeLeft}
               nextDayTotalTime={nextDayTotalTime}
-              navigation={navigation}
             />
           ) : (
             <QuizAvailableState
@@ -407,28 +419,38 @@ export default function DailyDropScreen({navigation}: Props) {
         ) : (
           <CountdownTimer 
             timeLeft={localTimeLeft}
-            title="NEXT QUIZ IN"
+            title="DAILY QUIZ IN"
             showBackground={true}
             size="medium"
             containerStyle={styles.countdownWrapper}
           />
         )}
 
-        {/* How to Play - Bottom text - only show when quiz is not available */}
-        {!isAvailable && (
-          <TouchableOpacity 
-            onPress={handleHowToPlay} 
-            activeOpacity={0.8} 
-            style={[styles.howToPlayButton, { 
-              backgroundColor: theme.colors.accent4,
-              borderColor: theme.colors.border 
-            }]}
-          >
-            <Text style={[styles.howToPlayButtonText, { color: theme.colors.text }]}>
-              HOW TO PLAY
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Practice Button - Always Available */}
+        <View style={styles.bottomButtonsContainer}>
+          <Button
+            title="Explore Our Practice Quizzes"
+            onPress={() => navigation.navigate('QuizSelection')}
+            style={[styles.practiceButton, { backgroundColor: theme.colors.accent4 }]}
+            textStyle={[styles.practiceButtonText, { color: theme.colors.text }]}
+          />
+          
+          {/* How to Play - only show when quiz is not available */}
+          {!isAvailable && (
+            <TouchableOpacity 
+              onPress={handleHowToPlay} 
+              activeOpacity={0.8} 
+              style={[styles.howToPlayButton, { 
+                backgroundColor: theme.colors.accent4,
+                borderColor: theme.colors.border 
+              }]}
+            >
+              <Text style={[styles.howToPlayButtonText, { color: theme.colors.text }]}>
+                HOW TO PLAY
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </ThemedBackground>
   );
@@ -478,13 +500,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
-  howToPlayButton: {
+  bottomButtonsContainer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 20,
     alignSelf: 'center',
-    paddingHorizontal: 32,
+    alignItems: 'center',
+    gap: 12,
+  },
+  practiceButton: {
     paddingVertical: 16,
-    borderRadius: 30,
+    paddingHorizontal: 32,
+    minWidth: 280,
+    borderRadius: 25,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  practiceButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  howToPlayButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 25,
     borderWidth: 1,
     shadowColor: 'rgba(0, 0, 0, 0.1)',
     shadowOffset: { width: 0, height: 2 },

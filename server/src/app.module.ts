@@ -65,13 +65,16 @@ import { TestController } from './admin/controllers/cdn-test.controller';
 import { AuthController } from './controllers/auth.controller';
 import { UserController } from './controllers/user.controller';
 import { NotificationController } from './controllers/notification.controller';
+import { MediaUploadController } from './controllers/media-upload.controller';
 
 // Services
 import { DailyQuizJobProcessor } from './services/daily-quiz-job-processor.service';
 import { NotificationService } from './services/notification.service';
 import { FirebaseService } from './services/firebase.service';
 import { AuthService } from './services/auth.service';
+import { MediaUploadService } from './services/media-upload.service';
 import { FirebaseAuthMiddleware } from './middleware/firebase-auth.middleware';
+import { AdminGuard } from './guards/admin.guard';
 
 // Question Creation Services
 import { QuestionCreationService } from './database/services/question-creation/question-creation.service';
@@ -83,6 +86,11 @@ import { VisualAestheticQuestionService } from './database/services/question-cre
 
 // Daily Quiz Composer Module
 import { DailyQuizComposerModule } from './database/services/daily-quiz-composer';
+
+// Quiz Creation Module
+import { QuizCreationModule } from './services/quiz-creation/quiz-creation.module';
+import { AdminJobManagementService } from './services/quiz-creation/admin-job-management.service';
+import { AdminTestingService } from './services/quiz-creation/admin-testing.service';
 
 // Attempt Scoring Services
 import { AttemptScoringService } from './services/attempt-scoring/attempt-scoring.service';
@@ -138,6 +146,9 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
 
     // Daily Quiz Composer module
     DailyQuizComposerModule,
+
+    // Quiz Creation module
+    QuizCreationModule,
 
     // Quiz Simulation module (for testing)
     QuizSimulationModule,
@@ -197,6 +208,7 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     AuthController,
     UserController,
     NotificationController,
+    MediaUploadController,
     SeasonsController,
     AdminSeasonsController,
   ],
@@ -212,11 +224,18 @@ import { QuizSimulationModule } from './test/quiz-simulation.module';
     VisualAestheticQuestionService,
     // Job Processing Services
     DailyQuizJobProcessor,
+    // Job Management Services
+    AdminJobManagementService,
+    // Testing Services
+    AdminTestingService,
     // Notification Services
     NotificationService,
     // Authentication Services
     FirebaseService,
     AuthService,
+    AdminGuard,
+    // Media Upload Service
+    MediaUploadService,
     // Attempt Scoring Services
     AttemptScoringService,
     QuestionCorrectnessService,

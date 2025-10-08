@@ -15,7 +15,7 @@ export type RootStackParamList = {
   CompleteAccount: undefined;
 
   // Quiz Flow
-  DailyDrop: undefined;
+  DailyDrop: {quizId?: string};
   StartQuiz: undefined;
   QuizSelection: undefined;
   Quiz: {
@@ -38,7 +38,15 @@ export type RootStackParamList = {
   Profile: {userId?: string};
   Settings: undefined;
   QuizDetails: {quizId: string};
-  Leaderboard: undefined;
+  Leaderboard: {
+    quizResults?: {
+      score: number;
+      accPoints: number;
+      previousScore: number;
+      newTotalScore: number;
+      ranking: any;
+    };
+  };
 };
 
 // Main Tab Navigator

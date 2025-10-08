@@ -65,7 +65,7 @@ export const PopularityMatchComponent: React.FC<PopularityMatchComponentProps> =
     if (showCorrect && correctAnswer?.values) {
       return theme.colors.textOnPrimary;
     }
-    return theme.colors.accent4;
+    return theme.colors.textSecondary;
   };
 
   return (
@@ -76,7 +76,7 @@ export const PopularityMatchComponent: React.FC<PopularityMatchComponentProps> =
       
       <View style={[styles.instructionContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
         {question.prompt.asOf && (
-          <Text style={[styles.asOfText, { color: theme.colors.accent4 }]}>
+          <Text style={[styles.asOfText, { color: theme.colors.textSecondary }]}>
             (As of {question.prompt.asOf})
           </Text>
         )}

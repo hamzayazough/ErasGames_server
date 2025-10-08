@@ -13,6 +13,7 @@ import {
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import { ThemeProvider } from './app/core/theme/ThemeProvider';
 import { AuthProvider } from './app/core/context/AuthContext';
+import { NotificationProvider } from './app/core/context/NotificationContext';
 import { RootNavigator } from './app/navigation/RootNavigator';
 import { FCMService } from './app/core/services/FCMService';
 
@@ -43,8 +44,10 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-            <RootNavigator />
+            <NotificationProvider>
+              <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+              <RootNavigator />
+            </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

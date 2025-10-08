@@ -2,36 +2,46 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
+  Delete,
   Body,
-  HttpStatus,
-  HttpException,
   Logger,
   Query,
+  Param,
+  UseGuards,
 } from '@nestjs/common';
-import {
-  DailyQuizComposerService,
-  ComposerConfig,
-  DailyQuizMode,
-} from '../../database/services/daily-quiz-composer';
+import { AdminGuard } from '../../guards/admin.guard';
+import { DailyQuizMode } from '../../database/services/daily-quiz-composer';
+import { AdminService } from '../../services/quiz-creation/admin.service';
+import { AdminJobManagementService } from '../../services/quiz-creation/admin-job-management.service';
+import { AdminTestingService } from '../../services/quiz-creation/admin-testing.service';
 import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.service';
 
 /**
- * Admin controller for manual daily quiz composition and monitoring
+ * 🔧 Admin Daily Quiz Controller
  *
- * Provides endpoints for:
- * - Manual quiz generation
- * - Composition monitoring and statistics
- * - Question availability checking
- * - System health validation
+ * Centralized admin controller for all daily quiz operations including:
+ * - Manual quiz composition and monitoring
+ * - System health validation and statistics
+ * - Testing endpoints for React Native development
+ * - Job management and workflow testing
+ *
+ * This controller consolidates functionality from both the original admin controller
+ * and the daily quiz test controller into a single comprehensive admin interface.
  */
 @Controller('admin/daily-quiz')
+@UseGuards(AdminGuard)
 export class AdminDailyQuizController {
   private readonly logger = new Logger(AdminDailyQuizController.name);
 
   constructor(
-    private readonly composerService: DailyQuizComposerService,
+    private readonly adminService: AdminService,
+    private readonly jobManagementService: AdminJobManagementService,
+    private readonly testingService: AdminTestingService,
     private readonly jobProcessor: DailyQuizJobProcessor,
   ) {}
+
+  // ========== MANUAL COMPOSITION ENDPOINTS ==========
 
   /**
    * Manually compose a daily quiz for a specific date/time
@@ -43,68 +53,10 @@ export class AdminDailyQuizController {
     request: {
       dropAtUTC: string;
       mode?: DailyQuizMode;
-      config?: Partial<ComposerConfig>;
+      config?: any;
     },
   ) {
-    try {
-      const dropDate = new Date(request.dropAtUTC);
-
-      if (isNaN(dropDate.getTime())) {
-        throw new HttpException(
-          'Invalid dropAtUTC format. Use ISO 8601 format.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const mode = request.mode || DailyQuizMode.MIX;
-
-      this.logger.log(
-        `Manual composition requested for ${dropDate.toISOString()}`,
-      );
-
-      const result = await this.composerService.composeDailyQuiz(
-        dropDate,
-        mode,
-        request.config,
-      );
-
-      return {
-        success: true,
-        data: {
-          quizId: result.dailyQuiz.id,
-          questionCount: result.questions.length,
-          template: {
-            version: result.template.version,
-            cdnUrl: result.dailyQuiz.templateCdnUrl,
-            size: JSON.stringify(result.template).length,
-          },
-          composition: {
-            relaxationLevel:
-              result.compositionLog.finalSelection.averageExposure,
-            themeDistribution:
-              result.compositionLog.finalSelection.themeDistribution,
-            difficultyActual:
-              result.compositionLog.finalSelection.difficultyActual,
-            warnings: result.compositionLog.warnings,
-            performanceMs: result.compositionLog.performance.durationMs,
-          },
-        },
-        message: `Successfully composed daily quiz for ${dropDate.toISOString()}`,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to compose quiz: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new HttpException(
-        `Failed to compose daily quiz: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return await this.adminService.composeDailyQuiz(request);
   }
 
   /**
@@ -113,24 +65,7 @@ export class AdminDailyQuizController {
    */
   @Get('availability')
   async getQuestionAvailability() {
-    try {
-      const availability = await this.composerService.getCompositionStats();
-
-      return {
-        success: true,
-        data: availability,
-        message: 'Question availability retrieved successfully',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to get availability: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      throw new HttpException(
-        `Failed to retrieve question availability: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return await this.adminService.getQuestionAvailability();
   }
 
   /**
@@ -143,43 +78,13 @@ export class AdminDailyQuizController {
     request: {
       dropAtUTC: string;
       mode?: DailyQuizMode;
-      config?: Partial<ComposerConfig>;
+      config?: any;
     },
   ) {
-    try {
-      const dropDate = new Date(request.dropAtUTC);
-
-      if (isNaN(dropDate.getTime())) {
-        throw new HttpException(
-          'Invalid dropAtUTC format. Use ISO 8601 format.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const mode = request.mode || DailyQuizMode.MIX;
-
-      const preview = await this.composerService.previewComposition(
-        dropDate,
-        mode,
-        request.config,
-      );
-
-      return {
-        success: true,
-        data: preview,
-        message: 'Preview generated successfully',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to preview quiz: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      throw new HttpException(
-        `Failed to preview daily quiz: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return await this.adminService.previewDailyQuiz(request);
   }
+
+  // ========== SYSTEM MONITORING ENDPOINTS ==========
 
   /**
    * Get composition health check
@@ -187,26 +92,16 @@ export class AdminDailyQuizController {
    */
   @Get('health')
   async getCompositionHealth() {
-    try {
-      const healthData = await this.composerService.getSystemHealth();
+    return await this.adminService.getCompositionHealth();
+  }
 
-      return {
-        success: true,
-        data: healthData,
-        message: healthData.healthy
-          ? 'Composition system is healthy'
-          : 'Issues detected',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      throw new HttpException(
-        'Health check failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  /**
+   * Get quiz for a specific number of days from now
+   * GET /admin/daily-quiz/by-days?days=0 (0=today, 1=tomorrow, etc.)
+   */
+  @Get('by-days')
+  async getQuizByDaysFromNow(@Query('days') days: string = '0') {
+    return await this.adminService.getQuizByDaysFromNow({ days });
   }
 
   /**
@@ -215,13 +110,7 @@ export class AdminDailyQuizController {
    */
   @Get('options')
   getCompositionOptions() {
-    const options = this.composerService.getConfigurationOptions();
-
-    return {
-      success: true,
-      data: options,
-      message: 'Composition options retrieved successfully',
-    };
+    return this.adminService.getCompositionOptions();
   }
 
   /**
@@ -233,28 +122,10 @@ export class AdminDailyQuizController {
     @Query('limit') limit: string = '10',
     @Query('offset') offset: string = '0',
   ) {
-    try {
-      const logs = await this.composerService.getRecentCompositionLogs(
-        parseInt(limit),
-        parseInt(offset),
-      );
-
-      return {
-        success: true,
-        data: logs,
-        message: 'Composition logs retrieved successfully',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to get logs: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      throw new HttpException(
-        'Failed to retrieve composition logs',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return await this.adminService.getCompositionLogs({ limit, offset });
   }
+
+  // ========== JOB MANAGEMENT ENDPOINTS ==========
 
   /**
    * Manually trigger daily composition job
@@ -262,40 +133,7 @@ export class AdminDailyQuizController {
    */
   @Post('jobs/trigger-composition')
   async triggerDailyComposition(@Body() request: { dropAtUTC: string }) {
-    try {
-      const dropDate = new Date(request.dropAtUTC);
-
-      if (isNaN(dropDate.getTime())) {
-        throw new HttpException(
-          'Invalid dropAtUTC format. Use ISO 8601 format.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      this.logger.log(
-        `Manual job composition trigger requested for ${dropDate.toISOString()}`,
-      );
-
-      await this.jobProcessor.triggerDailyComposition(dropDate);
-
-      return {
-        success: true,
-        message: `Daily composition job triggered successfully for ${dropDate.toISOString()}`,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to trigger composition job: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new HttpException(
-        `Failed to trigger daily composition job: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return await this.jobManagementService.triggerDailyComposition(request);
   }
 
   /**
@@ -304,35 +142,7 @@ export class AdminDailyQuizController {
    */
   @Post('jobs/trigger-warmup')
   async triggerTemplateWarmup(@Body() request: { quizId: string }) {
-    try {
-      if (!request.quizId) {
-        throw new HttpException('quizId is required', HttpStatus.BAD_REQUEST);
-      }
-
-      this.logger.log(
-        `Manual template warmup trigger requested for quiz ${request.quizId}`,
-      );
-
-      await this.jobProcessor.triggerTemplateWarmup(request.quizId);
-
-      return {
-        success: true,
-        message: `Template warmup job triggered successfully for quiz ${request.quizId}`,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to trigger warmup job: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new HttpException(
-        `Failed to trigger template warmup job: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return await this.jobManagementService.triggerTemplateWarmup(request);
   }
 
   /**
@@ -341,24 +151,7 @@ export class AdminDailyQuizController {
    */
   @Get('jobs/status')
   getJobStatus() {
-    try {
-      const status = this.jobProcessor.getJobStatus();
-
-      return {
-        success: true,
-        data: status,
-        message: 'Job status retrieved successfully',
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to get job status: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-
-      throw new HttpException(
-        'Failed to retrieve job status',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return this.jobManagementService.getJobStatus();
   }
 
   /**
@@ -369,51 +162,137 @@ export class AdminDailyQuizController {
   async testCompleteWorkflow(
     @Body() request: { dropAtUTC: string; mode?: DailyQuizMode },
   ) {
-    try {
-      const dropDate = new Date(request.dropAtUTC);
+    return await this.jobManagementService.testCompleteWorkflow(request);
+  }
 
-      if (isNaN(dropDate.getTime())) {
-        throw new HttpException(
-          'Invalid dropAtUTC format. Use ISO 8601 format.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+  // ========== TESTING ENDPOINTS (from DailyQuizTestController) ==========
 
-      this.logger.log(
-        `Testing complete workflow for ${dropDate.toISOString()}`,
-      );
+  /**
+   * 🚀 Create Today's and Tomorrow's Quiz for Testing
+   * POST /admin/daily-quiz/create-todays-quiz
+   *
+   * This endpoint mimics the daily quiz job crons to:
+   * 1. Create today's quiz with drop time in 5 minutes
+   * 2. Create tomorrow's quiz with standard drop time
+   * 3. Generate and upload CDN templates for both
+   * 4. Schedule notifications for both quizzes
+   *
+   * Perfect for testing the React Native app with real quiz data!
+   */
+  @Post('create-todays-quiz')
+  async createTodaysQuiz() {
+    return await this.testingService.createTodaysQuiz();
+  }
 
-      // Step 1: Trigger composition
-      this.logger.log('Step 1: Running composition...');
-      await this.jobProcessor.triggerDailyComposition(dropDate);
+  /**
+   * 📊 Get current quiz status for testing (today and tomorrow)
+   * GET /admin/daily-quiz/status
+   */
+  @Get('status')
+  async getQuizStatus() {
+    return await this.adminService.getQuizStatus();
+  }
 
-      // Step 2: Find the created quiz
-      this.logger.log('Step 2: Finding created quiz...');
-      // We need to get the quiz ID from the database
-      // For now, we'll return the composition result and let the user manually trigger warmup
+  /**
+   * 🚀 Create ONLY Today's Quiz (for immediate testing)
+   * POST /admin/daily-quiz/create-today-only
+   */
+  @Post('create-today-only')
+  async createTodayOnly() {
+    return await this.testingService.createTodayOnly();
+  }
 
-      return {
-        success: true,
-        message: `Composition completed for ${dropDate.toISOString()}. Use the quiz ID from the logs endpoint to trigger warmup manually.`,
-        nextSteps: [
-          '1. Call GET /admin/daily-quiz/logs to find the quiz ID',
-          '2. Call POST /admin/daily-quiz/jobs/trigger-warmup with the quiz ID',
-          '3. Verify templateCdnUrl is set in the quiz record',
-        ],
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to test workflow: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+  /**
+   * 🧹 Clean up today's and tomorrow's quizzes (for testing)
+   * POST /admin/daily-quiz/cleanup
+   */
+  @Post('cleanup')
+  async cleanupTodaysQuiz() {
+    return await this.adminService.cleanupTodaysQuiz();
+  }
 
-      if (error instanceof HttpException) {
-        throw error;
-      }
+  // ========== NEW QUIZ MANAGEMENT ENDPOINTS ==========
 
-      throw new HttpException(
-        `Failed to test complete workflow: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  /**
+   * 🎯 Create a custom quiz with specific questions
+   * POST /admin/daily-quiz/create-custom
+   */
+  @Post('create-custom')
+  async createCustomQuiz(
+    @Body()
+    request: {
+      dropAtUTC: string;
+      questionIds: string[];
+      mode?: DailyQuizMode;
+      replaceExisting?: boolean;
+    },
+  ) {
+    return await this.adminService.createCustomQuiz(request, {
+      jobProcessor: this.jobProcessor,
+    });
+  }
+
+  /**
+   * 🕒 Update quiz drop time
+   * PATCH /admin/daily-quiz/update-drop-time
+   */
+  @Patch('update-drop-time')
+  async updateQuizDropTime(
+    @Body()
+    request: {
+      quizId: string;
+      newDropAtUTC: string;
+    },
+  ) {
+    return await this.adminService.updateQuizDropTime(request, {
+      jobProcessor: this.jobProcessor,
+    });
+  }
+
+  /**
+   * 📝 Update quiz questions
+   * PATCH /admin/daily-quiz/update-questions
+   */
+  @Patch('update-questions')
+  async updateQuizQuestions(
+    @Body()
+    request: {
+      quizId: string;
+      questionIds: string[];
+    },
+  ) {
+    return await this.adminService.updateQuizQuestions(request);
+  }
+
+  /**
+   * 🎨 Regenerate quiz template
+   * POST /admin/daily-quiz/regenerate-template
+   */
+  @Post('regenerate-template')
+  async regenerateTemplate(
+    @Body()
+    request: {
+      quizId: string;
+    },
+  ) {
+    return await this.adminService.regenerateTemplate(request);
+  }
+
+  /**
+   * 📋 Get quiz details with questions
+   * GET /admin/daily-quiz/details?quizId=X
+   */
+  @Get('details')
+  async getQuizDetails(@Query('quizId') quizId: string) {
+    return await this.adminService.getQuizDetails(quizId);
+  }
+
+  /**
+   * 🗑️ Delete a quiz (only if not yet dropped)
+   * DELETE /admin/daily-quiz/delete/:quizId
+   */
+  @Delete('delete/:quizId')
+  async deleteQuiz(@Param('quizId') quizId: string) {
+    return await this.adminService.deleteQuiz(quizId);
   }
 }

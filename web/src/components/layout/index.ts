@@ -1,0 +1,1 @@
+export { AdminLayoutWrapper } from "./AdminLayoutWrapper";

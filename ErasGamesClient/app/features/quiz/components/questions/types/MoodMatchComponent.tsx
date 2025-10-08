@@ -19,15 +19,6 @@ export const MoodMatchComponent: React.FC<MoodMatchComponentProps> = ({
 }) => {
   const theme = useTheme();
 
-  // Debug logging
-  console.log('MoodMatchComponent Debug:', {
-    question,
-    questionType: question.questionType,
-    prompt: question.prompt,
-    choices: question.choices,
-    choicesLength: question.choices?.length,
-    correctAnswer
-  });
 
   const handleChoiceSelect = (index: number) => {
     if (!disabled) {
@@ -63,7 +54,7 @@ export const MoodMatchComponent: React.FC<MoodMatchComponentProps> = ({
     if (isCorrect || isWrong || isSelected) {
       return [styles.choiceText, { color: theme.colors.textOnPrimary }];
     } else {
-      return [styles.choiceText, { color: theme.colors.accent4 }];
+      return [styles.choiceText, { color: theme.colors.textSecondary }];
     }
   };
 

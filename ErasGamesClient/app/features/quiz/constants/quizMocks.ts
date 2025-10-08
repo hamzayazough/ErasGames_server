@@ -30,10 +30,10 @@ export const dailyQuizMock: QuizMock = {
         album: 'folklore',
       },
       choices: [
-        {id: 'choice1', text: '2019'},
-        {id: 'choice2', text: '2020'},
-        {id: 'choice3', text: '2021'},
-        {id: 'choice4', text: '2022'},
+        {id: '1', text: '2019'},
+        {id: '2', text: '2020'},
+        {id: '3', text: '2021'},
+        {id: '4', text: '2022'},
       ],
     },
     {
@@ -47,10 +47,10 @@ export const dailyQuizMock: QuizMock = {
         lyric: 'Romeo, take me somewhere we can be alone',
       },
       choices: [
-        {id: 'choice1', text: 'Love Story'},
-        {id: 'choice2', text: 'You Belong With Me'},
-        {id: 'choice3', text: 'White Horse'},
-        {id: 'choice4', text: 'Teardrops On My Guitar'},
+        {id: '1', text: 'Love Story'},
+        {id: '2', text: 'You Belong With Me'},
+        {id: '3', text: 'White Horse'},
+        {id: '4', text: 'Teardrops On My Guitar'},
       ],
     },
     {
@@ -102,7 +102,12 @@ export const dailyQuizMock: QuizMock = {
       prompt: {
         task: 'Identify the song from this 1-second audio clip',
       },
-      mediaRefs: [{type: 'audio', url: 'https://example.com/one-second.mp3'}],
+      mediaRefs: [
+        {
+          type: 'audio',
+          url: 'https://s3.ca-central-1.amazonaws.com/appart.ai/cinematic-hit-3-317170.mp3',
+        },
+      ],
       choices: [
         'We Are Never Getting Back Together',
         'I Knew You Were Trouble',
@@ -132,10 +137,10 @@ export const basicQuizMock: QuizMock = {
         album: 'folklore',
       },
       choices: [
-        {id: 'choice1', text: '2019'},
-        {id: 'choice2', text: '2020'},
-        {id: 'choice3', text: '2021'},
-        {id: 'choice4', text: '2022'},
+        {id: '1', text: '2019'},
+        {id: '2', text: '2020'},
+        {id: '3', text: '2021'},
+        {id: '4', text: '2022'},
       ],
     },
     {
@@ -149,10 +154,10 @@ export const basicQuizMock: QuizMock = {
         text: "I've got a blank space baby, and I'll _______",
       },
       choices: [
-        {id: 'choice1', text: 'write your name'},
-        {id: 'choice2', text: 'sing your song'},
-        {id: 'choice3', text: 'dance all night'},
-        {id: 'choice4', text: 'call you mine'},
+        {id: '1', text: 'write your name'},
+        {id: '2', text: 'sing your song'},
+        {id: '3', text: 'dance all night'},
+        {id: '4', text: 'call you mine'},
       ],
     },
     {
@@ -166,10 +171,10 @@ export const basicQuizMock: QuizMock = {
         lyric: 'And you were tossing me the car keys',
       },
       choices: [
-        {id: 'choice1', text: 'All Too Well (10 Minute Version)'},
-        {id: 'choice2', text: 'Red'},
-        {id: 'choice3', text: 'We Are Never Getting Back Together'},
-        {id: 'choice4', text: 'I Knew You Were Trouble'},
+        {id: '1', text: 'All Too Well (10 Minute Version)'},
+        {id: '2', text: 'Red'},
+        {id: '3', text: 'We Are Never Getting Back Together'},
+        {id: '4', text: 'I Knew You Were Trouble'},
       ],
     },
     {
@@ -183,10 +188,10 @@ export const basicQuizMock: QuizMock = {
         setRule: 'Albums from the 2010s',
       },
       choices: [
-        {id: 'choice1', text: 'Lover'},
-        {id: 'choice2', text: 'folklore'},
-        {id: 'choice3', text: '1989'},
-        {id: 'choice4', text: 'reputation'},
+        {id: '1', text: 'Lover'},
+        {id: '2', text: 'folklore'},
+        {id: '3', text: '1989'},
+        {id: '4', text: 'reputation'},
       ],
     },
     {
@@ -261,10 +266,10 @@ export const advancedQuizMock: QuizMock = {
         },
       ],
       choices: [
-        {id: 'choice1', text: 'Midnights'},
-        {id: 'choice2', text: 'folklore'},
-        {id: 'choice3', text: 'evermore'},
-        {id: 'choice4', text: 'Lover'},
+        {id: '1', text: 'Midnights'},
+        {id: '2', text: 'folklore'},
+        {id: '3', text: 'evermore'},
+        {id: '4', text: 'Lover'},
       ],
     },
     {
@@ -278,16 +283,28 @@ export const advancedQuizMock: QuizMock = {
         description: 'Upbeat pop song with synthesizers',
       },
       mediaRefs: [
-        {type: 'audio', url: 'https://example.com/clip1.mp3'},
-        {type: 'audio', url: 'https://example.com/clip2.mp3'},
-        {type: 'audio', url: 'https://example.com/clip3.mp3'},
-        {type: 'audio', url: 'https://example.com/clip4.mp3'},
+        {
+          type: 'audio',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
+        },
+        {
+          type: 'audio',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
+        },
+        {
+          type: 'audio',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
+        },
+        {
+          type: 'audio',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
+        },
       ],
       choices: [
-        {id: 'choice1', text: 'Clip 1'},
-        {id: 'choice2', text: 'Clip 2'},
-        {id: 'choice3', text: 'Clip 3'},
-        {id: 'choice4', text: 'Clip 4'},
+        {id: '1', text: 'Clip 1'},
+        {id: '2', text: 'Clip 2'},
+        {id: '3', text: 'Clip 3'},
+        {id: '4', text: 'Clip 4'},
       ],
     },
     {
@@ -312,7 +329,12 @@ export const advancedQuizMock: QuizMock = {
       prompt: {
         task: 'Identify the song from this reversed audio clip',
       },
-      mediaRefs: [{type: 'audio', url: 'https://example.com/reversed.mp3'}],
+      mediaRefs: [
+        {
+          type: 'audio',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
+        },
+      ],
       choices: ['Love Story', 'You Belong With Me', 'Shake It Off', '22'],
     },
     {
@@ -352,10 +374,10 @@ export const interactiveQuizMock: QuizMock = {
           "What significant event happened in Taylor Swift's life in 2016?",
       },
       choices: [
-        {id: 'choice1', text: 'First Grammy win'},
-        {id: 'choice2', text: 'Moved to Nashville'},
-        {id: 'choice3', text: 'Phone call controversy'},
-        {id: 'choice4', text: 'Started dating Joe Alwyn'},
+        {id: '1', text: 'First Grammy win'},
+        {id: '2', text: 'Moved to Nashville'},
+        {id: '3', text: 'Phone call controversy'},
+        {id: '4', text: 'Started dating Joe Alwyn'},
       ],
       correct: {choiceIndex: 2},
     },
@@ -386,13 +408,13 @@ export const interactiveQuizMock: QuizMock = {
       },
       choices: [
         {
-          id: 'choice1',
+          id: '1',
           text: 'All Too Well (10 Minute Version)',
           duration: 630,
         },
-        {id: 'choice2', text: 'State of Grace', duration: 295},
-        {id: 'choice3', text: 'Holy Ground', duration: 203},
-        {id: 'choice4', text: 'Begin Again', duration: 239},
+        {id: '2', text: 'State of Grace', duration: 295},
+        {id: '3', text: 'Holy Ground', duration: 203},
+        {id: '4', text: 'Begin Again', duration: 239},
       ],
       correct: {choiceIndex: 0},
     },
@@ -447,7 +469,12 @@ export const interactiveQuizMock: QuizMock = {
       prompt: {
         task: 'Identify the song from this 1-second audio clip',
       },
-      mediaRefs: [{type: 'audio', url: 'https://example.com/one-second.mp3'}],
+      mediaRefs: [
+        {
+          type: 'audio',
+          url: 'https://crowdprom.s3.ca-central-1.amazonaws.com/promoter-works/jKI5KkceZ8XhAwOXxvdjV703rxA2/flickering-neon-316717.mp3',
+        },
+      ],
       choices: [
         'We Are Never Getting Back Together',
         'I Knew You Were Trouble',
@@ -496,7 +523,6 @@ export const challengeQuizMock: QuizMock = {
 };
 
 export const allQuizMocks: QuizMock[] = [
-  dailyQuizMock,
   basicQuizMock,
   advancedQuizMock,
   interactiveQuizMock,

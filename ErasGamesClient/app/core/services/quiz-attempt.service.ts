@@ -23,12 +23,33 @@ export interface QuizSubmission {
   };
   accPoints: number;
   finishTimeSec: number;
+  previousScore: number; // User's total score before this quiz
+  newTotalScore: number; // User's total score after this quiz
   questions: Array<{
     questionId: string;
     isCorrect: boolean;
     timeSpentMs: number;
     accuracyPoints: number;
   }>;
+  ranking?: {
+    currentRank: number;
+    previousRank?: number;
+    totalPoints: number;
+    rankingContext: Array<{
+      userId: string;
+      handle: string;
+      name?: string;
+      country?: string;
+      totalPoints: number;
+      rank: number;
+      isCurrentUser: boolean;
+    }>;
+    seasonInfo: {
+      id: string;
+      name: string;
+      displayName: string;
+    };
+  };
 }
 
 export interface QuizAnswer {

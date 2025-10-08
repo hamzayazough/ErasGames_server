@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FCM_TOKEN_KEY = '@fcm_token';
 const FCM_PERMISSION_REQUESTED = '@fcm_permission_requested';
+const FCM_REGISTERED_TOKEN_KEY = '@fcm_registered_token';
+const FCM_REGISTERED_USER_KEY = '@fcm_registered_user';
 
 export class FCMService {
   /**
@@ -67,13 +69,45 @@ export class FCMService {
   }
 
   /**
+   * Check if current token is already registered for user
+   */
+  static async isTokenAlreadyRegistered(userId: string): Promise<boolean> {
+    try {
+      const [registeredToken, registeredUser] = await Promise.all([
+        AsyncStorage.getItem(FCM_REGISTERED_TOKEN_KEY),
+        AsyncStorage.getItem(FCM_REGISTERED_USER_KEY),
+      ]);
+
+      const currentToken = await AsyncStorage.getItem(FCM_TOKEN_KEY);
+
+      return (
+        registeredToken === currentToken &&
+        registeredUser === userId &&
+        currentToken !== null
+      );
+    } catch (error) {
+      console.error('Error checking token registration status:', error);
+      return false;
+    }
+  }
+
+  /**
    * Register FCM token with server
    */
   static async registerTokenWithServer(
     token: string,
     userId: string,
+    forceRegister: boolean = false,
   ): Promise<boolean> {
     try {
+      // Check if token is already registered for this user (unless forced)
+      if (!forceRegister && (await this.isTokenAlreadyRegistered(userId))) {
+        console.log('✅ FCM token already registered for user, skipping...');
+        return true;
+      }
+
+      console.log('📤 Registering FCM token with server for user:', userId);
+
       const response = await fetch(
         'http://10.0.2.2:3000/api/notifications/register-token',
         {
@@ -93,6 +127,13 @@ export class FCMService {
 
       if (response.ok) {
         console.log('✅ FCM token registered with server');
+
+        // Store successful registration
+        await Promise.all([
+          AsyncStorage.setItem(FCM_REGISTERED_TOKEN_KEY, token),
+          AsyncStorage.setItem(FCM_REGISTERED_USER_KEY, userId),
+        ]);
+
         return true;
       } else {
         console.error('❌ Failed to register FCM token with server');
@@ -107,10 +148,37 @@ export class FCMService {
   /**
    * Setup foreground message handler
    */
-  static setupForegroundMessageHandler() {
+  static setupForegroundMessageHandler(
+    showNotificationCallback?: (data: {
+      type: 'daily_quiz' | 'test' | 'generic';
+      title?: string;
+      message?: string;
+      quizId?: string;
+      dropTime?: string;
+      data?: Record<string, any>;
+    }) => void,
+  ) {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('📩 Foreground notification received:', remoteMessage);
 
+      // Use custom notification handler if provided
+      if (showNotificationCallback) {
+        const notificationData = {
+          type:
+            (remoteMessage.data?.type as 'daily_quiz' | 'test' | 'generic') ||
+            'generic',
+          title: remoteMessage.notification?.title,
+          message: remoteMessage.notification?.body,
+          quizId: remoteMessage.data?.quizId,
+          dropTime: remoteMessage.data?.dropTime,
+          data: remoteMessage.data,
+        };
+
+        showNotificationCallback(notificationData);
+        return;
+      }
+
+      // Fallback to Alert.alert for backward compatibility
       // Handle different notification types
       if (remoteMessage.data?.type === 'daily_quiz') {
         // Show in-app notification for daily quiz
@@ -221,8 +289,68 @@ export class FCMService {
       // Store new token
       await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
 
-      // Register new token with server
-      await this.registerTokenWithServer(token, userId);
+      // Register new token with server (force since token changed)
+      await this.registerTokenWithServer(token, userId, true);
     });
+  }
+
+  /**
+   * Initialize FCM for user (smart registration)
+   */
+  static async initializeForUser(
+    userId: string,
+    showNotificationCallback?: (data: {
+      type: 'daily_quiz' | 'test' | 'generic';
+      title?: string;
+      message?: string;
+      quizId?: string;
+      dropTime?: string;
+      data?: Record<string, any>;
+    }) => void,
+  ): Promise<boolean> {
+    try {
+      console.log('🔔 Initializing FCM for user:', userId);
+
+      // Request permission and get token
+      const fcmToken = await this.requestPermissionAndGetToken();
+
+      if (!fcmToken) {
+        console.log('❌ Failed to get FCM token');
+        return false;
+      }
+
+      // Register token with server (will check if already registered)
+      const registered = await this.registerTokenWithServer(fcmToken, userId);
+
+      if (registered) {
+        // Setup message handlers
+        this.setupForegroundMessageHandler(showNotificationCallback);
+        this.setupTokenRefreshHandler(userId);
+
+        console.log('✅ FCM initialization complete');
+        return true;
+      } else {
+        console.log('❌ FCM token registration failed');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error initializing FCM:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear FCM registration data (call on logout)
+   */
+  static async clearRegistrationData(): Promise<void> {
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem(FCM_REGISTERED_TOKEN_KEY),
+        AsyncStorage.removeItem(FCM_REGISTERED_USER_KEY),
+      ]);
+      console.log('🧹 FCM registration data cleared');
+    } catch (error) {
+      console.error('Error clearing FCM registration data:', error);
+    }
   }
 }

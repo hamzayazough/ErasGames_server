@@ -62,30 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Setup push notifications for authenticated user
-  const setupNotifications = async (userId: string) => {
-    try {
-      console.log('🔔 Setting up push notifications...');
-      
-      // Request permission and get FCM token
-      const fcmToken = await FCMService.requestPermissionAndGetToken();
-      
-      if (fcmToken) {
-        // Register token with server
-        await FCMService.registerTokenWithServer(fcmToken, userId);
-        
-        // Setup message handlers
-        FCMService.setupForegroundMessageHandler();
-        FCMService.setupTokenRefreshHandler(userId);
-        
-        console.log('✅ Push notifications setup complete');
-      } else {
-        console.log('❌ Failed to get FCM token');
-      }
-    } catch (error) {
-      console.error('Error setting up notifications:', error);
-    }
-  };
+  // Note: FCM setup is now handled in RootNavigator with custom notification callbacks
 
   useEffect(() => {
     // Initialize Firebase
@@ -101,8 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const serverUserData = await handleServerAuthentication();
           console.log('✅ Authenticated with server:', serverUserData.id);
           
-          // Setup FCM notifications after successful authentication
-          await setupNotifications(authUser.uid);
+          // Note: FCM notifications are now setup in RootNavigator with custom handlers
         } catch (error) {
           console.error('❌ Failed to authenticate with server:', error);
           setServerUser(null);
@@ -111,6 +87,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // User is logged out
         setServerUser(null);
         authApiService.logout();
+        // Clear FCM registration data
+        await FCMService.clearRegistrationData();
       }
       
       setIsLoading(false);
@@ -151,6 +129,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear server user data and auth token
       setServerUser(null);
       authApiService.logout();
+      // Clear FCM registration data so token gets re-registered on next login
+      await FCMService.clearRegistrationData();
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +151,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear server user data and auth token
       setServerUser(null);
       authApiService.logout();
+      // Clear FCM registration data
+      await FCMService.clearRegistrationData();
     } finally {
       setIsLoading(false);
     }

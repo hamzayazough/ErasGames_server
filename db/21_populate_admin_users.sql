@@ -1,0 +1,70 @@
+-- 21_populate_admin_users.sql: Populate admin user accounts
+
+-- Insert admin users with Firebase UIDs
+INSERT INTO users (
+    id,
+    email,
+    email_verified,
+    auth_provider,
+    provider_user_id,
+    name,
+    handle,
+    country,
+    tz,
+    role,
+    status,
+    analytics_consent,
+    marketing_consent,
+    push_enabled,
+    leaderboard_opt_out,
+    share_country_on_lb,
+    created_at,
+    updated_at
+) VALUES 
+(
+    'Az3blhnUeTbYdLQl6NhpbSMQhjm2',
+    'admin@erasgames.com',
+    true,
+    'firebase',
+    'Az3blhnUeTbYdLQl6NhpbSMQhjm2',
+    'Admin User 1',
+    'admin1',
+    'CA',
+    'America/Toronto',
+    'admin',
+    'active',
+    true,
+    false,
+    true,
+    false,
+    true,
+    NOW(),
+    NOW()
+),
+(
+    'BJNXWOc1NzPaARvM68aw72rRBq33',
+    'admin2@erasgames.com',
+    true,
+    'firebase',
+    'BJNXWOc1NzPaARvM68aw72rRBq33',
+    'Admin User 2',
+    'admin2',
+    'CA',
+    'America/Toronto',
+    'admin',
+    'active',
+    true,
+    false,
+    true,
+    false,
+    true,
+    NOW(),
+    NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    email_verified = EXCLUDED.email_verified,
+    name = EXCLUDED.name,
+    handle = EXCLUDED.handle,
+    role = EXCLUDED.role,
+    updated_at = NOW();

@@ -7,7 +7,36 @@ import { DailyQuiz } from '../../database/entities/daily-quiz.entity';
 import { DailyQuizQuestion } from '../../database/entities/daily-quiz-question.entity';
 import { User } from '../../database/entities/user.entity';
 import { Answer } from '../../database/entities/answers/answer.interface';
-import { AttemptScoringService } from '../attempt-scoring';
+import {
+  AttemptScoringService,
+  ScoreCalculationResult,
+} from '../attempt-scoring';
+import { SeasonService } from '../../database/services/season.service';
+
+export interface ScoreCalculationResultWithRanking
+  extends ScoreCalculationResult {
+  previousScore: number; // User's total score before this quiz
+  newTotalScore: number; // User's total score after this quiz
+  ranking: {
+    currentRank: number;
+    previousRank?: number;
+    totalPoints: number;
+    rankingContext: Array<{
+      userId: string;
+      handle: string;
+      name?: string | null;
+      country?: string | null;
+      totalPoints: number;
+      rank: number;
+      isCurrentUser: boolean;
+    }>;
+    seasonInfo: {
+      id: string;
+      name: string;
+      displayName: string;
+    };
+  };
+}
 
 @Injectable()
 export class AttemptService {
@@ -23,6 +52,7 @@ export class AttemptService {
     @InjectRepository(DailyQuizQuestion)
     private readonly dailyQuizQuestionRepository: Repository<DailyQuizQuestion>,
     private readonly attemptScoringService: AttemptScoringService,
+    private readonly seasonService: SeasonService,
   ) {}
 
   /**
@@ -222,13 +252,41 @@ export class AttemptService {
    */
   async finishAttempt(
     attemptId: string,
+    userId: string,
     answers?: Array<{ questionId: string; answer: any }>,
-  ) {
+  ): Promise<ScoreCalculationResultWithRanking> {
     const attempt = await this.getAttempt(attemptId);
 
     // Check if already finished (idempotent)
     if (attempt.status === 'finished') {
-      return this.getFinishedAttemptResult(attempt);
+      const result = await this.getFinishedAttemptResult(attempt);
+      const ranking = await this.getRankingContext(userId, result.score);
+
+      // Get user's score info for idempotent case
+      const currentSeason = await this.seasonService.getCurrentSeason();
+      let previousScore = 0;
+      let newTotalScore = result.score;
+
+      if (currentSeason) {
+        const userParticipation = await this.seasonService.getUserParticipation(
+          currentSeason.id,
+          userId,
+        );
+        const totalPoints = userParticipation?.totalPoints || 0;
+        // For finished attempts, we assume the quiz score is already included in total
+        previousScore = totalPoints - result.score;
+        newTotalScore = totalPoints;
+      }
+
+      return {
+        ...result,
+        previousScore,
+        newTotalScore,
+        ranking: {
+          ...ranking,
+          previousRank: ranking.previousRank ?? undefined,
+        },
+      };
     }
 
     const now = new Date();
@@ -273,7 +331,98 @@ export class AttemptService {
 
     await this.attemptRepository.save(attempt);
 
-    return result;
+    // Get user's score before this quiz for animation purposes
+    const currentSeason = await this.seasonService.getCurrentSeason();
+    let previousScore = 0;
+    if (currentSeason) {
+      const userParticipation = await this.seasonService.getUserParticipation(
+        currentSeason.id,
+        userId,
+      );
+      previousScore = userParticipation?.totalPoints || 0;
+    }
+
+    // Add ranking information
+    const ranking = await this.getRankingContext(userId, result.score);
+    return {
+      ...result,
+      previousScore, // Score before this quiz
+      newTotalScore: previousScore + result.score, // Total score after this quiz
+      ranking: {
+        ...ranking,
+        previousRank: ranking.previousRank ?? undefined,
+      },
+    };
+  }
+
+  /**
+   * Get ranking context for user after completing a quiz
+   */
+  private async getRankingContext(userId: string, newScore: number) {
+    try {
+      // Get current active season
+      const currentSeason = await this.seasonService.getCurrentSeason();
+
+      if (!currentSeason) {
+        throw new Error('No active season found');
+      }
+
+      // Get user's previous ranking (before this quiz)
+      const userParticipationBefore =
+        await this.seasonService.getUserParticipation(currentSeason.id, userId);
+      const previousRank = userParticipationBefore?.currentRank;
+
+      // Update user's season participation with new score (add to existing total)
+      await this.seasonService.updateUserParticipation(
+        currentSeason.id,
+        userId,
+        newScore, // This should be the points from this quiz, not total
+      );
+
+      // Get updated ranking context (5 above, user, 5 below)
+      const rankingContext = await this.seasonService.getRankingContext(
+        currentSeason.id,
+        userId,
+        5, // positions above
+        5, // positions below
+      );
+
+      return {
+        currentRank: rankingContext.userRank,
+        previousRank,
+        totalPoints: rankingContext.userTotalPoints,
+        rankingContext: rankingContext.players,
+        seasonInfo: {
+          id: currentSeason.id,
+          name: currentSeason.name,
+          displayName: currentSeason.displayName,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to get ranking context:', error);
+      // Return default ranking info if there's an error
+      return {
+        currentRank: 1,
+        previousRank: undefined,
+        totalPoints: newScore,
+        rankingContext: [
+          {
+            userId,
+            handle: 'You',
+            name: undefined,
+            country: undefined,
+            totalPoints: newScore,
+            rank: 1,
+            isCurrentUser: true,
+          },
+        ],
+        seasonInfo: {
+          id: 'unknown',
+          name: 'Season 1',
+          displayName: 'Season 1',
+        },
+      };
+    }
   }
 
   /**

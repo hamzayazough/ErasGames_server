@@ -48,7 +48,7 @@ export const LongestSongComponent: React.FC<LongestSongComponentProps> = ({
     if (isCorrect || isWrong || isSelected) {
       return theme.colors.textOnPrimary;
     }
-    return theme.colors.accent4;
+    return theme.colors.textSecondary;
   };
 
   return (

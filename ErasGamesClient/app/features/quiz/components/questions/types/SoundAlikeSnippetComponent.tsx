@@ -4,6 +4,7 @@ import { QuestionComponentProps } from '../QuestionRenderer';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text } from '../../../../../ui';
 import { useTheme } from '../../../../../core/theme/ThemeProvider';
+import { audioService } from '../../../../../core/services/audioService';
 
 interface SoundAlikeSnippetComponentProps extends Omit<QuestionComponentProps, 'question'> {
   question: SoundAlikeSnippetQuestion;
@@ -23,23 +24,48 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
   const [playCount, setPlayCount] = useState(0);
   const [audioDuration, setAudioDuration] = useState(8); // Default 8 seconds
 
+  // Cleanup audio when component unmounts
+  useEffect(() => {
+    return () => {
+      if (isPlaying) {
+        audioService.stopCurrentSound();
+      }
+    };
+  }, [isPlaying]);
+
   const handleChoiceSelect = (index: number) => {
     if (!disabled) {
       onAnswerChange({ choiceIndex: index });
     }
   };
 
-  const handlePlayAudio = () => {
+  const handlePlayAudio = async () => {
     if (playCount >= 2) return; // Max 2 plays as per requirements
     
-    // TODO: Implement actual audio playback
-    setIsPlaying(true);
-    setPlayCount(prev => prev + 1);
+    if (!question.mediaRefs || question.mediaRefs.length === 0) {
+      return;
+    }
+
+    const audioRef = question.mediaRefs.find(ref => ref.type === 'audio');
     
-    // Simulate audio playback duration
-    setTimeout(() => {
+    if (!audioRef) {
+      return;
+    }
+
+    try {
+      setIsPlaying(true);
+      setPlayCount(prev => prev + 1);
+      
+      await audioService.playSound(
+        audioRef.url,
+        () => {
+          // Audio finished playing
+          setIsPlaying(false);
+        }
+      );
+    } catch (error) {
       setIsPlaying(false);
-    }, audioDuration * 1000);
+    }
   };
 
   const getChoiceStyle = (index: number) => {
@@ -76,8 +102,8 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
         return theme.colors.textOnPrimary;
       }
     }
-    
-    return isSelected ? theme.colors.accent4 : theme.colors.textPrimary;
+
+    return isSelected ? theme.colors.textSecondary : theme.colors.textPrimary;
   };
 
   return (
@@ -92,7 +118,7 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
         <TouchableOpacity
           style={[
             styles.playButton,
-            { backgroundColor: isPlaying ? theme.colors.primary : theme.colors.accent4 },
+            { backgroundColor: isPlaying ? theme.colors.primary : theme.colors.textSecondary },
             (disabled || playCount >= 2) && styles.playButtonDisabled
           ]}
           onPress={handlePlayAudio}
@@ -105,11 +131,11 @@ export const SoundAlikeSnippetComponent: React.FC<SoundAlikeSnippetComponentProp
         </TouchableOpacity>
         
         <View style={styles.audioInfo}>
-          <Text style={[styles.audioLabel, { color: theme.colors.accent4 }]}>
+          <Text style={[styles.audioLabel, { color: theme.colors.textSecondary }]}>
             {isPlaying ? 'Playing Snippet...' : `Play Snippet (0:0${audioDuration})`}
           </Text>
           {playCount > 0 && (
-            <Text style={[styles.playCountText, { color: theme.colors.accent4, opacity: 0.7 }]}>
+            <Text style={[styles.playCountText, { color: theme.colors.textSecondary, opacity: 0.7 }]}>
               Played {playCount}/2 times
             </Text>
           )}

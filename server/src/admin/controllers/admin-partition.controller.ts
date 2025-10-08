@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../../guards/admin.guard';
 import { PartitionManagementService } from '../../database/services/partition-management.service';
 
 interface PartitionResponse {
@@ -13,7 +14,7 @@ interface PartitionResponse {
  * Provides monitoring, manual operations, and health checks for partitioned tables.
  */
 @Controller('admin/partitions')
-// @UseGuards(AdminAuthGuard) // Add admin authentication guard
+@UseGuards(AdminGuard)
 export class AdminPartitionController {
   constructor(private readonly partitionService: PartitionManagementService) {}
 

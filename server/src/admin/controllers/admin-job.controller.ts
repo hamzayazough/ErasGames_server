@@ -6,13 +6,16 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
+import { AdminGuard } from '../../guards/admin.guard';
 import { DailyQuizJobProcessor } from '../../services/daily-quiz-job-processor.service';
 
 /**
  * Admin controller for managing daily quiz background jobs
  */
 @Controller('admin/jobs')
+@UseGuards(AdminGuard)
 export class AdminJobController {
   private readonly logger = new Logger(AdminJobController.name);
 
@@ -25,6 +28,19 @@ export class AdminJobController {
   @Get('status')
   getJobStatus() {
     return this.jobProcessor.getJobStatus();
+  }
+
+  /**
+   * GET /admin/jobs/notifications
+   * Get list of active notification cron jobs for debugging
+   */
+  @Get('notifications')
+  getActiveNotificationJobs() {
+    return {
+      success: true,
+      data: this.jobProcessor.getActiveNotificationJobs(),
+      message: 'Active notification jobs retrieved',
+    };
   }
 
   /**
@@ -45,7 +61,7 @@ export class AdminJobController {
         );
       }
 
-      await this.jobProcessor.triggerDailyComposition(dropDate);
+      await this.jobProcessor.triggerDailyQuizCreation(dropDate);
 
       return {
         message: `Daily composition triggered for ${dropDate.toISOString()}`,
@@ -73,7 +89,7 @@ export class AdminJobController {
     @Body() request: { quizId: string },
   ): Promise<{ message: string }> {
     try {
-      await this.jobProcessor.triggerTemplateWarmup(request.quizId);
+      await this.jobProcessor.triggerTemplateGeneration(request.quizId);
 
       return {
         message: `Template warmup triggered for quiz ${request.quizId}`,
@@ -99,7 +115,7 @@ export class AdminJobController {
   @Post('composer/run')
   async runComposerJob(): Promise<{ message: string }> {
     try {
-      await this.jobProcessor.runDailyComposition();
+      await this.jobProcessor.runDailyQuizCreation();
 
       return {
         message: 'Daily composition job completed successfully',
@@ -120,7 +136,7 @@ export class AdminJobController {
   @Post('template/run')
   async runTemplateJob(): Promise<{ message: string }> {
     try {
-      await this.jobProcessor.runTemplateWarmup();
+      await this.jobProcessor.runTemplateRetry();
 
       return {
         message: 'Template warmup job completed successfully',

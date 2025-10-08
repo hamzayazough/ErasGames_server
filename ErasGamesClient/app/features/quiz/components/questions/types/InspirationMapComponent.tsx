@@ -58,7 +58,7 @@ export const InspirationMapComponent: React.FC<InspirationMapComponentProps> = (
     if (isCorrect || isWrong || isSelected) {
       return theme.colors.textOnPrimary;
     }
-    return theme.colors.accent4;
+    return theme.colors.textSecondary;
   };
 
   return (
@@ -71,7 +71,7 @@ export const InspirationMapComponent: React.FC<InspirationMapComponentProps> = (
       {/* Disclaimer if provided */}
       {question.prompt.disclaimer && (
         <View style={[styles.disclaimerContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent1 }]}>
-          <Text style={[styles.disclaimerLabel, { color: theme.colors.accent4 }]}>
+          <Text style={[styles.disclaimerLabel, { color: theme.colors.textSecondary }]}>
             ⚠️ DISCLAIMER:
           </Text>
           <Text style={[styles.disclaimerText, { color: theme.colors.textPrimary }]}>

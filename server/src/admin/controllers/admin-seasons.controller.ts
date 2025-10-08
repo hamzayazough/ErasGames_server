@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../../guards/admin.guard';
 import { SeasonService } from '../../database/services/season.service';
 import type { CreateSeasonDto } from '../../database/services/season.service';
 import { Season } from '../../database/entities/season.entity';
@@ -10,6 +11,7 @@ import { DailySeasonProgress } from '../../database/entities/daily-season-progre
  * Admin-only endpoints for season management, maintenance, and manual operations.
  */
 @Controller('admin/seasons')
+@UseGuards(AdminGuard)
 export class AdminSeasonsController {
   constructor(private readonly seasonService: SeasonService) {}
 
