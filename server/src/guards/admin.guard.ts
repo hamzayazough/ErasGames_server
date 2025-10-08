@@ -10,7 +10,7 @@ import { FirebaseService } from '../services/firebase.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
-import { UserRole } from '../database/enums/user.enums';
+import { UserRole, UserStatus } from '../database/enums/user.enums';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -85,7 +85,7 @@ export class AdminGuard implements CanActivate {
         );
       }
 
-      if (user.status !== 'active') {
+      if (user.status !== UserStatus.ACTIVE) {
         throw new ForbiddenException(
           'Access denied: Admin account is not active',
         );
