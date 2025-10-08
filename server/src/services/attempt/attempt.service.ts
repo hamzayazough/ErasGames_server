@@ -15,6 +15,8 @@ import { SeasonService } from '../../database/services/season.service';
 
 export interface ScoreCalculationResultWithRanking
   extends ScoreCalculationResult {
+  previousScore: number; // User's total score before this quiz
+  newTotalScore: number; // User's total score after this quiz
   ranking: {
     currentRank: number;
     previousRank?: number;
@@ -259,8 +261,27 @@ export class AttemptService {
     if (attempt.status === 'finished') {
       const result = await this.getFinishedAttemptResult(attempt);
       const ranking = await this.getRankingContext(userId, result.score);
+
+      // Get user's score info for idempotent case
+      const currentSeason = await this.seasonService.getCurrentSeason();
+      let previousScore = 0;
+      let newTotalScore = result.score;
+
+      if (currentSeason) {
+        const userParticipation = await this.seasonService.getUserParticipation(
+          currentSeason.id,
+          userId,
+        );
+        const totalPoints = userParticipation?.totalPoints || 0;
+        // For finished attempts, we assume the quiz score is already included in total
+        previousScore = totalPoints - result.score;
+        newTotalScore = totalPoints;
+      }
+
       return {
         ...result,
+        previousScore,
+        newTotalScore,
         ranking: {
           ...ranking,
           previousRank: ranking.previousRank ?? undefined,
@@ -310,10 +331,23 @@ export class AttemptService {
 
     await this.attemptRepository.save(attempt);
 
+    // Get user's score before this quiz for animation purposes
+    const currentSeason = await this.seasonService.getCurrentSeason();
+    let previousScore = 0;
+    if (currentSeason) {
+      const userParticipation = await this.seasonService.getUserParticipation(
+        currentSeason.id,
+        userId,
+      );
+      previousScore = userParticipation?.totalPoints || 0;
+    }
+
     // Add ranking information
     const ranking = await this.getRankingContext(userId, result.score);
     return {
       ...result,
+      previousScore, // Score before this quiz
+      newTotalScore: previousScore + result.score, // Total score after this quiz
       ranking: {
         ...ranking,
         previousRank: ranking.previousRank ?? undefined,
@@ -338,11 +372,11 @@ export class AttemptService {
         await this.seasonService.getUserParticipation(currentSeason.id, userId);
       const previousRank = userParticipationBefore?.currentRank;
 
-      // Update user's season participation with new score
+      // Update user's season participation with new score (add to existing total)
       await this.seasonService.updateUserParticipation(
         currentSeason.id,
         userId,
-        newScore,
+        newScore, // This should be the points from this quiz, not total
       );
 
       // Get updated ranking context (5 above, user, 5 below)

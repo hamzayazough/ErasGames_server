@@ -148,10 +148,37 @@ export class FCMService {
   /**
    * Setup foreground message handler
    */
-  static setupForegroundMessageHandler() {
+  static setupForegroundMessageHandler(
+    showNotificationCallback?: (data: {
+      type: 'daily_quiz' | 'test' | 'generic';
+      title?: string;
+      message?: string;
+      quizId?: string;
+      dropTime?: string;
+      data?: Record<string, any>;
+    }) => void,
+  ) {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
       console.log('📩 Foreground notification received:', remoteMessage);
 
+      // Use custom notification handler if provided
+      if (showNotificationCallback) {
+        const notificationData = {
+          type:
+            (remoteMessage.data?.type as 'daily_quiz' | 'test' | 'generic') ||
+            'generic',
+          title: remoteMessage.notification?.title,
+          message: remoteMessage.notification?.body,
+          quizId: remoteMessage.data?.quizId,
+          dropTime: remoteMessage.data?.dropTime,
+          data: remoteMessage.data,
+        };
+
+        showNotificationCallback(notificationData);
+        return;
+      }
+
+      // Fallback to Alert.alert for backward compatibility
       // Handle different notification types
       if (remoteMessage.data?.type === 'daily_quiz') {
         // Show in-app notification for daily quiz
@@ -270,7 +297,17 @@ export class FCMService {
   /**
    * Initialize FCM for user (smart registration)
    */
-  static async initializeForUser(userId: string): Promise<boolean> {
+  static async initializeForUser(
+    userId: string,
+    showNotificationCallback?: (data: {
+      type: 'daily_quiz' | 'test' | 'generic';
+      title?: string;
+      message?: string;
+      quizId?: string;
+      dropTime?: string;
+      data?: Record<string, any>;
+    }) => void,
+  ): Promise<boolean> {
     try {
       console.log('🔔 Initializing FCM for user:', userId);
 
@@ -287,7 +324,7 @@ export class FCMService {
 
       if (registered) {
         // Setup message handlers
-        this.setupForegroundMessageHandler();
+        this.setupForegroundMessageHandler(showNotificationCallback);
         this.setupTokenRefreshHandler(userId);
 
         console.log('✅ FCM initialization complete');

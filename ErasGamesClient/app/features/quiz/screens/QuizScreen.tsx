@@ -146,7 +146,7 @@ export default function QuizScreen({navigation, route}: Props) {
           // Show completed quiz message
           Alert.alert(
             'Quiz Already Completed',
-            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0}%! Come back tomorrow for a new quiz.`,
+            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0} points! Come back tomorrow for a new quiz.`,
             [{text: 'OK'}]
           );
         } else {

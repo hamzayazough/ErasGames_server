@@ -62,23 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Setup push notifications for authenticated user
-  const setupNotifications = async (userId: string) => {
-    try {
-      console.log('🔔 Setting up push notifications...');
-      
-      // Use the smart initialization that avoids duplicate registrations
-      const success = await FCMService.initializeForUser(userId);
-      
-      if (success) {
-        console.log('✅ Push notifications setup complete');
-      } else {
-        console.log('❌ Push notifications setup failed');
-      }
-    } catch (error) {
-      console.error('Error setting up notifications:', error);
-    }
-  };
+  // Note: FCM setup is now handled in RootNavigator with custom notification callbacks
 
   useEffect(() => {
     // Initialize Firebase
@@ -94,8 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const serverUserData = await handleServerAuthentication();
           console.log('✅ Authenticated with server:', serverUserData.id);
           
-          // Setup FCM notifications after successful authentication
-          await setupNotifications(authUser.uid);
+          // Note: FCM notifications are now setup in RootNavigator with custom handlers
         } catch (error) {
           console.error('❌ Failed to authenticate with server:', error);
           setServerUser(null);

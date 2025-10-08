@@ -30,8 +30,11 @@ const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 type Props = RootStackScreenProps<'DailyDrop'>;
 
-export default function DailyDropScreen({navigation}: Props) {
+export default function DailyDropScreen({navigation, route}: Props) {
   const theme = useTheme();
+  
+  // Extract notification-specific quizId if provided
+  const notificationQuizId = route.params?.quizId;
   
   // Use the consolidated hook that handles everything
   const { 
@@ -63,6 +66,16 @@ export default function DailyDropScreen({navigation}: Props) {
   
   // Quiz starting state
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
+
+  // Handle notification deep link
+  useEffect(() => {
+    if (notificationQuizId && isAvailable && !isLoading) {
+      console.log('🔗 Deep link from notification detected, quiz ID:', notificationQuizId);
+      // If quiz is available and we have a notification quiz ID, 
+      // we could auto-start the quiz or show some indication
+      // For now, just log it - the user will see the available quiz
+    }
+  }, [notificationQuizId, isAvailable, isLoading]);
 
   // Initialize local countdown from server data  
   useEffect(() => {
@@ -217,7 +230,7 @@ export default function DailyDropScreen({navigation}: Props) {
           // Show completed quiz message
           Alert.alert(
             'Quiz Already Completed',
-            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0}%! Come back tomorrow for a new quiz.`,
+            `You've already completed today's quiz with a score of ${attemptStatus.attempt.score || 0} points! Come back tomorrow for a new quiz.`,
             [{text: 'OK'}]
           );
         } else {

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
-  Image,
   Dimensions,
 } from 'react-native';
 import {useTheme, ThemedBackground} from '../../../core/theme';
@@ -22,7 +21,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   const theme = useTheme();
   
   const {quizResult} = route.params;
-  const {finalScore, finishTimeSeconds, questions, ranking} = quizResult;
+  const {finalScore, finishTimeSeconds, questions, ranking, accPoints, previousScore, newTotalScore} = quizResult;
   
   const totalQuestions = questions?.length || 0;
   const correctAnswers = questions?.filter(q => q.isCorrect).length || 0;
@@ -32,7 +31,6 @@ export default function QuizResultsScreen({navigation, route}: Props) {
   const [countingAnimation] = useState(new Animated.Value(0));
   const [displayScore, setDisplayScore] = useState(0);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [timeLeft, setTimeLeft] = useState('23:45:12');
   const [animatingScores, setAnimatingScores] = useState(false);
   const [currentUserAnimatedScore, setCurrentUserAnimatedScore] = useState(currentUser?.totalScore || 0);
   const [rankImprovement, setRankImprovement] = useState(0);
@@ -113,29 +111,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
     }, 500);
   }, []);
 
-  // Countdown timer effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Calculate time until end of day (midnight)
-      const now = new Date();
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      const diff = endOfDay.getTime() - now.getTime();
-      
-      if (diff > 0) {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-      } else {
-        setTimeLeft('00:00:00');
-      }
-    }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
 
   // Animate score increase in leaderboard
   const animateScoreIncrease = () => {
@@ -273,10 +249,37 @@ export default function QuizResultsScreen({navigation, route}: Props) {
           </View>
         )}
 
-        {/* Action Button */}
+        {/* Action Buttons */}
         <View style={styles.actionContainer}>
           <TouchableOpacity
-            style={[styles.homeButton, { backgroundColor: theme.colors.primary }]}
+            style={[styles.leaderboardButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => {
+              // Debug logging before navigation
+              console.log('QuizResults - Navigating to Leaderboard with data:');
+              console.log('Final Score:', finalScore);
+              console.log('Ranking data:', ranking);
+              console.log('Ranking context:', ranking?.rankingContext);
+              
+              // Navigate to leaderboard screen with quiz results data
+              navigation.navigate('Leaderboard', {
+                quizResults: {
+                  score: finalScore,
+                  accPoints: accPoints || 0,
+                  previousScore: previousScore || 0,
+                  newTotalScore: newTotalScore || finalScore,
+                  ranking: ranking,
+                },
+              });
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, { color: theme.colors.onPrimary || '#FFFFFF' }]}>
+              🏆 View Leaderboard
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.homeButton, { backgroundColor: theme.colors.surface, borderWidth: 2, borderColor: theme.colors.primary }]}
             onPress={() => {
               navigation.reset({
                 index: 0,
@@ -285,7 +288,7 @@ export default function QuizResultsScreen({navigation, route}: Props) {
             }}
             activeOpacity={0.8}
           >
-            <Text style={[styles.buttonText, { color: theme.colors.onPrimary || '#FFFFFF' }]}>
+            <Text style={[styles.buttonText, { color: theme.colors.primary }]}>
               🏠 Back Home
             </Text>
           </TouchableOpacity>
@@ -317,10 +320,6 @@ export default function QuizResultsScreen({navigation, route}: Props) {
           {/* Player Score Section */}
           <View style={[styles.playerScoreSection, { backgroundColor: theme.colors.card }]}>
             <View style={styles.coinContainer}>
-              <Image 
-                source={require('../../../assets/images/coin.png')} 
-                style={styles.coinIcon} 
-              />
               <Text style={[styles.coinText, { color: theme.colors.primary }]}>
                 +{accPoints || finalScore}
               </Text>
@@ -393,13 +392,6 @@ export default function QuizResultsScreen({navigation, route}: Props) {
               </View>
             )}
           </Card>
-          
-          {/* Countdown Timer */}
-          <View style={[styles.timerContainer, { backgroundColor: theme.colors.card }]}>
-            <Text style={[styles.timerText, { color: theme.colors.textSecondary }]}>
-              Ends in {timeLeft}
-            </Text>
-          </View>
           
           {/* Continue Button */}
           <View style={styles.actionContainer}>
@@ -530,6 +522,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
+  leaderboardButton: {
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
   homeButton: {
     paddingVertical: 18,
     paddingHorizontal: 32,
@@ -587,8 +591,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   coinIcon: {
-    width: 32,
-    height: 32,
+    fontSize: 32,
     marginRight: 8,
   },
   coinText: {
@@ -654,22 +657,6 @@ const styles = StyleSheet.create({
   },
   currentPlayerScore: {
     fontWeight: '700',
-  },
-  timerContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  timerText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   noDataContainer: {
     padding: 20,

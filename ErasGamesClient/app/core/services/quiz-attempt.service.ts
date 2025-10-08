@@ -23,6 +23,8 @@ export interface QuizSubmission {
   };
   accPoints: number;
   finishTimeSec: number;
+  previousScore: number; // User's total score before this quiz
+  newTotalScore: number; // User's total score after this quiz
   questions: Array<{
     questionId: string;
     isCorrect: boolean;
