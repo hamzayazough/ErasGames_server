@@ -244,13 +244,17 @@ export default function QuizScreen({navigation, route}: Props) {
       setQuizSubmitted(true); // Stop the timer
       
       if (isMountedRef.current) {
-        // Create QuizSubmission object for results screen
+        // Create QuizSubmission object for results screen with ALL data from API
         const quizSubmission = {
           finalScore: result.score,
           scoreBreakdown: result.breakdown,
           finishTimeSeconds: result.finishTimeSec,
           accuracyPoints: result.accPoints,
-          questions: result.questions
+          questions: result.questions,
+          // Include ranking and score data from API response
+          ranking: result.ranking,
+          previousScore: result.previousScore,
+          newTotalScore: result.newTotalScore
         };
         
         // Navigate to results screen
