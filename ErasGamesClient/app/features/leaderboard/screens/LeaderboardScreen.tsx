@@ -169,13 +169,13 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
   };
 
   const getRankTextColor = (rank: number, isCurrentUser: boolean) => {
-    if (isCurrentUser) return '#8A2BE2';
-    if (rank <= 3) return '#8A2BE2'; // Purple for top 3
-    return '#666666'; // Gray for others
+    if (isCurrentUser) return '#FFD700'; // Gold for current user
+    if (rank <= 3) return '#FFD700'; // Gold for top 3
+    return '#FFFFFF'; // White for others
   };
 
   const getPlayerTextColor = (isCurrentUser: boolean) => {
-    return isCurrentUser ? '#8A2BE2' : '#2D1B69';
+    return isCurrentUser ? '#FFD700' : '#FFFFFF'; // Gold for current user, white for others
   };
 
   // Render clean player row (like reference design)
@@ -236,11 +236,11 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
           <Text style={[
             styles.cleanPlayerScore,
             { 
-              color: isCurrentUser ? 'rgba(138, 43, 226, 0.7)' : '#666666',
+              color: isCurrentUser ? 'rgba(255, 215, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
               fontWeight: '600'
             }
           ]}>
-            {player.totalPoints.toLocaleString()} points
+            💰 {player.totalPoints.toLocaleString()} points
           </Text>
         </View>
 
@@ -365,20 +365,25 @@ const styles = StyleSheet.create({
   cleanPlayerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: '#7f05d6ff', // Indigo purple card background
     marginVertical: 6,
     borderRadius: 16,
     padding: 16,
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: 'rgba(0, 0, 0, 0.3)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   currentUserHighlight: {
-    backgroundColor: 'rgba(138, 43, 226, 0.1)',
+    backgroundColor: '#6A0DAD', // Slightly lighter purple for current user
     borderWidth: 2,
-    borderColor: 'rgba(138, 43, 226, 0.3)',
+    borderColor: '#8A2BE2', // Bright purple border
+    shadowColor: 'rgba(138, 43, 226, 0.5)',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 6,
   },
 
   // Rank Number
@@ -435,10 +440,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: 'rgba(0, 0, 0, 0.3)',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
