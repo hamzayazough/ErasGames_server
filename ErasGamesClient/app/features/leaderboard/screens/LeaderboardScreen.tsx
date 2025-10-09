@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {View, Text, Card} from '../../../ui';
 import {useTheme, ThemedBackground} from '../../../core/theme';
+import {useAuth} from '../../../core/context/AuthContext';
 import {useLeaderboard} from '../hooks/useLeaderboard';
 import {TopPlayer} from '../../../core/api/seasons';
 import {GlobalHeader, AnimatedLogo} from '../../../shared/components';
@@ -17,6 +18,8 @@ const {width: screenWidth} = Dimensions.get('window');
 
 export default function LeaderboardScreen({ navigation }: { navigation?: any }) {
   const theme = useTheme();
+  const { serverUser } = useAuth();
+  const scrollViewRef = useRef<ScrollView>(null);
   const {
     leaderboard,
     myStats,
@@ -77,7 +80,30 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
   };
 
   const leaderboardData = getPlayers();
+  const currentUserId = serverUser?.id;
   const currentUserRank = myStats?.hasStats ? myStats.stats?.participation.currentRank : null;
+
+  // Auto-scroll to current user's position when data loads
+  useEffect(() => {
+    if (!isLoading && leaderboardData.length > 0 && currentUserId) {
+      const currentUserIndex = leaderboardData.findIndex(player => player.userId === currentUserId);
+      
+      if (currentUserIndex !== -1 && scrollViewRef.current) {
+        // Calculate approximate scroll position
+        // Each row is approximately: margin (8) + padding (16*2) + content height (~70) = ~122px
+        const rowHeight = 122;
+        const scrollPosition = currentUserIndex * rowHeight;
+        
+        // Add a small delay to ensure the layout is complete
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({
+            y: scrollPosition,
+            animated: true,
+          });
+        }, 300);
+      }
+    }
+  }, [isLoading, leaderboardData, currentUserId]);
 
   // Get rank colors based on position
   const getRankColors = (rank: number, isCurrentUser: boolean) => {
@@ -180,7 +206,7 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
 
   // Render clean player row (like reference design)
   const renderCleanPlayerRow = (player: TopPlayer, index: number) => {
-    const isCurrentUser = currentUserRank === player.rank;
+    const isCurrentUser = currentUserId === player.userId;
     const displayName = isCurrentUser ? 'You' : (player.name || player.handle);
     const avatarLetter = getAvatarLetter(player, isCurrentUser);
     const avatarColor = getAvatarColor(displayName);
@@ -250,7 +276,7 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
               fontWeight: '600'
             }
           ]}>
-            💰 {player.totalPoints.toLocaleString()} points
+            {player.totalPoints.toLocaleString()} points
           </Text>
         </View>
 
@@ -302,6 +328,7 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
