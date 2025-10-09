@@ -5,6 +5,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Dimensions,
+  Image,
 } from 'react-native';
 import {View, Text, Card} from '../../../ui';
 import {useTheme, ThemedBackground} from '../../../core/theme';
@@ -239,7 +240,7 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
               fontWeight: '600'
             }
           ]}>
-            🪙 {player.totalPoints.toLocaleString()} points
+            {player.totalPoints.toLocaleString()} points
           </Text>
         </View>
 
@@ -280,6 +281,15 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
         onProfilePress={() => navigation?.navigate?.('Profile', {userId: undefined})}
         onLeaderboardPress={() => {}} // Already on leaderboard
       />
+
+      {/* Leaderboard Title Image */}
+      <View style={styles.headerImageContainer}>
+        <Image 
+          source={require('../../../assets/images/main-theme/main-leaderboard-title.png')}
+          style={styles.leaderboardTitleImage}
+          resizeMode="contain"
+        />
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -337,6 +347,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 40,
+  },
+
+  // Header Image Container
+  headerImageContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+  },
+  leaderboardTitleImage: {
+    width: screenWidth * 0.8, // 80% of screen width
+    height: 60, // Fixed height for title
+    maxWidth: 300, // Maximum width constraint
   },
 
   // Clean Player Row (like reference design)
