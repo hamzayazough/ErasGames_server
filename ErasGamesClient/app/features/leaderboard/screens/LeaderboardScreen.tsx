@@ -156,9 +156,9 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
     if (isCurrentUser) {
       return { 
         ...baseStyle, 
-        backgroundColor: '#8A2BE2',
+        backgroundColor: theme.colors.accent3 || theme.colors.primary,
         borderWidth: 2,
-        borderColor: '#9370DB',
+        borderColor: theme.colors.accent1 || theme.colors.textOnPrimary,
       };
     }
     
@@ -169,13 +169,13 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
   };
 
   const getRankTextColor = (rank: number, isCurrentUser: boolean) => {
-    if (isCurrentUser) return '#FFD700'; // Gold for current user
-    if (rank <= 3) return '#FFD700'; // Gold for top 3
-    return '#FFFFFF'; // White for others
+    if (isCurrentUser) return theme.colors.accent1 || theme.colors.textOnPrimary;
+    if (rank <= 3) return theme.colors.accent1 || theme.colors.textOnPrimary;
+    return theme.colors.textOnPrimary;
   };
 
   const getPlayerTextColor = (isCurrentUser: boolean) => {
-    return isCurrentUser ? '#FFD700' : '#FFFFFF'; // Gold for current user, white for others
+    return isCurrentUser ? theme.colors.accent1 || theme.colors.textOnPrimary : theme.colors.textOnPrimary;
   };
 
   // Render clean player row (like reference design)
@@ -202,7 +202,15 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
         key={`player-${player.userId}-${index}`}
         style={[
           styles.cleanPlayerRow,
-          isCurrentUser && styles.currentUserHighlight
+          {
+            backgroundColor: theme.colors.text, // Using text color (#4B0082 indigo)
+            shadowColor: theme.colors.text,
+          },
+          isCurrentUser && {
+            backgroundColor: theme.colors.textSecondary || theme.colors.text,
+            borderWidth: 2,
+            borderColor: theme.colors.accent1 || theme.colors.primary,
+          }
         ]}
         activeOpacity={0.7}
       >
@@ -236,7 +244,9 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
           <Text style={[
             styles.cleanPlayerScore,
             { 
-              color: isCurrentUser ? 'rgba(255, 215, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+              color: isCurrentUser 
+                ? theme.colors.accent2 || theme.colors.textOnPrimary + '80'
+                : theme.colors.textOnPrimary + 'CC',
               fontWeight: '600'
             }
           ]}>
@@ -305,17 +315,28 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
         showsVerticalScrollIndicator={false}
       >
         {/* Simple Clean Leaderboard List */}
-        {leaderboardData.length > 0 ? (
-          leaderboardData.map((player, index) => renderCleanPlayerRow(player, index))
-        ) : (
-          <View style={styles.emptyContainer}>
-            <AnimatedLogo size={120} />
-            <Text style={styles.emptyTitle}>Ready to Compete?</Text>
-            <Text style={styles.emptyText}>
-              Be the first to join the leaderboard! 🚀
-            </Text>
-          </View>
-        )}
+        <View style={styles.playersContainer}>
+          {leaderboardData.length > 0 ? (
+            <View style={[
+              styles.playersBackground,
+              {
+                backgroundColor: theme.colors.backgroundDark || theme.colors.surface,
+                shadowColor: theme.colors.primary,
+                borderColor: theme.colors.border,
+              }
+            ]}>
+              {leaderboardData.map((player, index) => renderCleanPlayerRow(player, index))}
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <AnimatedLogo size={120} />
+              <Text style={styles.emptyTitle}>Ready to Compete?</Text>
+              <Text style={styles.emptyText}>
+                Be the first to join the leaderboard! 🚀
+              </Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -349,6 +370,23 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
+  // Players Container (outer wrapper)
+  playersContainer: {
+    marginVertical: 8,
+  },
+
+  // Players Background (inner dark container) - will be styled dynamically with theme
+  playersBackground: {
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+  },
+
   // Header Image Container
   headerImageContainer: {
     alignItems: 'center',
@@ -361,29 +399,18 @@ const styles = StyleSheet.create({
     maxWidth: 300, // Maximum width constraint
   },
 
-  // Clean Player Row (like reference design)
+  // Clean Player Row (like reference design) - background will be styled dynamically
   cleanPlayerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#7f05d6ff', // Indigo purple card background
-    marginVertical: 6,
+    marginVertical: 4, // Spacing between rows
+    marginHorizontal: 4, // Small horizontal margin for better fit
     borderRadius: 16,
     padding: 16,
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-  },
-  currentUserHighlight: {
-    backgroundColor: '#6A0DAD', // Slightly lighter purple for current user
-    borderWidth: 2,
-    borderColor: '#8A2BE2', // Bright purple border
-    shadowColor: 'rgba(138, 43, 226, 0.5)',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 6,
   },
 
   // Rank Number
