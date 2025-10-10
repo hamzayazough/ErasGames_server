@@ -619,6 +619,63 @@ export class SeasonService {
   }
 
   /**
+   * Get total number of participants in a season
+   */
+  async getTotalParticipants(seasonId: string): Promise<number> {
+    return this.participationRepository.count({
+      where: { season: { id: seasonId }, isActive: true },
+    });
+  }
+
+  /**
+   * Get paginated leaderboard for a season
+   */
+  async getPaginatedLeaderboard(
+    seasonId: string,
+    offset: number = 0,
+    limit: number = 50,
+  ): Promise<{
+    players: TopPlayer[];
+    totalParticipants: number;
+    hasMore: boolean;
+  }> {
+    const totalParticipants = await this.getTotalParticipants(seasonId);
+
+    const participations = await this.participationRepository.find({
+      where: { season: { id: seasonId }, isActive: true },
+      relations: ['user'],
+      order: { totalPoints: 'DESC' },
+      skip: offset,
+      take: limit,
+    });
+
+    const players: TopPlayer[] = participations.map((p, index) => ({
+      userId: p.user.id,
+      handle: p.user.handle || 'Anonymous',
+      name: p.user.name,
+      country: p.user.country,
+      totalPoints: p.totalPoints,
+      rank: offset + index + 1,
+      totalQuizzesCompleted: p.totalQuizzesCompleted,
+      currentStreak: p.currentStreak,
+      longestStreak: p.longestStreak,
+      perfectScores: p.perfectScores,
+      averagePointsPerQuiz: p.averagePointsPerQuiz,
+      perfectScoreRate: p.perfectScoreRate,
+      lastActivityAt: p.lastActivityAt?.toISOString() || '',
+      daysActive: p.participationDays,
+    }));
+
+    const hasMore = offset + limit < totalParticipants;
+
+    return {
+      players,
+      totalParticipants,
+      hasMore,
+    };
+  }
+
+  /**
    * Recalculate rankings for all participants in a season
    */
   private async recalculateSeasonRankings(seasonId: string) {

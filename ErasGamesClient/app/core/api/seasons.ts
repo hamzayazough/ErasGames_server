@@ -53,6 +53,22 @@ export interface SeasonTopPlayers {
   seasonName: string;
 }
 
+export interface SeasonLeaderboardAroundUser {
+  userRank: number;
+  userTotalPoints: number;
+  players: (TopPlayer & {isCurrentUser: boolean})[];
+  totalParticipants: number;
+  seasonName: string;
+}
+
+export interface PaginatedTopPlayers {
+  players: TopPlayer[];
+  totalParticipants: number;
+  seasonName: string;
+  hasMore: boolean;
+  nextOffset?: number;
+}
+
 export interface SeasonParticipation {
   id: string;
   seasonId: string;
@@ -154,6 +170,40 @@ export class SeasonsApiService {
   }
 
   /**
+   * Get current season leaderboard around user's position
+   */
+  async getCurrentSeasonLeaderboardAroundMe(
+    above?: number,
+    below?: number,
+  ): Promise<SeasonLeaderboardAroundUser | SeasonErrorResponse> {
+    const params: Record<string, string> = {};
+    if (above) params.above = above.toString();
+    if (below) params.below = below.toString();
+
+    return httpService.get<SeasonLeaderboardAroundUser | SeasonErrorResponse>(
+      '/seasons/current/leaderboard/around-me',
+      {params: Object.keys(params).length > 0 ? params : undefined},
+    );
+  }
+
+  /**
+   * Get paginated top players for current season
+   */
+  async getCurrentSeasonTopPaginated(
+    offset?: number,
+    limit?: number,
+  ): Promise<PaginatedTopPlayers | SeasonErrorResponse> {
+    const params: Record<string, string> = {};
+    if (offset) params.offset = offset.toString();
+    if (limit) params.limit = limit.toString();
+
+    return httpService.get<PaginatedTopPlayers | SeasonErrorResponse>(
+      '/seasons/current/leaderboard/top',
+      {params: Object.keys(params).length > 0 ? params : undefined},
+    );
+  }
+
+  /**
    * Get top players for current season (simplified endpoint)
    */
   async getCurrentSeasonTopPlayers(
@@ -223,7 +273,12 @@ export class SeasonsApiService {
    * Type guard to check if response is an error response
    */
   isErrorResponse(
-    response: SeasonLeaderboard | SeasonTopPlayers | SeasonErrorResponse,
+    response:
+      | SeasonLeaderboard
+      | SeasonTopPlayers
+      | SeasonLeaderboardAroundUser
+      | PaginatedTopPlayers
+      | SeasonErrorResponse,
   ): response is SeasonErrorResponse {
     return (response as SeasonErrorResponse).hasLeaderboard === false;
   }
@@ -275,6 +330,8 @@ export const {
   getSeasonById,
   getCurrentSeasonInfo,
   getCurrentSeasonLeaderboard,
+  getCurrentSeasonLeaderboardAroundMe,
+  getCurrentSeasonTopPaginated,
   getCurrentSeasonTopPlayers,
   getCurrentSeasonMyStats,
   getSeasonLeaderboard,

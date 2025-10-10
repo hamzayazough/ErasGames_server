@@ -1,55 +1,123 @@
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import {
   seasonsApiService,
   SeasonInfo,
   SeasonLeaderboard,
   SeasonTopPlayers,
+  SeasonLeaderboardAroundUser,
+  PaginatedTopPlayers,
   SeasonErrorResponse,
   MySeasonStats,
 } from '../../../core/api/seasons';
 
+export type LeaderboardMode = 'around-me' | 'top-players';
+
 export interface LeaderboardState {
   seasonInfo: SeasonInfo | null;
-  leaderboard: SeasonLeaderboard | SeasonTopPlayers | null;
+  leaderboard:
+    | SeasonLeaderboard
+    | SeasonTopPlayers
+    | SeasonLeaderboardAroundUser
+    | PaginatedTopPlayers
+    | null;
   myStats: MySeasonStats | null;
   isLoading: boolean;
   isRefreshing: boolean;
+  isLoadingMore: boolean;
   error: string | null;
+  mode: LeaderboardMode;
+  hasMore: boolean;
+  nextOffset?: number;
 }
 
-export function useLeaderboard() {
+export function useLeaderboard(initialMode: LeaderboardMode = 'around-me') {
   const [state, setState] = useState<LeaderboardState>({
     seasonInfo: null,
     leaderboard: null,
     myStats: null,
     isLoading: true,
     isRefreshing: false,
+    isLoadingMore: false,
     error: null,
+    mode: initialMode,
+    hasMore: false,
+    nextOffset: undefined,
   });
 
-  const fetchLeaderboardData = useCallback(async (isRefresh = false) => {
+  const fetchLeaderboardData = async (
+    isRefresh = false,
+    mode?: LeaderboardMode,
+    loadMore = false,
+  ) => {
     try {
+      const actualMode = mode || state.mode;
+
       if (isRefresh) {
         setState(prev => ({...prev, isRefreshing: true, error: null}));
+      } else if (loadMore) {
+        setState(prev => ({...prev, isLoadingMore: true, error: null}));
       } else {
-        setState(prev => ({...prev, isLoading: true, error: null}));
+        setState(prev => ({
+          ...prev,
+          isLoading: true,
+          error: null,
+          mode: actualMode,
+        }));
       }
 
       // Fetch season info first
       const seasonInfo = await seasonsApiService.getCurrentSeasonInfo();
 
-      let leaderboard: SeasonLeaderboard | SeasonTopPlayers | null = null;
+      let leaderboard:
+        | SeasonLeaderboard
+        | SeasonTopPlayers
+        | SeasonLeaderboardAroundUser
+        | PaginatedTopPlayers
+        | null = null;
       let myStats: MySeasonStats | null = null;
+      let hasMore = false;
+      let nextOffset: number | undefined;
 
       // Only fetch leaderboard if there's an active season
       if (seasonInfo.hasSeason && seasonInfo.status === 'active') {
         try {
-          // Fetch current season leaderboard
-          const leaderboardResponse =
-            await seasonsApiService.getCurrentSeasonLeaderboard(50);
+          if (actualMode === 'around-me') {
+            // Fetch leaderboard around user's position
+            const leaderboardResponse =
+              await seasonsApiService.getCurrentSeasonLeaderboardAroundMe(
+                20,
+                20,
+              );
 
-          if (!seasonsApiService.isErrorResponse(leaderboardResponse)) {
-            leaderboard = leaderboardResponse;
+            if (!seasonsApiService.isErrorResponse(leaderboardResponse)) {
+              leaderboard = leaderboardResponse;
+            }
+          } else {
+            // Fetch top players with pagination
+            const offset = loadMore && state.nextOffset ? state.nextOffset : 0;
+            const leaderboardResponse =
+              await seasonsApiService.getCurrentSeasonTopPaginated(offset, 50);
+
+            if (!seasonsApiService.isErrorResponse(leaderboardResponse)) {
+              if (
+                loadMore &&
+                state.leaderboard &&
+                'players' in state.leaderboard &&
+                'players' in leaderboardResponse
+              ) {
+                // Append new players to existing list
+                const existingPlayers = state.leaderboard.players;
+                const newPlayers = leaderboardResponse.players;
+                leaderboard = {
+                  ...leaderboardResponse,
+                  players: [...existingPlayers, ...newPlayers],
+                };
+              } else {
+                leaderboard = leaderboardResponse;
+              }
+              hasMore = leaderboardResponse.hasMore;
+              nextOffset = leaderboardResponse.nextOffset;
+            }
           }
         } catch (leaderboardError) {
           console.log('Could not fetch leaderboard:', leaderboardError);
@@ -75,7 +143,11 @@ export function useLeaderboard() {
         myStats,
         isLoading: false,
         isRefreshing: false,
+        isLoadingMore: false,
         error: null,
+        mode: actualMode,
+        hasMore,
+        nextOffset,
       }));
     } catch (error: any) {
       console.error('Failed to fetch leaderboard data:', error);
@@ -83,22 +155,33 @@ export function useLeaderboard() {
         ...prev,
         isLoading: false,
         isRefreshing: false,
+        isLoadingMore: false,
         error: error.message || 'Failed to load leaderboard data',
       }));
     }
+  };
+
+  const switchMode = useCallback((newMode: LeaderboardMode) => {
+    fetchLeaderboardData(false, newMode);
+  }, []);
+
+  const loadMore = useCallback(() => {
+    fetchLeaderboardData(false, undefined, true);
   }, []);
 
   const refresh = useCallback(() => {
     fetchLeaderboardData(true);
-  }, [fetchLeaderboardData]);
+  }, []);
 
   // Initial load
   useEffect(() => {
     fetchLeaderboardData();
-  }, [fetchLeaderboardData]);
+  }, []); // Empty dependency array for initial load only
 
   return {
     ...state,
+    switchMode,
+    loadMore,
     refresh,
     refetch: fetchLeaderboardData,
   };

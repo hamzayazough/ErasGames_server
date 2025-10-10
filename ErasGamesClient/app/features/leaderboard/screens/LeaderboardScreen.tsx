@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import {View, Text, Card} from '../../../ui';
 import {useTheme, ThemedBackground} from '../../../core/theme';
 import {useAuth} from '../../../core/context/AuthContext';
-import {useLeaderboard} from '../hooks/useLeaderboard';
+import {useLeaderboard, LeaderboardMode} from '../hooks/useLeaderboard';
 import {TopPlayer} from '../../../core/api/seasons';
 import {GlobalHeader, AnimatedLogo} from '../../../shared/components';
 
@@ -25,9 +26,14 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
     myStats,
     isLoading,
     isRefreshing,
+    isLoadingMore,
     error,
+    mode,
+    hasMore,
+    switchMode,
+    loadMore,
     refresh,
-  } = useLeaderboard();
+  } = useLeaderboard('around-me');
 
   // Handle error state
   if (error && !isLoading) {
@@ -65,7 +71,7 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
   }
 
   // Get players from leaderboard response
-  const getPlayers = (): TopPlayer[] => {
+  const getPlayers = (): (TopPlayer & { isCurrentUser?: boolean })[] => {
     if (!leaderboard) return [];
     
     if ('topPlayers' in leaderboard) {
@@ -73,7 +79,7 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
     }
     
     if ('players' in leaderboard) {
-      return (leaderboard as any).players;
+      return leaderboard.players;
     }
     
     return [];
@@ -83,10 +89,12 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
   const currentUserId = serverUser?.id;
   const currentUserRank = myStats?.hasStats ? myStats.stats?.participation.currentRank : null;
 
-  // Auto-scroll to current user's position when data loads
+  // Auto-scroll to current user's position when data loads (only in around-me mode)
   useEffect(() => {
-    if (!isLoading && leaderboardData.length > 0 && currentUserId) {
-      const currentUserIndex = leaderboardData.findIndex(player => player.userId === currentUserId);
+    if (!isLoading && leaderboardData.length > 0 && currentUserId && mode === 'around-me') {
+      const currentUserIndex = leaderboardData.findIndex(player => 
+        player.userId === currentUserId || player.isCurrentUser
+      );
       
       if (currentUserIndex !== -1 && scrollViewRef.current) {
         // Calculate approximate scroll position
@@ -103,7 +111,7 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
         }, 300);
       }
     }
-  }, [isLoading, leaderboardData, currentUserId]);
+  }, [isLoading, leaderboardData, currentUserId, mode]);
 
   // Get rank colors based on position
   const getRankColors = (rank: number, isCurrentUser: boolean) => {
@@ -204,9 +212,24 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
     return isCurrentUser ? theme.colors.accent1 || theme.colors.textOnPrimary : theme.colors.textOnPrimary;
   };
 
+  // Handle scroll to load more
+  const handleScroll = (event: any) => {
+    const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
+    const paddingToBottom = 20;
+    
+    if (
+      layoutMeasurement.height + contentOffset.y >=
+      contentSize.height - paddingToBottom
+    ) {
+      if (hasMore && !isLoadingMore && mode === 'top-players') {
+        loadMore();
+      }
+    }
+  };
+
   // Render clean player row (like reference design)
-  const renderCleanPlayerRow = (player: TopPlayer, index: number) => {
-    const isCurrentUser = currentUserId === player.userId;
+  const renderCleanPlayerRow = (player: TopPlayer & { isCurrentUser?: boolean }, index: number) => {
+    const isCurrentUser = player.isCurrentUser || (currentUserId === player.userId);
     const displayName = isCurrentUser ? 'You' : (player.name || player.handle);
     const avatarLetter = getAvatarLetter(player, isCurrentUser);
     const avatarColor = getAvatarColor(displayName);
@@ -327,6 +350,63 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
         />
       </View>
 
+      {/* Mode Toggle Buttons */}
+      <View style={styles.modeToggleContainer}>
+        <TouchableOpacity
+          style={[
+            styles.modeButton,
+            {
+              backgroundColor: mode === 'around-me' 
+                ? theme.colors.primary 
+                : theme.colors.card,
+              borderColor: theme.colors.border,
+            }
+          ]}
+          onPress={() => switchMode('around-me')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.modeButtonText,
+              {
+                color: mode === 'around-me' 
+                  ? theme.colors.textOnPrimary 
+                  : theme.colors.text,
+              }
+            ]}
+          >
+            My Position
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[
+            styles.modeButton,
+            {
+              backgroundColor: mode === 'top-players' 
+                ? theme.colors.primary 
+                : theme.colors.card,
+              borderColor: theme.colors.border,
+            }
+          ]}
+          onPress={() => switchMode('top-players')}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.modeButtonText,
+              {
+                color: mode === 'top-players' 
+                  ? theme.colors.textOnPrimary 
+                  : theme.colors.text,
+              }
+            ]}
+          >
+            Top Players
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -340,6 +420,8 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
           />
         }
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
       >
         {/* Simple Clean Leaderboard List */}
         <View style={styles.playersContainer}>
@@ -364,6 +446,16 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
             </View>
           )}
         </View>
+
+        {/* Load More Indicator */}
+        {isLoadingMore && (
+          <View style={styles.loadMoreContainer}>
+            <AnimatedLogo size={40} />
+            <Text style={[styles.loadMoreText, { color: theme.colors.textSecondary }]}>
+              Loading more players...
+            </Text>
+          </View>
+        )}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -581,5 +673,45 @@ const styles = StyleSheet.create({
   
   bottomPadding: {
     height: 60,
+  },
+
+  // Mode Toggle Buttons
+  modeToggleContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modeButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  // Load More Indicator
+  loadMoreContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

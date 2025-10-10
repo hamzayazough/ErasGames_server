@@ -9,24 +9,18 @@ import {
 import { Request } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  SeasonService,
-  SeasonLeaderboard,
-} from '../database/services/season.service';
+import { SeasonService } from '../database/services/season.service';
+import { FirebaseUser } from '../decorators/firebase-user.decorator';
+import type { FirebaseUser as FirebaseUserType } from '../decorators/firebase-user.decorator';
 import { Season } from '../database/entities/season.entity';
 import { SeasonParticipation } from '../database/entities/season-participation.entity';
 import { SeasonStatus } from '../database/enums/season-status.enum';
 import { Attempt } from '../database/entities/attempt.entity';
-import { FirebaseUser } from '../decorators/firebase-user.decorator';
-import type { FirebaseUser as FirebaseUserType } from '../decorators/firebase-user.decorator';
+import { SeasonLeaderboard } from '../database/services/season.service';
 
 // Extended Request interface with Firebase user
 interface AuthenticatedRequest extends Request {
-  firebaseUser?: {
-    uid: string;
-    email?: string;
-    name?: string;
-  };
+  firebaseUser?: FirebaseUser;
 }
 
 /**
@@ -166,6 +160,180 @@ export class SeasonsController {
       status: 'active',
       message: `${currentSeason.displayName} is live!`,
       daysRemaining: currentSeason.daysRemaining ?? undefined,
+    };
+  }
+
+  /**
+   * Get current season leaderboard around user's position
+   */
+  @Get('current/leaderboard/around-me')
+  async getCurrentSeasonLeaderboardAroundMe(
+    @Query('above') above?: string,
+    @Query('below') below?: string,
+    @Req() req?: AuthenticatedRequest,
+  ): Promise<
+    | {
+        userRank: number;
+        userTotalPoints: number;
+        players: Array<{
+          userId: string;
+          handle: string;
+          name?: string;
+          country?: string;
+          totalPoints: number;
+          rank: number;
+          currentStreak: number;
+          perfectScores: number;
+          isCurrentUser: boolean;
+        }>;
+        totalParticipants: number;
+        seasonName: string;
+      }
+    | { hasLeaderboard: false; message: string }
+  > {
+    // Add safety check
+    if (!req?.firebaseUser?.uid) {
+      console.error('❌ No authenticated user found');
+      return {
+        hasLeaderboard: false,
+        message:
+          'Authentication required. Please log in to view your position.',
+      };
+    }
+    const currentSeason = await this.seasonService.getCurrentSeason();
+
+    if (!currentSeason) {
+      return {
+        hasLeaderboard: false,
+        message: 'No active season currently running',
+      };
+    }
+
+    const positionsAbove = above ? parseInt(above, 10) : 20;
+    const positionsBelow = below ? parseInt(below, 10) : 20;
+
+    if (positionsAbove < 0 || positionsAbove > 100) {
+      throw new BadRequestException('Above must be between 0 and 100');
+    }
+
+    if (positionsBelow < 0 || positionsBelow > 100) {
+      throw new BadRequestException('Below must be between 0 and 100');
+    }
+
+    try {
+      const context = await this.seasonService.getRankingContext(
+        currentSeason.id,
+        req.firebaseUser.uid,
+        positionsAbove,
+        positionsBelow,
+      );
+
+      // Get additional data for players
+      const enhancedPlayers = await Promise.all(
+        context.players.map(async (player) => {
+          const participation = await this.seasonService.getUserParticipation(
+            currentSeason.id,
+            player.userId,
+          );
+          return {
+            ...player,
+            name: player.name ?? undefined,
+            country: player.country ?? undefined,
+            currentStreak: participation?.currentStreak || 0,
+            perfectScores: participation?.perfectScores || 0,
+          };
+        }),
+      );
+
+      const totalParticipants = await this.seasonService.getTotalParticipants(
+        currentSeason.id,
+      );
+
+      return {
+        userRank: context.userRank,
+        userTotalPoints: context.userTotalPoints,
+        players: enhancedPlayers,
+        totalParticipants,
+        seasonName: currentSeason.displayName,
+      };
+    } catch (error) {
+      return {
+        hasLeaderboard: false,
+        message: `Failed to get your position ${error instanceof Error ? error.message : ''}`,
+      };
+    }
+  }
+
+  /**
+   * Get paginated top players for current season
+   */
+  @Get('current/leaderboard/top')
+  async getCurrentSeasonTopPaginated(
+    @Query('offset') offset?: string,
+    @Query('limit') limit?: string,
+  ): Promise<
+    | {
+        players: Array<{
+          userId: string;
+          handle: string;
+          name?: string;
+          country?: string;
+          totalPoints: number;
+          rank: number;
+          currentStreak: number;
+          perfectScores: number;
+        }>;
+        totalParticipants: number;
+        seasonName: string;
+        hasMore: boolean;
+        nextOffset?: number;
+      }
+    | { hasLeaderboard: false; message: string }
+  > {
+    const currentSeason = await this.seasonService.getCurrentSeason();
+
+    if (!currentSeason) {
+      return {
+        hasLeaderboard: false,
+        message: 'No active season currently running',
+      };
+    }
+
+    const offsetNum = offset ? parseInt(offset, 10) : 0;
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+
+    if (offsetNum < 0) {
+      throw new BadRequestException('Offset must be non-negative');
+    }
+
+    if (limitNum < 1 || limitNum > 100) {
+      throw new BadRequestException('Limit must be between 1 and 100');
+    }
+
+    const paginatedLeaderboard =
+      await this.seasonService.getPaginatedLeaderboard(
+        currentSeason.id,
+        offsetNum,
+        limitNum,
+      );
+
+    return {
+      players: paginatedLeaderboard.players.map((p) => ({
+        userId: p.userId,
+        handle: p.handle,
+        name: p.name ?? undefined,
+        country: p.country ?? undefined,
+        totalPoints: p.totalPoints,
+        rank: p.rank,
+        currentStreak: p.currentStreak,
+        perfectScores: p.perfectScores,
+      })),
+      totalParticipants: paginatedLeaderboard.totalParticipants,
+      seasonName: currentSeason.displayName,
+      hasMore: paginatedLeaderboard.hasMore,
+      nextOffset: paginatedLeaderboard.hasMore
+        ? offsetNum + limitNum
+        : undefined,
     };
   }
 
