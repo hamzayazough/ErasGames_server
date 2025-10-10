@@ -434,7 +434,35 @@ export default function LeaderboardScreen({ navigation }: { navigation?: any }) 
                 borderColor: theme.colors.border,
               }
             ]}>
+              {/* Show "More players above" indicator */}
+              {leaderboardData.length > 0 && leaderboardData[0]?.rank > 1 && (
+                <View style={[styles.morePlayersIndicator, { borderBottomColor: theme.colors.border }]}>
+                  <Text style={[styles.morePlayersText, { color: theme.colors.textSecondary }]}>
+                    ••• {leaderboardData[0].rank - 1} more players above •••
+                  </Text>
+                </View>
+              )}
+              
               {leaderboardData.map((player, index) => renderCleanPlayerRow(player, index))}
+              
+              {/* Show "More players below" indicator for around-me mode */}
+              {mode === 'around-me' && leaderboardData.length > 0 && !isLoadingMore && (() => {
+                const lastPlayer = leaderboardData[leaderboardData.length - 1];
+                const totalParticipants = 'totalParticipants' in leaderboard! ? leaderboard.totalParticipants : 0;
+                const playersBelow = totalParticipants - lastPlayer.rank;
+                return playersBelow > 0;
+              })() && (
+                <View style={[styles.morePlayersIndicator, { borderTopColor: theme.colors.border }]}>
+                  <Text style={[styles.morePlayersText, { color: theme.colors.textSecondary }]}>
+                    {(() => {
+                      const lastPlayer = leaderboardData[leaderboardData.length - 1];
+                      const totalParticipants = 'totalParticipants' in leaderboard! ? leaderboard.totalParticipants : 0;
+                      const playersBelow = totalParticipants - lastPlayer.rank;
+                      return `••• ${playersBelow} more players below •••`;
+                    })()}
+                  </Text>
+                </View>
+              )}
             </View>
           ) : (
             <View style={styles.emptyContainer}>
@@ -713,5 +741,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 8,
     textAlign: 'center',
+  },
+
+  // More Players Indicators
+  morePlayersIndicator: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderTopWidth: 1,
+    borderColor: 'transparent',
+  },
+  morePlayersText: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    opacity: 0.8,
+    letterSpacing: 0.5,
   },
 });
